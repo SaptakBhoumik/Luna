@@ -1,0 +1,1169 @@
+/*
+  Name is luna. Btw this file is demo file so there may be mistakes. Refer to this file for underlying concept and not for exact syntax
+  For exact syntax, refer to small.luna
+*/
+//Note for exported/extern functions:They can have only one return value. The return type and return value must be one of the following types
+// i8,i16,i32,i64,u8,u16,u32,u64,f32,f64,simd types, atomic/threadlocal types,c raw pointer of the aforementioned types,structs that only contain fields of the 
+// aforementioned types
+//Note *T is a raw ptr to T so no safety rails. If you want safety rails then use Shared{T} or [T] for example 
+//Note :- Among complex datatypes, only Shared,List,Str,Tensor,Map are builtin to the language i.e we dont define them from scratch in the language. The compiler handles it
+
+//Also NOTE:-You may specify @[align(N)] even on the function parameter(@[align(N)] name:T or @[align(N)] mut name:T) and function return type(@[align(N)] T)
+             You may also specify it on an individual struct field
+             var:*T = ptr. This works no matter the alignment of ptr
+             @[align(N)] var:*T = ptr. This requires ptr to be aligned to N bytes, otherwise it's a compile error.
+//Note:- A function and method may have the same name irrespective of type.
+//You can pass function as parameter to other function and method but you cant pass method as parameter to other function or method. 
+//You can have multiple methods with the same name as long as their receiver or atleast one argument type is different. 
+//You can have multiple functions with the same name as long as their parameter types are different.
+// ---- Imports --------------------------------------------------------------------------------------------------------------------------------------
+
+import math
+import fs
+import http
+import std::io::{println, print}
+import simd
+import gpu
+
+using io = std::io
+//Now u can use io using std::io::println or using io::println, and so on
+// ---- Enums ------------------------------------------------------------------------------------------------------------------------------------------
+
+pub enum Direction {
+    North,
+    South,
+    East,
+    West,
+}
+
+pub enum Status {
+    Ok = 0,
+    Warn = 1,
+    Fail = 2,
+}
+pub enum Result {
+    //Yes. You can have any value(constexpr) associated with enum varients
+    Success = "success",
+    Error = "error"
+}
+// ---- Type aliases ----------------------------------------------------------------------------------------------------------------------------
+// `type` creates a distinct named alias - not just a synonym.
+// Sum types and named tuples are both defined with `type`.
+
+pub  type Shape  = Circle | Rect | Triangle
+     type Number = i32    | f64
+     type MyInt  = i32
+     type Point3 = (f64, f64, f64)   // named tuple type
+
+// ---- Structs --------------------------------------------------------------------------------------------------------------------------------------
+//
+// Struct initialization:
+//   Non-generic: Name(field:val, ...)
+//   Generic:     Name{TypeParam}(field:val, ...)
+//
+// The brace-only form Name{...} is not used for initialization -
+// braces are reserved exclusively for type-parameter lists.
+
+pub struct Vec2 {
+    pub mut x:f64
+    pub mut y:f64 = 0.0
+}
+
+pub struct Circle {
+    pub mut center:Vec2
+    pub mut radius:f64
+}
+
+pub struct Rect {
+    pub mut top_left: Vec2
+    pub mut bottom_right:Vec2
+}
+
+pub struct Triangle {
+    pub a:Vec2                              // immutable once set
+    pub b:Vec2 = Vec2(x:9.0, y:0.0)     // default; overridable at construction
+    pub mut c:Vec2
+}
+
+// Generic struct - [100 * T] is a fixed array of 100 elements of type T
+pub struct Stack{T} {
+    mut data:[100 * T]   // private; only methods may access directly
+    pub mut top:i32
+}
+
+// Nested struct - access via cfg.net.host, cfg.log.verbose, etc.
+pub struct Config {
+    pub struct Network {
+        pub host:str
+        pub port:i32
+    }
+    pub struct Logging {
+        pub level:i32
+        pub verbose:bool
+    }
+    pub net:Network
+    pub log:Logging
+}
+
+// @[align(N)] sets the minimum byte alignment for a struct or variable.
+// Useful for SIMD loads (16/32-byte), cache-line padding (64-byte), MMIO.
+@[align(16)]
+pub struct Vec4 {
+    pub mut x:f32
+    pub mut y:f32
+    pub mut z:f32
+    pub mut w:f32
+}
+
+// @[align(N)] on struct fields
+pub struct SimdData {
+    @[align(32)] data:[8 * f32]
+    @[align(64)] pad:[8  * u8]
+    x:i32
+}
+
+// @[align(N)] on function parameters and return type
+fn process(@[align(32)] buf:[8 * f32], @[align(16)] mut out:[4 * f32]) -> @[align(32)] [8 * f32] {
+    ret buf
+}
+
+// ---- Forward declarations ------------------------------------------------------------------------------------------------------------
+// A signature with no body is a forward declaration.
+// Useful for certain cases
+
+struct ListNode                     // forward struct
+fn is_even(n:i32) -> bool      // forward function
+fn (v:Vec2)normalize() -> Vec2     // forward method
+
+// Note definitions must appear in same file. It is not like C. The only reason forward declaration is allowed is due to some rare cases where it will be helpful
+struct ListNode {
+    pub val: i32
+    pub mut next:*ListNode
+}
+
+// ==============================================================================
+// Memory Model
+// ==============================================================================
+//
+// Five storage locations - the compiler picks automatically:
+//
+//   Stack          default; no escape; drop() at scope exit (reverse decl order)
+//   GC heap        value escapes via ret or opaque call; GC frees when no refs
+//   Shared{T}      compiler promotes when concurrent multi-owner detected;
+//                  ref-counted; drop() when count hits zero
+//   thread_local   per-thread independent copy; drop() when thread exits
+//   Manual         alloc/free; free(v) calls drop(v) first if defined
+//
+// Pass / return threshold = 64 bits (8 bytes = one CPU register):
+//   size <= 8 bytes  -> always copy   (bool, i8..i64, u8..u64, f32, f64, *T)
+//   size > 8 bytes  -> move if source not used after; full copy if still used
+//
+// Struct/tuple/sumtype size = sum of field sizes in memory layout.
+// Heap content of Str/List/Tensor does NOT count toward that size -
+// only the in-struct pointer+length fields count.
+//
+// Builtin complex types (compiler-managed, not defined in userspace):
+//   Shared{T}  List{T}  Str  Tensor{T}  Map{K,V}
+//
+// Raw pointer *T:
+//   No safety rails. 8 bytes -> always copied. C interop only.
+//   For safety use Shared{T} or List{T} instead.
+//
+// Exported / extern functions:
+//   Single return value only.
+//   Allowed types: i8..i64, u8..u64, f32, f64, SIMD types,
+//   atomic/thread_local types, C raw pointers of the above,
+//   structs whose fields are exclusively the above types.
+
+// ---- Structs used in memory model examples ------------------------------------------------------------------------
+
+pub struct GpuBuffer {
+    pub mut handle: i32
+}
+
+fn (mut g: GpuBuffer) drop() {
+    gpu::release(g.handle)   // GPU resource freed before memory is released
+}
+
+pub struct DbConnection {
+    pub host: str
+}
+
+fn (mut d: DbConnection) drop() {
+    db::close(d.host)
+}
+
+pub struct FileHandle {
+    pub mut fd: i32
+}
+
+fn (mut f: FileHandle) drop() {
+    fs::close(f.fd)   // deterministic: runs at scope exit or when explicitly dropped
+}
+
+// ---- Drop ordering --------------------------------------------------------------------------------------------------------------------------
+// When a scope exits, variables are dropped in REVERSE declaration order.
+// This is safe because later-declared variables may hold references to
+// earlier-declared ones.
+
+fn drop_order_demo() -> ! {
+    file_a := FileHandle(fd: fs::open("a.txt")!)   // declared first
+    conn_b := DbConnection(host: "localhost")       // declared second; may use file_a
+    // ...
+}   // conn_b.drop() called first, then file_a.drop() - always safe
+
+// ---- File handle with automatic drop - no defer needed ------------------------------------------------
+// drop() on a stack variable is called deterministically at scope exit.
+// For stack objects you never need defer { fs::close(f) } - drop() handles it.
+// Use defer only when you need cleanup at a specific point BEFORE scope exit.
+
+fn read_config() -> !str {
+    f := FileHandle(fd: fs::open("config.txt")!)
+    // f is stack-allocated; drop() called at end of this scope regardless of
+    // whether we return normally or propagate an error via !
+    ret fs::read(f.fd)!
+    // returned str is > 8 bytes (pointer + length = 16 bytes) so the caller
+    // receives the address - no copy of the heap content, just pointer transfer
+}
+
+// ---- Stack vs heap - escape analysis ------------------------------------------------------------------------------------
+// The compiler decides based on whether the value outlives its declaring scope.
+
+fn make_point() -> Vec2 {
+    p := Vec2(x: 3.0, y: 4.0)   // would be stack, but...
+    ret p                         // ...escapes via ret -> compiler promotes to GC heap
+}                                 // no drop() here - caller now holds the reference
+
+fn use_point_local() {
+    p := Vec2(x: 3.0, y: 4.0)   // does NOT escape -> stays on stack
+    io::println(f"{p.x}")
+}                                 // p.drop() called here if Vec2 defined drop() and then stack frame released
+                                  // Vec2 has no drop() so just stack frame released
+
+fn point_drop_demo() {
+    result := make_point()        // result holds GC heap reference
+    io::println(f"{result.x}")
+}                                 // result goes out of scope -> drop() + GC free
+
+// ---- Pass-by-reference when value not used after call --------------------------------------------------
+// v is > 8 bytes and not used after process_point() - compiler passes by reference.
+// v stays on stack if process_point()'s call graph has no unjoined threads
+// that could outlive v's stack frame. If the call graph is opaque (C extern),
+// the compiler assumes worst case and copies and passes it to C like a normal value (no reference, no heap promotion).
+
+fn pass_ref_demo() {
+    small: i32 = 10
+    use_int(small)               // i32 is <= 8 bytes -> copied by value always
+
+    big := Vec2(x: 1.0, y: 2.0) // Vec2 is 16 bytes -> > 8 byte threshold
+    process_point(big)           // big not used after -> compiler passes by reference
+                                 // no copy, no heap promotion (call graph is visible)
+}
+
+// ---- Copy vs move semantics --------------------------------------------------------------------------------------------------------
+// The rule applies uniformly to Str, List{T}, Tensor{T}, structs, tuples,
+// and sum types. Size is checked at compile time from the type definition.
+
+fn move_copy_demo() {
+    // ---- Primitive - always copy (<= 8 bytes) --------------------------------------------------------------------
+    pi: i32 = 42
+    pi2 := pi              // copy - pi is <= 8 bytes; both are valid and independent
+    io::println(pi)        // 42
+    io::println(pi2)       // 42
+
+    // ---- Str - copy if source still used after, move if not --------------------------------------
+    // Str in memory = (pointer: 8 bytes, length: 8 bytes) = 16 bytes total
+    // The heap content itself is never copied unless explicitly requested.
+
+    greeting: str = "hello world"
+    greeting2 := greeting          // greeting IS used after -> full copy of str header
+                                   // + new heap allocation for the content
+    io::println(greeting)          // still valid - "hello world"
+    greeting3 := greeting2         // greeting2 is NOT used after -> move
+                                   // greeting3 takes greeting2's pointer, no copy
+    io::println(greeting3)         // "hello world"
+
+    // explicit copy regardless of usage:
+    greeting4 := copy(greeting)    // always deep copies heap content
+
+    // ---- Struct - total field size determines copy vs move threshold ----------------------
+    // Vec2 = (x: f64, y: f64) = 16 bytes total -> above 8-byte threshold
+    // Treated the same as Str/List for copy/move purposes.
+
+    pt_a := Vec2(x: 1.0, y: 2.0)
+    pt_b := pt_a               // pt_a IS used after -> full copy of Vec2 (16 bytes)
+    io::println(pt_a.x)        // still valid
+    pt_c := pt_b               // pt_b is NOT used after -> move; pt_b invalidated
+    io::println(pt_c.x)
+
+    // Same rule applies to List{T}, Tensor{T}, tuple, and sum types.
+}
+
+// ---- Thread promotion - compiler determines Shared{T} automatically ------------------------
+// No syntax change - the compiler inserts ref-counting internally.
+// Promotion decisions are made entirely at compile time from the thread
+// lifetime graph (which threads are live between their launch and join).
+
+fn threading_mem_demo() {
+    // shared - used by t_mem1 AND t_mem2 which are BOTH live at the same time
+    //          -> compiler promotes to Shared{GpuBuffer} (ref-counted)
+    shared_buf := GpuBuffer(handle: gpu::alloc())
+
+    // solo_a - used ONLY by t_mem1; main never touches it after launch
+    //        -> compiler moves into t_mem1 (zero overhead, no ref-counting)
+    solo_a := GpuBuffer(handle: gpu::alloc())
+
+    // concurrent_b - used by t_mem2 AND by main's process_gpu() call
+    //               which happens AFTER t_mem2 is launched but BEFORE join
+    //             -> compiler promotes to Shared{GpuBuffer}
+    concurrent_b := GpuBuffer(handle: gpu::alloc())
+
+    // thread_local - each thread gets its own independent copy
+    //              -> no promotion, no sharing, no ref-counting
+    thread_local mut tl_scratch := GpuBuffer(handle: gpu::alloc())
+
+    process_gpu(concurrent_b)                          // main uses concurrent_b
+    t_mem1 := thread { work_gpu(shared_buf, solo_a, tl_scratch) }
+    t_mem2 := thread { work_gpu(shared_buf, concurrent_b, tl_scratch) }
+    process_gpu(concurrent_b)                          // main uses concurrent_b again
+    t_mem1.join()!                                     // solo_a.drop() here if last ref
+    t_mem2.join()!
+
+    // seq_c - declared AFTER both joins; used only sequentially, never concurrently
+    //       -> no promotion needed; compiler treats each use as single-owner
+    seq_c := GpuBuffer(handle: gpu::alloc())
+
+    t_mem3 := thread { work_gpu(shared_buf, seq_c, tl_scratch) }
+    t_mem3.join()!                                     // t_mem3 done before t_mem4 starts
+    t_mem4 := thread { work_gpu(shared_buf, seq_c, tl_scratch) }
+    t_mem4.join()!
+
+}   // shared_buf.drop() here - last reference (main's) released after both joins
+    // seq_c.drop() here - stack variable, scope exits
+    // tl_scratch.drop() called per-thread when each thread exits
+
+// ---- Explicit early drop --------------------------------------------------------------------------------------------------------------
+// drop(v) triggers cleanup immediately rather than waiting for scope exit.
+// The compiler marks v invalid after this point - use-after-drop is a
+// compile error. The compiler also suppresses the automatic scope-exit drop
+// so there is no double-drop.
+
+fn early_drop_demo() -> ! {
+    gpu_res := GpuBuffer(handle: gpu::alloc())
+    render(gpu_res)
+    gpu_res.drop()              // drop() + free now - don't hold GPU resource
+                               // through the following long CPU work
+    // use(gpu_res)            // compile error - gpu_res was dropped
+    heavy_cpu_work()           // runs without gpu_res alive
+}                              // no second drop - compiler knows gpu_res is gone
+
+// ---- Manual allocation ------------------------------------------------------------------------------------------------------------------
+// alloc{T}/free{T},aligned_alloc8{T}/aligned_free8{T},aligned_alloc16{T}/aligned_free16{T},....... bypass the GC and drop() system - no safety rails, 
+// no automatic cleanup. 
+
+//---Declaration of the forward declared variable
+fn is_even(n:i32) -> bool { 
+    ret n % 2 == 0 
+}
+
+fn (v:Vec2) normalize() -> Vec2 {
+    len := v.length()
+    ret Vec2(x:v.x / len, y:v.y / len)
+}
+
+// ---- Methods --------------------------------------------------------------------------------------------------------------------------------------
+// Methods receive the receiver by reference.
+// If `mut` is used on the receiver, the caller must pass a mutable variable and the method may mutate it. 
+
+fn (v:Vec2)length() -> f64 {
+    ret math::sqrt(v.x * v.x + v.y * v.y)
+}
+
+fn (v:Vec2)+(other:Vec2) -> Vec2 {
+    ret Vec2(x:v.x + other.x, y:v.y + other.y)
+}
+
+fn (v:Vec2)-(other:Vec2) -> Vec2 {
+    ret Vec2(x:v.x - other.x, y:v.y - other.y)
+}
+
+fn (v:Vec2)*(scalar:f64) -> Vec2 {
+    ret Vec2(x:v.x * scalar, y:v.y * scalar)
+}
+
+fn (v:Vec2)==(other:Vec2) -> bool { 
+    ret v.x == other.x && v.y == other.y 
+}
+fn (v:Vec2)!=(other:Vec2) -> bool { 
+    ret !(v == other) 
+}
+
+// Generic methods:{T} is not repeated on the method name -
+// the receiver already introduces T into scope.
+fn (mut s:Stack{T})push(val:T) {
+    s.data[s.top] = val
+    s.top++
+}
+
+fn (s:Stack{T})[](i:i32) -> T{ 
+    ret s.data[i] // getter
+}   
+fn (mut s:Stack{T})[]=(i:i32, val:T) { 
+    s.data[i] = val // setter
+} 
+
+fn (mut s:Stack{T}) pop() -> T {
+    s.top--
+    ret s.data[s.top]
+}
+
+fn (s:Stack{T}) is_empty() -> bool { 
+    ret s.top == 0 
+}
+fn (s:Stack{T}) size() -> i32  { 
+    ret s.top 
+}
+
+// ---- Constants ----------------------------------------------------------------------------------------------------------------------------------
+
+PI:f64 = 3.14159265358979
+MAX_SIZE:i32 = 100
+
+// ---- Function overloading ------------------------------------------------------------------------------------------------------------
+
+fn area(c:Circle) -> f64 { ret PI * c.radius * c.radius }
+
+fn area(r:Rect) -> f64 {
+    dx := r.bottom_right.x - r.top_left.x
+    dy := r.bottom_right.y - r.top_left.y
+    ret dx * dy
+}
+
+fn area(t:Triangle) -> f64 {
+    ab := t.b - t.a
+    ac := t.c - t.a
+    ret (ab.x * ac.y - ab.y * ac.x) / 2.0
+}
+
+// ---- Error handling ------------------------------------------------------------------------------------------------------------------------
+
+fn divide(a:f64, b:f64) -> !f64 {
+    if b == 0.0 { ret error("division by zero") }
+    ret a / b
+}
+
+fn safe_sqrt(x:f64) -> !f64 {
+    if x < 0.0 { ret error("negative input to sqrt") }
+    ret math::sqrt(x)
+}
+
+// ! propagation - if divide or safe_sqrt fail, compute propagates the same error
+fn compute(a:f64, b:f64) -> !f64 {
+    d := divide(a, b)!
+    s := safe_sqrt(d)!
+    ret s
+}
+
+// ?T - optional return; None signals absence, no error message
+fn find(arr:[5 * i32], idx:i32) -> ?i32 {
+    if idx < 0 || idx >= 5 { ret None }
+    ret arr[idx]
+}
+
+// ---- Defer ------------------------------------------------------------------------------------------------------------------------------------------
+
+fn read_file(path:str) -> !str {
+    f := fs::open(path)!
+    defer { fs::close(f) }   // runs on exit regardless of error or normal return
+    ret fs::read(f)!
+}
+
+// ---- Threading ----------------------------------------------------------------------------------------------------------------------------------
+//
+// Thread{T}          - handle to a running OS thread producing a value of type T.
+// thread { }         - spawns a thread; use `ret` to return its value explicitly.
+// thread expr        - prefix form for single-expression threads (no braces).
+// .join()            - block until completion; returns !T; propagate with or / !.
+//
+// Shared mutable state - three models, pick by granularity:
+//
+//   atomic mut x:T
+//       Every individual read/write is inherently thread-safe.
+//       Use for:counters, flags, single-value updates.
+//
+//   lock x { }
+//   lock (x, y) { }   - lock multiple atomics together
+//   lock { }           - global critical section; no two threads may simultaneously
+//                        be inside any bare lock {} block
+//       Acquires exclusive access to listed variables for the whole block.
+//       Use for:multi-step sequences that must not interleave.
+//
+//   thread_local mut x:T
+//       Each thread owns an independent copy of x.
+//       Zero sharing, zero locking. Initialiser runs once per thread.
+//       Use for:per-thread scratch buffers, request IDs, error state.
+//
+// Chan{T}            - bounded typed channel (cap 0 = rendezvous).
+// .send(v)           - blocks until receiver is ready or buffer has space.
+// .recv()            - blocks until a value is available; returns ?T (None = closed).
+
+fn fetch(url:str) -> !str {
+    resp := http::get(url)!
+    ret resp.body
+}
+
+fn fetch_both(url1:str, url2:str) -> !str {
+    t1:Thread{!str} = thread { ret fetch(url1) }  // block form - explicit ret
+    t2:Thread{!str} = thread fetch(url2)           // prefix form - single expr
+    r1 := t1.join() or ""
+    r2 := t2.join() or ""
+    ret r1 + r2
+}
+
+// Atomic counter - individual increments need no explicit locking
+fn concurrent_counter() -> i32 {
+    atomic mut count:i32 = 0
+
+    mut handles:[4 * Thread{()}] = []
+    loop i :0..4 {
+        handles[i] = thread {
+            loop _ :0..1000 { count++ }   // atomic; safe across all threads
+        }
+    }
+    loop t :handles { t.join()! }
+    ret count
+}
+
+// lock - when one atomic op is not enough (multi-step must not interleave)
+// -> ! means:propagates errors, returns no value
+fn transfer_demo() -> ! {
+    atomic mut balance:i32 = 1000
+
+    t1 := thread {
+        lock balance {
+            fee     := balance / 20     // 5% - read and write must not interleave
+            balance = balance - fee
+        }
+    }
+    t2 := thread {
+        lock (balance) {                // explicit single-var form; same as above
+            balance = balance + 200
+        }
+    }
+    t1.join()!
+    t2.join()!
+    io::println(f"final balance:{balance}")
+}
+
+// Channel - producer/consumer via typed message passing
+fn channel_demo() -> ! {
+    ch:Chan{i32} = Chan{i32}(cap:8)
+
+    producer := thread {
+        loop i :0..5 { ch.send(i * i) }
+        ch.close()
+    }
+    consumer := thread {
+        loop {
+            val := ch.recv() or { break }   // None means channel closed
+            io::println(f"received:{val}")
+        }
+    }
+    producer.join()!
+    consumer.join()!
+}
+
+// thread_local - each thread owns a completely independent copy of request_id
+thread_local mut request_id:i32 = 0
+
+fn handle_request(id:i32) {
+    request_id = id   // writes only this thread's copy
+    io::println(f"handling request {request_id}")
+}
+
+// ---- Compiler attributes --------------------------------------------------------------------------------------------------------------
+@[inline]
+fn fast_add(a:i32, b:i32) -> i32 { ret a + b }
+
+@[noinline]
+fn slow_path(a:i32) -> i32 { ret a * a }
+
+@[deprecated(msg:"use compute() instead", after:"2025-01-01")]
+fn old_compute(a:f64, b:f64) -> f64 { ret a + b }
+
+@[extern("c_func_name")]
+fn cfunc(ptr:*i32) -> i32   // forward decl - implemented in C
+
+@[noreturn]
+fn panic(msg:str) { io::println(f"panic:{msg}") }
+
+@[export("lux_add")]
+pub fn exported_add(a:i32, b:i32) -> i32 { ret a + b }
+
+// @[align(N)] on a variable - minimum byte alignment for its storage.
+@[align(64)] mut cache_line_buf:[64 * u8]  = []   // one full cache line
+@[align(32)] mut avx_buf:[8  * f32] = []   // AVX-compatible alignment
+
+// ---- Variadic ------------------------------------------------------------------------------------------------------------------------------------
+//
+//   *args:T  - Lux typed variadic; args becomes a [T] slice inside the body.
+//   ...       - C-interop untyped varargs; only valid on @[extern] functions.
+
+fn sum_typed(*args:i32) -> i32 {
+    mut total := 0
+    loop v :args { 
+        total += v 
+    }
+    ret total
+}
+
+@[extern("sum_all")]
+fn sum_all(...) -> i32   // C implementation - no Lux body
+
+// ---- Decorators --------------------------------------------------------------------------------------------------------------------------------
+// @decorator is syntactic sugar for:fn = decorator(fn)
+
+fn log_calls(f:fn(i32) -> i32) -> fn(i32) -> i32 {
+    ret [=](x:i32) -> i32 {
+        io::println(f"calling with {x}")
+        result := f(x)
+        io::println(f"result:{result}")
+        ret result
+    }
+}
+
+fn repeat(times:i32,f:fn(i32) -> i32) -> fn(i32) -> i32  {
+    ret [times, f](x:i32) -> i32 {
+        mut i := 0
+        mut result := x
+        loop i < times {
+            result = f(result)
+            i++
+        }
+        ret result
+    }
+}
+//Yes the newline after @name is needed
+@log_calls 
+fn heavy_compute(n:i32) -> i32 { ret n * n }
+// Equivalent to decorated_heavy_compute = log_calls(heavy_compute)
+@repeat(3)  
+fn triple_inc(x:i32) -> i32 { ret x + 1 }
+//Equivalent to decorated_triple_inc = repeat(3,triple_inc)
+
+// ---- Generic functions ------------------------------------------------------------------------------------------------------------------
+
+fn max{T}(a:T, b:T) -> T { ret a > b ? a :b }
+fn min{T}(a:T, b:T) -> T { ret a < b ? a :b }
+fn clamp{T}(v:T, lo:T, hi:T) -> T { ret max{T}(lo, min{T}(v, hi)) }
+
+// Non-generic overload - preferred over clamp{T} when argument types are i8
+fn clamp(v:i8, lo:i8, hi:i8) -> i8 { ret 0 }
+
+// ---- Regular functions ------------------------------------------------------------------------------------------------------------------
+
+fn factorial(n:i32) -> i32 { ret n <= 1 ? 1 :n * factorial(n - 1) }
+
+fn fibonacci(n:i32) -> i32 {
+    if n <= 1 { ret n }
+    ret fibonacci(n - 1) + fibonacci(n - 2)
+}
+
+fn is_prime(n:i32) -> bool {
+    if n < 2 { ret False }
+    mut i := 2
+    loop i * i <= n {
+        if n % i == 0 { ret False }
+        i++
+    }
+    ret True
+}
+
+fn double(x:i32) -> i32 { ret x * 2 }
+fn inc(x:i32) -> i32 { ret x + 1 }
+fn square(x:i32) -> i32 { ret x * x }
+
+fn min_max(a:i32, b:i32) -> (i32, i32) {
+    ret a < b ? (a, b) :(b, a)
+}
+
+fn greet(name:str, greeting:str = "Hello") -> str {
+    ret f"{greeting}, {name}!"
+}
+
+// ---- Main --------------------------------------------------------------------------------------------------------------------------------------------
+
+pub fn main() {
+
+    // ---- Variables ------------------------------------------------------------------------------------------------------------------
+
+    x:i32 = 42
+    msg := "Hello There"
+    mut counter := 0
+    mut flag := True
+
+    // ---- String interpolation --------------------------------------------------------------------------------------------
+
+    io::println(f"x = {x}, msg = {msg}")
+    io::println(f"PI = {PI}")
+    io::println(f"3 |> double |> inc = {3 |> double |> inc}")
+
+    // ---- Ternary ----------------------------------------------------------------------------------------------------------------------
+
+    sign := x > 0 ? "positive" :"negative"
+    abs_x := x < 0 ? -x :x
+    grade := x > 90 ? "A" :x > 80 ? "B" :x > 70 ? "C" :"F"
+
+    // ---- Arithmetic & bitwise --------------------------------------------------------------------------------------------
+
+    sum := x + 8
+    diff := x - 2
+    product := x * 2
+    quot := 100.0 / 3.0
+    rem := x % 5
+
+    bits:i32 = 0xFF
+    shifted := bits << 2
+    anded := bits & 0x0F
+    ored := bits | 0xF0
+    xored := bits ^ 0x55
+    notted := ~bits
+
+    // ---- Increment / decrement & compound assignment ----------------------------------------------
+    // Post and pre forms both supported:var++  var--  ++var  --var
+    // Compound:+=  -=  *=  /=  %=  &=  |=  ^=  <<=  >>=
+
+    mut n := 10
+    n++
+    n--
+    ++n
+    --n
+    n += 5
+    n -= 3
+    n *= 2
+    n /= 4
+    n %= 3
+
+    // ---- Boolean logic ----------------------------------------------------------------------------------------------------------
+
+    a := True
+    b := False
+    both := a && b
+    one := a || b
+    inv := !a
+    xorb := (a || b) && !(a && b)
+
+    // ---- Cast ----------------------------------------------------------------------------------------------------------------------------
+    // No T(val) syntax allowed because we dont want ambiguity(Considdering that struct initialization also uses parentheses). Instead, we use cast{T}(val) to explicitly specify the target type.
+    as_float := cast{f64}(x)
+    as_int := cast{i32}(3.99)
+    as_u8 := cast{u8}(255)
+
+    // ---- Pointers --------------------------------------------------------------------------------------------------------------------
+
+    mut val:i32 = 99
+    ptr:*i32 = &val
+    deref := *ptr
+    *ptr = 100
+
+    null_ptr:*i32 = None
+    if null_ptr == None { io::println("pointer is null") }
+
+    // -> dereferences a pointer and accesses a field in one step
+    tri := Triangle(
+        a:Vec2(x:0.0, y:0.0),
+        c:Vec2(x:1.0, y:1.0)
+    )
+    mut triptr:*Triangle = &tri
+    triptr->c = Vec2(x:1.0, y:2.0)
+
+    // ?*i32 is disallowed - pointers are already nullable via None.
+    // *?i32 is allowed  - a pointer to an optional value.
+
+    // ---- Null coalescing ------------------------------------------------------------------------------------------------------
+
+    maybe:?i32 = None
+    safe := maybe ?? 42
+    io::println(f"safe:{safe}")
+
+    // [?i32] - dynamic slice whose elements are individually optional
+    maybes:[?i32] = [10, None, 30]
+    loop v : maybes { io::println(f"value:{v ?? -1}") }
+
+    // ---- Array types --------------------------------------------------------------------------------------------------------------
+    //
+    //   [N * T]  - fixed-size array; N is a compile-time constant; stack-allocated.
+    //   [T]      - dynamic list / slice; heap-allocated, variable length.
+
+    imm_arr:[5 * i32] = [10, 20, 30, 40, 50]
+    first := imm_arr[0]
+    last := imm_arr[4]
+
+    mut mut_arr:[5 * i32] = [1, 2, 3, 4, 5]
+    mut_arr[2] = 99
+
+    // ---- Map ------------------------------------------------------------------------------------------------------------------------------
+
+    mut scores:map{str, i32} = {}
+    scores["alice"] = 95
+    scores["bob"] = 82
+    scores["carol"] = 77
+
+    entry := scores["alice"] or 0
+    io::println(f"alice scored {entry}")
+    loop k, v :scores { io::println(f"{k}:{v}") }
+
+    // ---- Multiple return ------------------------------------------------------------------------------------------------------
+
+    lo, hi := min_max(10, 3)
+    io::println(f"min={lo} max={hi}")
+    
+    tuple := min_max(5, 8)
+    io::println(f"min={tuple[0]} max={tuple[1]}")//Note for tuple the index should be a const expression
+    // ---- Named & default args --------------------------------------------------------------------------------------------
+
+    io::println(greet("Alice"))
+    io::println(greet("Bob", greeting:"Hi"))
+
+    // ---- Variadic --------------------------------------------------------------------------------------------------------------------
+
+    io::println(sum_typed(1, 2, 3, 4, 5))   // Lux typed variadic
+    io::println(sum_all(1, 2, 3, 4, 5))     // C-interop untyped varargs
+
+    // ---- Error & option handling --------------------------------------------------------------------------------------
+    //
+    // or <expr>      single-expression fallback; no braces, no keyword needed.
+    // or { ... }     multi-statement fallback block:
+    //                  ret  -> return from the enclosing function entirely.
+    //                  give -> provide the fallback value for the assignment.
+    // expr!          propagate:on error, immediately ret error(...) from caller.
+
+    r1 := divide(10.0, 0.0) or {
+        io::println(f"caught:{err}")
+        ret       // exits main; r1 is never assigned
+    }
+
+    r2 := divide(10.0, 0.0) or 0.0
+    found := find(imm_arr, 10) or -1
+    io::println(f"found:{found}")
+
+    r3 := compute(16.0, 4.0) or {
+        io::println(f"compute failed:{err}")
+        give 0.0  // provide the fallback value; execution continues after the block
+    }
+    io::println(f"compute result:{r3}")
+
+    // ---- Loops --------------------------------------------------------------------------------------------------------------------------
+
+    loop i :0..5 { io::print(f"{i} ") }          // range (exclusive end)
+    loop i :0..20..2 { counter++ }                    // range with step N
+    loop v :imm_arr { io::println(v) }               // iterate array
+    loop k, v :scores { io::println(f"{k} -> {v}") }  // iterate map
+
+    mut m := 10
+    loop m > 0 { 
+        // while-style loop - condition checked at the start of each iteration
+        m-- 
+    }                                  
+
+    loop {                                               // infinite + break
+        if !flag { break }
+        flag = False
+    }
+
+    loop i :0..10 {                                    // continue
+        if i % 2 == 0 { continue }
+        io::println(i)
+    }
+
+    // ---- Parallel loops --------------------------------------------------------------------------------------------------------
+    //
+    // @[parallel]
+    //     Distributes loop iterations across worker threads automatically.
+    //     Iterations MUST be fully independent - no shared writes, no ordering
+    //     dependencies between them. The compiler does not verify this; it is
+    //     the programmer's contract.
+    //
+    // @[parallel(reduce:op, into:var)]
+    //     Parallel reduction. Each thread accumulates a private copy of `var`
+    //     and the results are merged with `op` at the end.
+    //     Supported ops:You may also use any function that takes in two Ts and returns a T as the reduction operator. And no the reduction operator cant be a method
+    //
+    //
+    // @[parallel(threads:N)]
+    //     Hint the runtime to use at most N worker threads for this loop.
+    //     Composable:@[parallel(threads:4, reduce:+, into:total)]
+    //
+    // @[parallel] and @[simd] may be combined on the same loop - the loop is
+    // both split across threads AND each thread's chunk is auto-vectorized.
+
+    // Basic parallel map - each iteration is fully independent
+    @[align(64)] out:[1024 * f32] = []
+    @[align(64)] inp:[1024 * f32] = []
+
+    @[parallel]
+    loop i :0..1024 {
+        out[i] = math::sqrt(inp[i]) * 2.0
+    }
+
+    // Parallel reduction - sum all elements across threads
+    mut total:f32 = 0.0
+    @[parallel(reduce:+, into:total)]
+    loop i :0..1024 {
+        total += inp[i]
+    }
+    io::println(f"parallel sum:{total}")
+
+    // Thread-count hint - useful when you know the hardware topology
+    @[parallel(threads:4)]
+    loop i :0..1024 {
+        out[i] = out[i] * inp[i]
+    }
+
+    // Combined parallel + SIMD - threads split the range, each thread
+    // auto-vectorizes its chunk. Best throughput for large independent arrays.
+    @[parallel]
+    @[simd]
+    loop i :0..1024 {
+        out[i] = inp[i] * inp[i] + 1.0
+    }
+
+    // ---- If / elif / else ----------------------------------------------------------------------------------------------------
+
+    score:i32 = 75
+    if score >= 90 { io::println("A") }
+    elif score >= 80 { io::println("B") }
+    elif score >= 70 { io::println("C") }
+    else { io::println("F") }
+
+    // ---- Match --------------------------------------------------------------------------------------------------------------------------
+    //
+    //  • Arms do NOT fall through - no break needed inside a case.
+    //  • `?` is the wildcard - matches anything not caught by a prior case.
+    //  • Dot shorthand `.Variant` available when matched type is unambiguous.
+
+    p:i32 = 1
+    q:i32 = 2
+    match p, q {
+        case 1, 2 { io::println("p=1 q=2") }
+        case 1, ? { io::println("p=1 q=any") }
+        case ? { io::println("other") }
+    }
+
+    dir := Direction.North
+    match dir {
+        case Direction.North { io::println("north") }
+        case Direction.South { io::println("south") }
+        case Direction.East { io::println("east") }
+        case ? { io::println("west") }
+    }
+
+    shape:Shape = Circle(center:Vec2(x:0.0, y:0.0), radius:5.0)
+    match typeid(shape) {
+        case typeid(Circle) {
+            c := cast{Circle}(shape)
+            io::println(f"circle:  {area(c)}")
+        }
+        case typeid(Rect) {
+            r := cast{Rect}(shape)
+            io::println(f"rect:    {area(r)}")
+        }
+        case typeid(Triangle) {
+            t := cast{Triangle}(shape)
+            io::println(f"triangle:{area(t)}")
+        }
+        case ? {
+            io::println("unknown shape")
+        }
+    }
+
+    // ---- Pipe operator ----------------------------------------------------------------------------------------------------------
+
+    piped := 3 |> double |> inc |> square
+    io::println(f"piped:{piped}")
+
+    // ---- Structs & methods --------------------------------------------------------------------------------------------------
+
+    v1 := Vec2(x:3.0, y:4.0)
+    v2 := Vec2(x:1.0, y:2.0)
+    v3 := v1 + v2
+    v4 := v1 - v2
+    v5 := v1 * 2.0
+    len := v1.length()
+    if v1 != v2 { io::println("vectors differ") }
+    io::println(f"length of v1:{len}")
+
+    // ---- Nested struct ----------------------------------------------------------------------------------------------------------
+
+    cfg := Config(
+        net:Config.Network(host:"localhost", port:8080),
+        log:Config.Logging(level:1, verbose:True)
+    )
+    io::println(f"host:{cfg.net.host}  port:{cfg.net.port}")
+    io::println(f"verbose:{cfg.log.verbose}")
+
+    // ---- Lambdas ----------------------------------------------------------------------------------------------------------------------
+    // Nested named functions are not allowed inside functions; use lambdas.
+    //
+    //   []         no capture
+    //   [=]        capture everything by value
+    //   [&]        capture everything by reference
+    //   [x]        capture x by value
+    //   [&x]       capture x by reference
+    //   [x, &y]    mixed
+
+    f1 := [](a:i32) -> i32 { ret a * 2 }
+
+    factor:i32 = 5
+    f2 := [=](a:i32)      -> i32 { ret a * factor }
+
+    mut acc:i32 = 0
+    f3 := [&](a:i32) -> i32 {
+        acc += a
+        ret acc
+    }
+    f4 := [factor](a:i32) -> i32 { ret a + factor }
+    f5 := [&acc](a:i32)   -> i32 {
+        acc += a
+        ret acc
+    }
+
+    offset:i32 = 10
+    f6 := [offset, &acc](a:i32) -> i32 {
+        acc += a
+        ret a + offset + acc
+    }
+
+    io::println(f1(4))
+    io::println(f2(4))
+    io::println(f3(4))
+    io::println(f4(4))
+    io::println(f5(4))
+    io::println(f6(4))
+
+    // ---- Generic stack ----------------------------------------------------------------------------------------------------------
+
+    mut stk:Stack{i32} = Stack{i32}(top:0)
+    stk.push(10)
+    stk.push(20)
+    stk.push(30)
+    stk[0] = 99                            // []= setter
+    io::println(stk[0])                    // [] getter
+    loop !stk.is_empty() { io::println(stk.pop()) }
+
+    // ---- Generic functions --------------------------------------------------------------------------------------------------
+
+    big := max{i32}(10, 20)
+    small := min{f64}(3.14, 2.71)
+    clamped := clamp{i32}(150, 0, 100)
+    io::println(f"max:{big}  min:{small}  clamped:{clamped}")
+
+    // ---- Decorators ----------------------------------------------------------------------------------------------------------------
+
+    io::println(heavy_compute(5))
+    io::println(triple_inc(0))
+    io::println(fast_add(3, 4))
+
+    // ---- Recursive functions ----------------------------------------------------------------------------------------------
+
+    io::println(f"10! = {factorial(10)}")
+    io::println(f"fib(10) = {fibonacci(10)}")
+    loop i :2..30 { if is_prime(i) { io::print(f"{i} ") } }
+
+    // ---- Threading ------------------------------------------------------------------------------------------------------------------
+    // Chaining .join() directly on a thread literal is not allowed for
+    // readability - assign the handle first, then join.
+
+    t_data := thread { ret fetch("https://example.com") }
+    data := t_data.join() or {
+        io::println(f"fetch failed:{err}")
+        give ""
+    }
+    io::println(f"fetched:{data}")
+
+    t_a := thread { ret fetch("https://a.com") }
+    t_b := thread fetch("https://b.com")        // prefix form - single expression
+    r_a := t_a.join() or ""
+    r_b := t_b.join() or ""
+    io::println(r_a + r_b)
+
+    count := concurrent_counter()
+    io::println(f"thread counter:{count}")
+    transfer_demo()!
+    channel_demo()!
+    handle_request(42)
+
+    // ---- Defer --------------------------------------------------------------------------------------------------------------------------
+
+    content := read_file("config.txt") or {
+        io::println(f"could not read:{err}")
+        give ""
+    }
+    io::println(content)
+
+    // ----  typedef ------------------------------------------------------------------------------------------------------
+
+    type LocalFloat = f64
+    lf:LocalFloat = 1.23
+    io::println(f"lf = {lf}")
+
+    type Cb = fn(i32) -> i32
+    cb:Cb = double
+    io::println(cb(7) |> square)
+
+    // ---- Namespace access ----------------------------------------------------------------------------------------------------
+
+    sq := math::sqrt(16.0)
+    io::println(f"sqrt(16) = {sq}")
+
+    // ---- SIMD ----------------------------------------------------------------------------------------------------------------------------
+    //
+    // <N * T>   - SIMD vector type:N lanes of element type T.
+    //             e.g. <4 * f32>, <8 * f32>, <2 * f64>, <4 * i32>, <4 * bool>
+    // Arithmetic operators (+, -, *, /) work lane-wise, same syntax as scalars.
+    // simd::namespace covers ops that have no scalar equivalent.
+    //
+    // @[align(16)] or @[align(32)] on source arrays ensures SIMD loads are
+    // properly aligned - misaligned loads trap on some ISAs.
+
+    a_vec:<4 * f32> = (1.0, 2.0, 3.0, 4.0)
+    b_vec:<4 * f32> = (5.0, 6.0, 7.0, 8.0)
+
+    ones:<4 * f32> = simd::splat{f32, 4}(1.0)   // broadcast scalar to every lane
+
+    // Lane-wise arithmetic - identical syntax to scalar ops
+    sum_vec := a_vec + b_vec     // (6, 8, 10, 12)
+    prod_vec := a_vec * b_vec     // (5, 12, 21, 32)
+    diff_vec := b_vec - a_vec
+    div_vec := b_vec / a_vec
+
+    // Lane access reuses the existing [] subscript protocol
+    first_lane := a_vec[0]        // f32:1.0
+    a_vec[3] = 99.0             // []= setter - insert into lane 3
+
+    // Comparison -> lane mask; drives masked / conditional operations
+    mask:<4 * bool> = a_vec < b_vec     // <4 * bool>(True, True, True, False)
+
+    blended := simd::blend(a_vec, b_vec, mask)
+    swapped := simd::shuffle(a_vec, b_vec, [3, 2, 5, 4])
+    hsum := simd::hadd(a_vec)      // f32:horizontal sum of all lanes
+    hmax := simd::hmax(a_vec)      // f32:max lane value
+    dot_result := simd::dot(a_vec, b_vec)
+    io::println(f"dot:{dot_result}  hsum:{hsum}  hmax:{hmax}")
+
+    // Load/store:bridge between [N * T] arrays and SIMD registers
+    @[align(16)] data_arr:[8 * f32] = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]
+    chunk0 := simd::load(data_arr, offset:0)
+    chunk1 := simd::load(data_arr, offset:4)
+    result_chunk := chunk0 * chunk1
+    simd::store(data_arr, offset:0, val:result_chunk)
+
+    // @[simd] loop hint - compiler auto-vectorizes; picks lane width per target
+    @[align(64)] out_arr:[1024 * f32] = []
+    @[align(64)] in_a: [1024 * f32] = []
+    @[align(64)] in_b: [1024 * f32] = []
+    @[simd]
+    loop i :0..1024 {
+        out_arr[i] = in_a[i] * in_b[i] + 1.0
+    }
+}
