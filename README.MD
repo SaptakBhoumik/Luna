@@ -13,13 +13,13 @@ My main inspiration was Lua(Although it is significantly different from Lua righ
 
 # Current progress
  - [x] Error lib
- - [] Test error lib
+ - [.] Test error lib
  - [x] Lexer
- - [] Test Lexer
- - [] Ast
- - [] Parser
- - [] Test Parser
- - [] Expand this list as I add more features to the language
+ - [.] Test Lexer
+ - [.] Ast
+ - [.] Parser
+ - [.] Test Parser
+ - [.] Expand this list as I add more features to the language
 
  Actually I am using code from my previous project named peregrine so there will be some inconsistancies in the code and will take time to fix them
 
