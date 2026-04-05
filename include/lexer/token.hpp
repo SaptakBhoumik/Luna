@@ -38,7 +38,8 @@ enum class TokenType {
     ellipsis,         // ...
     at,               // @
     question,         // ?
-    // null_coalesce,    // ??
+    null_coalesce,    // ??
+    error_coalesce,   // !!
 
     // Arithmetic
     plus,             // +
@@ -118,7 +119,6 @@ enum class TokenType {
     kw_false,//False
     kw_none,//None
 
-    kw_or,//or
     kw_give,//give
     kw_defer,//defer
 

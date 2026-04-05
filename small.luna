@@ -2,6 +2,14 @@
 //You can pass function as parameter to other function and method but you cant pass method as parameter to other function or method. 
 //You can have multiple methods with the same name as long as their receiver or atleast one argument type is different. 
 //You can have multiple functions with the same name as long as their parameter types are different.
+
+//!! :- Means error coalescing operator. It is used to handle errors in a concise way. It is similar to null coalescing operator but for errors. 
+//      It allows you to provide a default value in case of error or code block to run
+//?? :- Means null coalescing operator. It is used to handle optional values in a concise way. It allows you to provide a default value in case of None or code block to run
+//Let's say you do ``var := expr !! code_body`` or ``var := expr ?? code_body`` and  code body doesnt give any value then the cody body must exit from that scope
+//Doesnt matter how it exits the scope(Maybe a break if in loop or a return). But it must exit the scope. 
+//This is because if code body doesnt give any value then the whole expr !! code_body or expr ?? code_body will not have any value and it will be a compile error. 
+//So to avoid that we enforce that code body must exit the scope if it doesnt give any value.
 // ---- Imports ----
 import math
 import fs
@@ -104,8 +112,8 @@ fn area(r:Rect) -> f64 {
 // ---- Error handling ----
 fn divide(a:f64, b:f64) -> !f64 {
     if b == 0.0 { ret Error("div by zero") }//Note:-Error is just a struct with string field. Nothing fancy. Error is a builtin type and is meant specifically 
-                                            //for error handling. The Error struct has an implicit field called msg which is the error message. You can access it using err.msg in the or block. 
-                                            // You cant also create your own error types
+                                            //for error handling. The Error struct has an implicit field called msg which is the error message. You can access it using err.msg in the !! block. 
+                                            // You can not create your own error types
     ret a / b
 }
 fn safe_open(path:str) -> !i32 {
@@ -164,7 +172,6 @@ fn lock_demo() -> !void {
 }
 CONST1:=10.2E-3
 CONST2:!i32 = Error("not initialized")//Yes this is actually valid. Btw you can also have *!T but idk why you will need it. But u can just for consistancy
-CONST3:!
 fn chan_demo() -> !void {
     ch:Chan{i32} = Chan{i32}(cap = 4)
     p := thread { 
@@ -175,7 +182,7 @@ fn chan_demo() -> !void {
     }
     c := thread { 
         loop {
-            v := ch.recv() or { break }
+            v := ch.recv() ?? { break }
             io::println(v) 
         } 
     }
@@ -328,9 +335,9 @@ pub fn main() {
 
     // optional + null coalescing
     maybe:?i32 = None
-    safe := maybe or 0
+    safe := maybe ?? 0
     maybes:[?i32] = [1, None, 3]
-    loop v :maybes { io::println(v or -1) }
+    loop v :maybes { io::println(v ?? -1) }
 
     // arrays
     arr:[5*i32] = [1,2,3,4,5]
@@ -341,7 +348,7 @@ pub fn main() {
     mut scores:map{str,i32} = {}
     scores["a"] = 1
     scores["b"] = 2
-    entry := scores["a"] or 0
+    entry := scores["a"] !! 0
 
     // multiple return + tuple index
     lo, hi := minmax(10,3)
@@ -356,19 +363,20 @@ pub fn main() {
     io::println(sum_all(1,2,3,4))
 
     // error handling. The (err) part is optional if you dont need the error message. You can also give it a different name like (e) or (error_msg) or whatever you want.
-    r1 := divide(10.0, 0.0) or {
+    r1 := divide(10.0, 0.0) !! {
         io::println(f"error occurred")
         ret
     }
-    r2 := divide(10.0, 2.0) or 0.0
-    r3 := find_val(arr, 10) or -1
-    r4 := divide(4.0, 2.0) or (err){
+    r2 := divide(10.0, 2.0) !! 0.0
+    r3 := find_val(arr, 10) ?? -1
+    r4 := divide(4.0, 2.0) !! (err){
         io::println(f"err:{err}")
         give 0.0
     }
 
-    r5 := divide(4.0, 0.0)//This means type of r5 is !f64
-    //You cant use r5 as a normal f64 variable because it can also hold an error value. So you can use it only after applying or operator to handle it
+    r5 := divide(4.0, 0.0)//This means type of r5 is !f64. Also we didnt use divide(...)! because if error we dont want to throw it
+                         //We just want to save it. If we did divide(...)! then we would throw an error and exit if divide throws an Error
+    //You cant use r5 as a normal f64 variable because it can also hold an error value. So you can use it only after applying !! operator to handle it
     r6:!f64 = r5 
     err:Error = r5.err//This is how you can get the error value from a !T variable. Note if no error then Error will have msg field as empty string. err is implicit
                       //field of !T
@@ -504,15 +512,15 @@ pub fn main() {
     // threading
     t_a := thread { ret fetch("https://a.com") }
     t_b := thread fetch("https://b.com")
-    r_a := t_a.join() or ""
-    r_b := t_b.join() or ""
+    r_a := t_a.join() !! ""
+    r_b := t_b.join() !! ""
     io::println(r_a+r_b)
     io::println(f"count:{counter_demo()}")
     lock_demo()!
     chan_demo()!
 
     // defer + drop
-    content := read_file("cfg.txt") or { give "" }
+    content := read_file("cfg.txt") !! { give "" }
     io::println(content)
 
     // local type alias

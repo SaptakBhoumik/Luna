@@ -92,7 +92,6 @@ void Lexer::flush_keyword() {
         { "False", TokenType::kw_false },
         { "None", TokenType::kw_none },
 
-        { "or", TokenType::kw_or },
         { "give", TokenType::kw_give },
         { "defer", TokenType::kw_defer },
 
@@ -297,7 +296,7 @@ void Lexer::lex() {
             }
             case '?': {
                 this->flush_keyword();
-                this->push_current(TokenType::question);
+                this->lex_question();
                 break;
             }
             case '@': {
@@ -729,13 +728,27 @@ void Lexer::lex_bang() {
     if (this->peek() == '=') {
         this->advance();
         this->push("!=", TokenType::neq, start, this->curr_index + 1);
-    } 
+    }
+    else if(this->peek() == '!') {
+        this->advance();
+        this->push("!!", TokenType::error_coalesce, start, this->curr_index + 1);
+    }
     else {
         // '!' alone is valid in Luna — it's the error-propagation operator
         this->push("!", TokenType::bang, start, this->curr_index + 1);
     }
 }
-
+void Lexer::lex_question() {
+    const size_t start = this->curr_index;
+    if (this->peek() == '?') {
+        this->advance();
+        this->push("??", TokenType::null_coalesce, start, this->curr_index + 1);
+    }
+    else {
+        this->push("?", TokenType::question, start, this->curr_index + 1);
+    }
+}
+    
 void Lexer::lex_equal() {
     const size_t start = this->curr_index;
     if (this->peek() == '=') {

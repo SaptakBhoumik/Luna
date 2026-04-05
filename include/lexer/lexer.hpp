@@ -74,6 +74,7 @@ class Lexer {
     void lex_ampersand();
     void lex_pipe();
     void lex_bang();
+    void lex_question();
     void lex_equal();
     void lex_less();
     void lex_greater();
