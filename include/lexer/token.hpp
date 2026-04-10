@@ -50,8 +50,8 @@ enum class TokenType {
     percent,          // %
 
     //Logical
-    logical_and,      // &&
-    logical_or,       // ||
+    // logical_and,      // &&
+    // logical_or,       // ||
 
     // Bitwise
     caret,            // ^

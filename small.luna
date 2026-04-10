@@ -10,7 +10,19 @@
 //Doesnt matter how it exits the scope(Maybe a break if in loop or a return). But it must exit the scope. 
 //This is because if code body doesnt give any value then the whole expr !! code_body or expr ?? code_body will not have any value and it will be a compile error. 
 //So to avoid that we enforce that code body must exit the scope if it doesnt give any value.
-// ---- Imports ----
+
+/*
+In most programming languages we have the following logical and bitwise operators:
+Logical (`&&`, `||`): These short-circuit. If the first part of an `if` statement fails, the second part never runs. This prevents crashes (e.g., checking `if (obj != null && obj.prop)`) and saves performance.
+Bitwise (`&`, `|`): These are eager. They evaluate both sides every time and work on the binary bits of numbers (e.g., `5 & 3` results in `1`).
+
+But here we only have `&` and `|`
+If a|b or a&b is used in a boolean context then it behaves like logical operator and short-circuits. 
+If used in a non-boolean context then it behaves like bitwise operator and evaluates both sides every time. 
+This is a unique design choice that simplifies the language by having only one set of operators for both logical and bitwise operations, while still providing 
+the benefits of short-circuiting in boolean contexts.
+*/
+/ ---- Imports ----
 import math
 import fs
 import std::io::{println, print}
@@ -80,7 +92,7 @@ fn (p:Point)len() -> f64 { ret math::sqrt(p.x*p.x + p.y*p.y) }
 // ---- Methods ----
 //Magic methods for operator overloading and indexing
 fn (p:Point)__add__(o:Point) -> Point { ret Point(x = p.x+o.x, y = p.y+o.y) }
-fn (p:Point)__eq__(o:Point) -> bool { ret p.x==o.x && p.y==o.y }
+fn (p:Point)__eq__(o:Point) -> bool { ret p.x==o.x & p.y==o.y }
 fn (p:Point)__ne__(o:Point) -> bool { ret !(p==o) }
 fn (s:Stack{T})__getitem__{T}(i:i32) -> T{ ret s.data[i] }
 fn (mut s:Stack{T})__setitem__{T}(i:i32, val:T){ s.data[i]=val }
@@ -120,7 +132,7 @@ fn safe_open(path:str) -> !i32 {
     ret fs::open(path)!
 }
 fn find_val(arr:[5*i32], idx:i32) -> ?i32 {
-    if idx < 0 || idx >= 5 { ret None }
+    if idx < 0 | idx >= 5 { ret None }
     ret arr[idx]
 }
 
@@ -314,8 +326,8 @@ pub fn main() {
     // boolean
     a := True
     b := False
-    both := a&&b
-    one := a||b
+    both := a&b
+    one := a|b
     inv := !a
 
     // cast

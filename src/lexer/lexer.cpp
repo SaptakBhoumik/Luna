@@ -695,10 +695,10 @@ void Lexer::lex_ampersand() {
         this->advance();
         this->push("&=", TokenType::amp_eq, start, this->curr_index + 1);
     } 
-    else if(this->peek() == '&') {
-        this->advance();
-        this->push("&&", TokenType::logical_and, start, this->curr_index + 1);
-    }
+    // else if(this->peek() == '&') {
+    //     this->advance();
+    //     this->push("&&", TokenType::logical_and, start, this->curr_index + 1);
+    // }
     else {
         this->push("&", TokenType::ampersand, start, this->curr_index + 1);
     }
@@ -714,10 +714,10 @@ void Lexer::lex_pipe() {
         this->advance();
         this->push("|>", TokenType::pipeline, start, this->curr_index + 1);
     } 
-    else if(this->peek() == '|') {
-        this->advance();
-        this->push("||", TokenType::logical_or, start, this->curr_index + 1);
-    }
+    // else if(this->peek() == '|') {
+    //     this->advance();
+    //     this->push("||", TokenType::logical_or, start, this->curr_index + 1);
+    // }
     else {
         this->push("|", TokenType::pipe, start, this->curr_index + 1);
     }
