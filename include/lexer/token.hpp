@@ -100,20 +100,20 @@ enum class TokenType {
     kw_pub,//pub
     kw_enum,//enum
     kw_type,//type
-    kw_struct,//struct
+    // kw_struct,//struct
     kw_fn,//fn
 
     kw_mut,//mut
     kw_ret,//ret
     kw_if,//if
-    kw_elif,//elif
+    // kw_elif,//elif
     kw_else,//else
     kw_loop,//loop
     kw_break,//break
     kw_continue,//continue
     
     kw_match,//match
-    kw_case,//case
+    // kw_case,//case
 
     kw_true,//True
     kw_false,//False

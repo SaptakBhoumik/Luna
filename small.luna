@@ -29,9 +29,9 @@ import std::io::{println, print}
 using io = std::io
 
 // ---- Enums ----
-pub enum Dir { N, S, E, W }
-pub enum Code { Ok = 0, Err = 1 }
-pub enum Result {
+pub type Dir = enum{ N, S, E, W }
+pub type Code = enum{ Ok = 0, Err = 1, }
+pub type Result = enum {
     //Yes. You can have any value(constexpr) associated with enum varients
     Success = "success",
     Error = "error"
@@ -40,50 +40,49 @@ pub enum Result {
 // ---- Type aliases ----
 type Shape = Circle | Rect
 type Pair  = (i32, i32)
-type GenericPair{T1,T2} = (T1, T2)
+type GenericPair{T1,T2} = (T1, T2,)
 
 // ---- Structs ----
-pub struct Point {
-    pub mut x:f64
-    pub mut y:f64 = 0.0
+pub type Point = {
+    pub mut x:f64,pub mut y:f64 = 0.0
 }
 
-pub struct Circle {
-    pub mut c:Point
+pub type Circle = {
+    pub mut c:Point,
     pub mut r:f64
 }
 
-pub struct Rect {
-    pub mut tl:Point
+pub type Rect = {
+    pub mut tl:Point,
     pub mut br:Point
 }
 
-pub struct Buf {
+pub type Buf = {
     pub mut fd:i32
 }
 
 fn (mut b:Buf) __drop__() { fs::close(b.fd) }
 
-pub struct Stack{T} {
-    mut data:[32 * T]
-    pub mut top:i32
+pub type Stack{T} = {
+    mut data:[32 * T],
+    pub mut top:i32,
 }
 
 @[align(16)]
-pub struct Vec4 {
-    pub mut x:f32
-    pub mut y:f32
-    pub mut z:f32
+pub type Vec4 = {
+    pub mut x:f32,
+    pub mut y:f32,
+    pub mut z:f32,
     pub mut w:f32
 }
 
 // ---- Forward declarations ----
-struct Node
+type Node
 fn is_odd(n:i32) -> bool
 fn (p:Point)len() -> f64
 
-struct Node {
-    pub val:i32
+type Node = {
+    pub val:i32,
     pub mut next:*Node
 }
 fn is_odd(n:i32) -> bool { ret n % 2 != 0 }
@@ -428,26 +427,26 @@ pub fn main() {
     @[simd]
     loop i :0..512 { out[i] = inp[i]*inp[i] }
 
-    // if/elif/else
+    // if/else if/else
     sc:i32 = 75
     if sc>=90 { io::println("A") }
-    elif sc>=80 { io::println("B") }
-    elif sc>=70 { io::println("C") }
+    else if sc>=80 { io::println("B") }
+    else if sc>=70 { io::println("C") }
     else { io::println("F") }
 
     // match
     p:i32=1
      q:i32=2
     match p, q {
-        case 1, 2 { io::println("1,2") }
-        case 1, ? { io::println("1,?") }
-        case ? { io::println("?")   }
+        1, 2 { io::println("1,2") }
+        1, ? { io::println("1,?") }
+        ? { io::println("?")   }
     }
     dir := Dir.N
     match dir {
-        case Dir.N { io::println("north") }
-        case Dir.S { io::println("south") }
-        case ? { io::println("other") }
+        Dir.N { io::println("north") }
+        Dir.S { io::println("south") }
+        ? { io::println("other") }
     }
     shape:Shape = Circle(c = Point(x = 0.0,y = 0.0), r = 5.0)
     shape2:decltype(shape) = Rect(tl = Point(x = 0.0,y = 0.0), br = Point(x = 5.0,y = 5.0))//decltype gives the type of the variable/expr
@@ -456,15 +455,15 @@ pub fn main() {
     match shape.id {//sumtype has an implicit field called id which is the typeid of the currently held variant.
         //typeid is a unique u64 value representing the type of the variable. Set at compile time. Note:It can be diffrent across different compilations and runs,
         //so it should not be used in persistent storage or for serialization. It is only useful for type comparisons at runtime
-        case typeid(Circle) {
+        typeid(Circle) {
             c := cast{Circle}(shape)
             io::println(f"area:{area(c)}")
         }
-        case typeid(Rect) {
+        typeid(Rect) {
             r := cast{Rect}(shape)
             io::println(f"area:{area(r)}")
         }
-        case ? { io::println("unknown") }
+        ? { io::println("unknown") }
     }
 
     // pipe

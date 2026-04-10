@@ -73,20 +73,20 @@ void Lexer::flush_keyword() {
         { "pub", TokenType::kw_pub },
         { "enum", TokenType::kw_enum },
         { "type", TokenType::kw_type },
-        { "struct", TokenType::kw_struct },
+        // { "struct", TokenType::kw_struct },
         { "fn", TokenType::kw_fn },
 
         { "mut", TokenType::kw_mut },
         { "ret", TokenType::kw_ret },
         { "if", TokenType::kw_if },
-        { "elif", TokenType::kw_elif },
+        // { "elif", TokenType::kw_elif },
         { "else", TokenType::kw_else },
         { "loop", TokenType::kw_loop },
         { "break", TokenType::kw_break },
         { "continue", TokenType::kw_continue },
         
         { "match", TokenType::kw_match },
-        { "case", TokenType::kw_case },
+        // { "case", TokenType::kw_case },
 
         { "True", TokenType::kw_true },
         { "False", TokenType::kw_false },
