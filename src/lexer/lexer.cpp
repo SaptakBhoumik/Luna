@@ -80,7 +80,7 @@ void Lexer::flush_keyword() {
         { "ret", TokenType::kw_ret },
         { "if", TokenType::kw_if },
         // { "elif", TokenType::kw_elif },
-        { "else", TokenType::kw_else },
+        // { "else", TokenType::kw_else },
         { "loop", TokenType::kw_loop },
         { "break", TokenType::kw_break },
         { "continue", TokenType::kw_continue },

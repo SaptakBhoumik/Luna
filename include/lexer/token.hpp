@@ -107,7 +107,7 @@ enum class TokenType {
     kw_ret,//ret
     kw_if,//if
     // kw_elif,//elif
-    kw_else,//else
+    // kw_else,//else
     kw_loop,//loop
     kw_break,//break
     kw_continue,//continue

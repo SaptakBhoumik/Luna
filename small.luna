@@ -125,6 +125,15 @@ fn divide(a:f64, b:f64) -> !f64 {
     if b == 0.0 { ret Error("div by zero") }//Note:-Error is just a struct with string field. Nothing fancy. Error is a builtin type and is meant specifically 
                                             //for error handling. The Error struct has an implicit field called msg which is the error message. You can access it using err.msg in the !! block. 
                                             // You can not create your own error types
+    //Note:For only one if statement, u can just do ``if cond {.....}``
+    //But if else if is needed then u do 
+    //``if {
+    //    cond1 {....}
+    //    cond2 {....}
+    //    ? {....} // else case. ? is used for else case in if else if ladder. It is optional but good for readability
+    //}``
+
+
     ret a / b
 }
 fn safe_open(path:str) -> !i32 {
@@ -264,14 +273,20 @@ fn clamp(v:i8, lo:i8, hi:i8) -> i8 { ret 0 } // non-generic overload
 // ---- Regular functions ----
 fn fact(n:i32) -> i32 { ret n<=1 ? 1 :n*fact(n-1) }
 fn fib(n:i32) -> i32 {
-    if n<=1 { ret n }
+    if {
+        n<=1 { ret n }
+    }
     ret fib(n-1)+fib(n-2)
 }
 fn is_prime(n:i32) -> bool {
-    if n<2 { ret False }
+    if {
+        n<2 { ret False }
+    }
     mut i := 2
     loop i*i <= n { 
-        if n%i==0 { ret False }
+        if {
+            n%i==0 { ret False }
+        }
         i++ 
     }
     ret True
@@ -338,7 +353,9 @@ pub fn main() {
     ptr:*i32 = &val
     *ptr = 99
     null_ptr:*i32 = None
-    if null_ptr == None { io::println("null") }
+    if {
+        null_ptr == None { io::println("null") }
+    }
 
     pt := Point(x = 1.0, y = 2.0)
     mut pptr:*Point = &pt
@@ -400,11 +417,13 @@ pub fn main() {
     mut m := 3
     loop m>0 { m-- }                                  // while-style
     loop {                                            // infinite+break
-        if !flag { break }
+        if { 
+            !flag { break } 
+        }
         flag = False
     }
     loop i :0..6 {                                    // continue
-        if i%2==0 { continue }
+        if { i%2==0 { continue } }
         io::print(f"{i} ")
     }
 
@@ -429,10 +448,12 @@ pub fn main() {
 
     // if/else if/else
     sc:i32 = 75
-    if sc>=90 { io::println("A") }
-    else if sc>=80 { io::println("B") }
-    else if sc>=70 { io::println("C") }
-    else { io::println("F") }
+    if {
+        sc>=90 { io::println("A") }
+        sc>=80 { io::println("B") }
+        sc>=70 { io::println("C") }
+        ? { io::println("F") }
+    }
 
     // match
     p:i32=1
@@ -475,7 +496,7 @@ pub fn main() {
     v2 := Point(x = 1.0, y = 2.0)
     v3 := v1+v2
     io::println(f"len:{v1.len()}")
-    if v1!=v2 { io::println("differ") }
+    if { v1!=v2 { io::println("differ") }
 
     // lambdas
     factor:i32 = 3
@@ -515,9 +536,11 @@ pub fn main() {
     io::println(f"5!={fact(5)}")
     io::println(f"fib(7)={fib(7)}")
     loop i :2..20 { 
-        if is_prime(i) { 
-            io::print(f"{i}") 
-        } 
+        if { 
+            is_prime(i) { 
+                io::print(f"{i}") 
+            } 
+        }
     }
 
     // threading
