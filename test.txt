@@ -1,0 +1,196 @@
+import std::io::{println}
+import math
+
+// ---- Types & Enums ----
+pub type Dir  = enum { N, S, E, W }
+pub type Shape = Circle | Rect          // sum type
+
+pub type Point  = { pub mut x:f64, pub mut y:f64 = 0.0 }
+pub type Circle = { pub mut c:Point, pub mut r:f64 }
+pub type Rect   = { pub mut tl:Point, pub mut br:Point }
+
+pub type Stack{T} = { mut data:[32*T], pub mut top:i32 }
+
+// ---- Constants ----
+PI:f64 = 3.14159265358979
+
+// ---- Methods & operator overloading ----
+fn (p:Point) len()            -> f64   { ret math::sqrt(p.x*p.x + p.y*p.y) }
+fn (p:Point) __add__(o:Point) -> Point { ret Point(x = p.x+o.x, y = p.y+o.y) }
+fn (p:Point) __eq__(o:Point)  -> bool  { ret p.x==o.x & p.y==o.y }
+
+fn (mut s:Stack{T}) push{T}(val:T)     { s.data[s.top]=val; s.top++ }
+fn (mut s:Stack{T}) pop{T}()   -> T   { s.top--; ret s.data[s.top] }
+fn (s:Stack{T})     is_empty{T}() -> bool { ret s.top==0 }
+fn (s:Stack{T})     __getitem__{T}(i:i32) -> T { ret s.data[i] }
+
+// ---- Overloaded fns (by arg type) ----
+fn area(c:Circle) -> f64 { ret PI * c.r * c.r }
+fn area(r:Rect)   -> f64 { ret (r.br.x-r.tl.x) * (r.br.y-r.tl.y) }
+
+// ---- Error & optional returns ----
+fn divide(a:f64, b:f64) -> !f64 {
+    if b == 0.0 { ret Error("div by zero") }
+    ret a / b
+}
+
+fn find(arr:[5*i32], idx:i32) -> ?i32 {
+    if idx < 0 | idx >= 5 { ret None }
+    ret arr[idx]
+}
+
+// ---- Generics ----
+fn max{T}(a:T, b:T) -> T { ret a>b ? a : b }
+fn clamp{T}(v:T, lo:T, hi:T) -> T { ret max{T}(lo, max{T}(v, lo)) }
+
+// ---- Multiple return ----
+fn minmax(a:i32, b:i32) -> (i32,i32) { ret a<b ? (a,b) : (b,a) }
+
+// ---- Attributes ----
+@[inline]   fn fast_add(a:i32, b:i32) -> i32 { ret a+b }
+@[noinline] fn slow_mul(a:i32, b:i32) -> i32 { ret a*b }
+@[noreturn] @[inline] fn die(msg:str) { std::exit(1) }
+
+// ---- Variadic ----
+fn sum_all(*args:i32) -> i32 {
+    mut t := 0
+    loop v :args { t += v }
+    ret t
+}
+
+// ---- Decorator ----
+fn logged(f:fn(i32)->i32) -> fn(i32)->i32 {
+    ret [=](x:i32) -> i32 {
+        println(f"in:{x}")
+        r := f(x)
+        println(f"out:{r}")
+        ret r
+    }
+}
+@logged
+fn double(x:i32) -> i32 { ret x*2 }
+
+// ---- Main ----
+pub fn main() {
+    // Basic vars & string interp
+    x:i32 = 10
+    mut name := "Luna"
+    println(f"Hello from {name}! x={x} pi={PI}")
+
+    // Ternary
+    sign  := x>0 ? "pos" : "neg"
+    grade := x>9 ? "A" : x>7 ? "B" : "C"
+    println(f"sign={sign} grade={grade}")
+
+    // Bitwise (also logical in bool context)
+    bits:i32 = 0xFF
+    println(f"bits&0x0F={bits&0x0F}  bits|0xF0={bits|0xF0}  bits>>2={bits>>2}")
+
+    // Structs & operator overloading
+    v1 := Point(x=3.0, y=4.0)
+    v2 := Point(x=1.0, y=2.0)
+    v3 := v1+v2
+    println(f"v1.len={v1.len()}  v3=({v3.x},{v3.y})")
+
+    // Optional + null-coalescing (??)
+    maybe:?i32 = None
+    safe := maybe ?? 42
+    println(f"safe={safe}")
+
+    arr:[5*i32] = [10,20,30,40,50]
+    val := find(arr, 9) ?? -1       // out of range → -1
+    println(f"find(9)={val}")
+
+    // Error handling (!!) with default, block, and named error
+    r1 := divide(10.0, 0.0) !! 0.0
+    r2 := divide(10.0, 2.0) !! { println("unreachable"); give 0.0 }
+    r3 := divide(4.0,  0.0) !! (err) { println(f"caught: {err}"); give 0.0 }
+    println(f"r1={r1} r2={r2} r3={r3}")
+
+    // Saving a !T without throwing
+    result:!f64 = divide(1.0, 0.0)
+    err_msg := result.err.msg        // "" if no error, otherwise the message
+    println(f"saved error msg: '{err_msg}'")
+
+    // Multiple return & tuple indexing
+    lo, hi := minmax(10, 3)
+    t := minmax(5, 8)
+    println(f"lo={lo} hi={hi}  t[0]={t[0]} t[1]={t[1]}")
+
+    // Loops
+    loop i :0..5     { io::print(f"{i} ") }; println("")   // range
+    loop i :0..10..2 { io::print(f"{i} ") }; println("")   // step
+    loop v :arr      { io::print(f"{v} ") }; println("")   // array iter
+
+    mut m := 3
+    loop m>0 { m-- }                                        // while-style
+
+    // If-else-if ladder  (? = else)
+    sc:i32 = 75
+    if {
+        sc>=90 { println("A") }
+        sc>=80 { println("B") }
+        sc>=70 { println("C") }
+        ?      { println("F") }
+    }
+
+    // Match on enum
+    dir := Dir.N
+    match dir {
+        Dir.N { println("north") }
+        Dir.S { println("south") }
+        ?     { println("other") }
+    }
+
+    // Match on sum-type via .id / typeid()
+    shape:Shape = Circle(c=Point(x=0.0,y=0.0), r=5.0)
+    match shape.id {
+        typeid(Circle) { c := cast{Circle}(shape); println(f"circle area={area(c)}") }
+        typeid(Rect)   { r := cast{Rect}(shape);   println(f"rect   area={area(r)}") }
+    }
+
+    // Pipe operator
+    piped := 3 |> double |> double
+    println(f"piped={piped}")
+
+    // Lambdas ([], [=] capture-by-value, [&] capture-by-ref, [vars…] explicit)
+    factor:i32 = 3
+    mut acc:i32 = 0
+    lam_val := [=](x:i32) -> i32 { ret x*factor }  // copy of factor
+    lam_ref := [&](x:i32) -> i32 { acc+=x; ret acc } // ref to acc
+    println(f"lam_val(4)={lam_val(4)}  lam_ref(4)={lam_ref(4)} acc={acc}")
+
+    // Generics
+    println(f"max(3,7)={max{i32}(3,7)}")
+    println(f"clamp(200,0,100)={clamp{i32}(200,0,100)}")
+
+    // Generic stack with __getitem__ / __setitem__
+    mut stk:Stack{i32} = Stack{i32}(top=0)
+    stk.push(10); stk.push(20); stk.push(30)
+    stk[0] = 99
+    loop !stk.is_empty() { println(stk.pop()) }
+
+    // Variadic & decorator
+    println(f"sum_all={sum_all(1,2,3,4,5)}")
+    println(f"double(4)={double(4)}")   // wrapped by @logged
+
+    // Defer  (runs at end of scope)
+    {
+        f := fs::open("demo.txt")!
+        defer { fs::close(f) }
+        // f is closed automatically when this block exits
+    }
+
+    // Threading basics
+    t1 := thread { ret 6*7 }
+    answer := t1.join() !! 0
+    println(f"thread answer={answer}")
+
+    // SIMD
+    a_v:<4*f32> = (1.0, 2.0, 3.0, 4.0)
+    b_v:<4*f32> = (2.0, 3.0, 4.0, 5.0)
+    dot_r := simd::dot(a_v, b_v)
+    println(f"simd dot={dot_r}")
+
+    println("done.")
+}
