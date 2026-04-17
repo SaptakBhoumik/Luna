@@ -2,7 +2,7 @@ import std::io::{println}
 import math
 
 // ---- Types & Enums ----
-pub type Dir  = enum { N, S, E, W }
+pub type Dir = enum { N, S, E, W }
 pub type Shape = Circle | Rect          // sum type
 
 pub type Point  = { pub mut x:f64, pub mut y:f64 = 0.0 }
@@ -15,18 +15,18 @@ pub type Stack{T} = { mut data:[32*T], pub mut top:i32 }
 PI:f64 = 3.14159265358979
 
 // ---- Methods & operator overloading ----
-fn (p:Point) len()            -> f64   { ret math::sqrt(p.x*p.x + p.y*p.y) }
-fn (p:Point) __add__(o:Point) -> Point { ret Point(x = p.x+o.x, y = p.y+o.y) }
-fn (p:Point) __eq__(o:Point)  -> bool  { ret p.x==o.x & p.y==o.y }
+fn (p:Point)len() -> f64 { ret math::sqrt(p.x*p.x + p.y*p.y) }
+fn (p:Point)__add__(o:Point) -> Point { ret Point(x = p.x+o.x, y = p.y+o.y) }
+fn (p:Point)__eq__(o:Point) -> bool { ret p.x==o.x & p.y==o.y }
 
-fn (mut s:Stack{T}) push{T}(val:T)     { s.data[s.top]=val; s.top++ }
-fn (mut s:Stack{T}) pop{T}()   -> T   { s.top--; ret s.data[s.top] }
-fn (s:Stack{T})     is_empty{T}() -> bool { ret s.top==0 }
-fn (s:Stack{T})     __getitem__{T}(i:i32) -> T { ret s.data[i] }
+fn (mut s:Stack{T})push{T}(val:T) { s.data[s.top]=val; s.top++ }
+fn (mut s:Stack{T})pop{T}() -> T { s.top--; ret s.data[s.top] }
+fn (s:Stack{T})is_empty{T}() -> bool { ret s.top==0 }
+fn (s:Stack{T})__getitem__{T}(i:i32) -> T { ret s.data[i] }
 
 // ---- Overloaded fns (by arg type) ----
 fn area(c:Circle) -> f64 { ret PI * c.r * c.r }
-fn area(r:Rect)   -> f64 { ret (r.br.x-r.tl.x) * (r.br.y-r.tl.y) }
+fn area(r:Rect) -> f64 { ret (r.br.x-r.tl.x) * (r.br.y-r.tl.y) }
 
 // ---- Error & optional returns ----
 fn divide(a:f64, b:f64) -> !f64 {
@@ -47,7 +47,7 @@ fn clamp{T}(v:T, lo:T, hi:T) -> T { ret max{T}(lo, max{T}(v, lo)) }
 fn minmax(a:i32, b:i32) -> (i32,i32) { ret a<b ? (a,b) : (b,a) }
 
 // ---- Attributes ----
-@[inline]   fn fast_add(a:i32, b:i32) -> i32 { ret a+b }
+@[inline] fn fast_add(a:i32, b:i32) -> i32 { ret a+b }
 @[noinline] fn slow_mul(a:i32, b:i32) -> i32 { ret a*b }
 @[noreturn] @[inline] fn die(msg:str) { std::exit(1) }
 
@@ -118,9 +118,9 @@ pub fn main() {
     println(f"lo={lo} hi={hi}  t[0]={t[0]} t[1]={t[1]}")
 
     // Loops
-    loop i :0..5     { io::print(f"{i} ") }; println("")   // range
+    loop i :0..5 { io::print(f"{i} ") }; println("")   // range
     loop i :0..10..2 { io::print(f"{i} ") }; println("")   // step
-    loop v :arr      { io::print(f"{v} ") }; println("")   // array iter
+    loop v :arr { io::print(f"{v} ") }; println("")   // array iter
 
     mut m := 3
     loop m>0 { m-- }                                        // while-style
@@ -137,7 +137,10 @@ pub fn main() {
     // Match on enum
     dir := Dir.N
     match dir {
-        Dir.N { println("north") }
+        Dir.N { 
+            println("north")
+            break
+        }
         Dir.S { println("south") }
         ?     { println("other") }
     }
@@ -146,7 +149,7 @@ pub fn main() {
     shape:Shape = Circle(c=Point(x=0.0,y=0.0), r=5.0)
     match shape.id {
         typeid(Circle) { c := cast{Circle}(shape); println(f"circle area={area(c)}") }
-        typeid(Rect)   { r := cast{Rect}(shape);   println(f"rect   area={area(r)}") }
+        typeid(Rect) { r := cast{Rect}(shape);   println(f"rect   area={area(r)}") }
     }
 
     // Pipe operator
