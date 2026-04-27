@@ -356,7 +356,7 @@ pub fn main() {
     }
     //Compile time
     $loop $i:0..10 {$print("Hello {$i}")}
-    $match $os::platform(){//The platform compile time func is from the os library that is why
+    $match os::$platform(){//The platform compile time func is from the os library that is why
         //OS is an enum type which is basically const expr so....
         OS.Windows {
 
