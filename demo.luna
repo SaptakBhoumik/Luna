@@ -60,7 +60,7 @@ fn sum_all(*args:i32) -> i32 {
 
 // ---- Decorator ----
 fn logged(f:fn(i32)->i32) -> fn(i32)->i32 {
-    ret [=](x:i32) -> i32 {
+    ret fn[=](x:i32) -> i32 {
         println(f"in:{x}")
         r := f(x)
         println(f"out:{r}")
@@ -159,8 +159,8 @@ pub fn main() {
     // Lambdas ([], [=] capture-by-value, [&] capture-by-ref, [vars…] explicit)
     factor:i32 = 3
     mut acc:i32 = 0
-    lam_val := [=](x:i32) -> i32 { ret x*factor }  // copy of factor
-    lam_ref := [&](x:i32) -> i32 { acc+=x; ret acc } // ref to acc
+    lam_val := fn[=](x:i32) -> i32 { ret x*factor }  // copy of factor
+    lam_ref := fn[&](x:i32) -> i32 { acc+=x; ret acc } // ref to acc
     println(f"lam_val(4)={lam_val(4)}  lam_ref(4)={lam_ref(4)} acc={acc}")
 
     // Generics

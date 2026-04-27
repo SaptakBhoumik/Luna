@@ -100,9 +100,9 @@ void Lexer::flush_keyword() {
         { "thread", TokenType::kw_thread },
         { "lock", TokenType::kw_lock },
 
-        { "typesize", TokenType::kw_typesize },
+        // { "typesize", TokenType::kw_typesize },
         { "decltype", TokenType::kw_decltype },
-        { "typeid", TokenType::kw_typeid }
+        // { "typeid", TokenType::kw_typeid }
     };
 
     TokenType type;
@@ -307,6 +307,11 @@ void Lexer::lex() {
             case ',': {
                 this->flush_keyword();
                 this->push_current(TokenType::comma);
+                break;
+            }
+            case '$': {
+                this->flush_keyword();
+                this->push_current(TokenType::dollar);
                 break;
             }
 
@@ -755,6 +760,10 @@ void Lexer::lex_equal() {
         this->advance();
         this->push("==", TokenType::eq, start, this->curr_index + 1);
     } 
+    else if(this->peek() == '>'){
+        this->advance();
+        this->push("=>", TokenType::thick_arrow, start, this->curr_index + 1);
+    }
     else {
         this->push("=", TokenType::assign, start, this->curr_index + 1);
     }

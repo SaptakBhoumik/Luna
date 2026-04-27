@@ -26,6 +26,7 @@ the benefits of short-circuiting in boolean contexts.
 import math
 import fs
 import std::io::{println, print}
+import os
 using io = std::io
 
 // ---- Enums ----
@@ -224,8 +225,8 @@ fn c_puts(ptr:*i32) -> i32
 @[noreturn]
 fn die(msg:str) { std::exit(1) }
 
-@[export("lux_add")]
-pub fn lux_add(a:i32, b:i32) -> i32 { ret a+b }
+@[export("luna_add")]
+pub fn add(a:i32, b:i32) -> i32 { ret a+b }
 
 @[align(64)] mut cache_buf:[64 * u8] = []
 
@@ -242,7 +243,7 @@ fn c_printf(...) -> i32
 //will have the correct calling convention for C. Done by compiler and not a progammer, but good to know for understanding the generated code.
 // ---- Decorators ----
 fn logged(f:fn(i32)->i32) -> fn(i32)->i32 {
-    ret [=](x:i32) -> i32 {
+    ret fn(x:i32)[=] -> i32 {
         io::println(f"in:{x}")
         r := f(x)
         io::println(f"out:{r}")
@@ -250,7 +251,7 @@ fn logged(f:fn(i32)->i32) -> fn(i32)->i32 {
     }
 }
 fn repeat(n:i32, f:fn(i32)->i32) -> fn(i32)->i32 {
-    ret [n,f](x:i32) -> i32 {
+    ret fn(x:i32)[n,f] -> i32 {
         mut r := x
         mut i := 0
         loop i < n { r=f(r)
@@ -298,13 +299,79 @@ fn minmax(a:i32, b:i32) -> (i32,i32) { ret a<b ? (a,b) :(b,a) }
 fn greet(name:str, msg:str = "Hi") -> str { ret f"{msg} {name}" }
 
 fn sizeof{T}(T val) -> u64 {
-    ret typesize(T)//or do typesize(decltype(val)). Both are valid
+    ret $typesize{T}()//or do $typesize{decltype(val)}(). Both are valid
 }
 tricky_string1:="//"
 tricky_string2:="///""
+
+$compile_time_var:="Hello"//Only limited to simple types so string, any kind of int,uint,float,enum of these types, array,map etc, and struct/sumtype of these types
+                          //So no complex types like ptr
+fn $compile_time_fn($arg:i8){//Note:-U can also have a regular(Not compile time) function named compile_time_fn because both are diffrent type so no collision
+    //As the name suggest
+    $if True{
+        $print("Hello")
+    }
+    //Btw u have to use $ while calling/using compile time stuff. Even if u are inside a compile time function then also to reduce ambiguity it is needed
+    //We also have special compiler built in compile time function like $has_method(value,"method_u_are_searching_for") , $has_method{type}("method_u_are_searching_for")
+    //$has_attribute(value,"method_u_are_searching_for") , $has_attribute{type}("method_u_are_searching_for") and more
+}
+//We do allow compile time methods for the sake of generalization but only pass by value
+fn python_style_variadic(*$args,**$kwarg){
+    //Note:-Not a compile time function
+    $loop $arg : $args{
+        $if{
+            $kwarg.$contains("decay") {
+                io::println($arg*kwarg["decay"])
+            }
+            ? {
+                io::println($arg)
+            }
+        }
+    }
+}
+fn _test{T}(lambda:T){
+
+}
+fn _test{T}(a:i8,lambda:T){
+
+}
+/*
+_test => {}
+The above is same as _test({})
+
+_test(0) => {}
+The above is same as _test(0,{})
+*/
 // ---- Main ----
 pub fn main() {
 
+    _test => {
+        //Equivalent to a lambda that has no input variable or return type. Note in other places to define lambda u need fn and stuff. Just a special syntactic sugar here
+    }
+    _test() => fn(a:i8)->i8{
+
+    }
+    _test(123) => fn(a:i8)[=]->i8{
+
+    }
+    //Compile time
+    $loop $i:0..10 {$print("Hello {$i}")}
+    $match $os::platform(){//The platform compile time func is from the os library that is why
+        //OS is an enum type which is basically const expr so....
+        OS.Windows {
+
+        }
+        OS.Mac {
+
+        }
+        OS.Linux {
+            //I am on linux so only this part will be compiled, For the other part, we will check the syntax but not check the types. That is how it is done in C++
+            $print("Hello")//Done at compile time
+            io::println("Hello")//Done at runtime
+        }
+    }
+    //Actually the main goal of the above is to act as type of Interfaces(of go) + more
+    //Here main is not compile time so u have to explicietely use $
     // variables
     x:i32 = 10
     msg := "test"
@@ -345,8 +412,8 @@ pub fn main() {
     inv := !a
 
     // cast
-    f := cast{f64}(x)
-    i := cast{i32}(3.7)
+    f := $cast{f64}(x)
+    i := $cast{i32}(3.7)
 
     // pointers
     mut val:i32 = 42
@@ -471,21 +538,30 @@ pub fn main() {
     }
     shape:Shape = Circle(c = Point(x = 0.0,y = 0.0), r = 5.0)
     shape2:decltype(shape) = Rect(tl = Point(x = 0.0,y = 0.0), br = Point(x = 5.0,y = 5.0))//decltype gives the type of the variable/expr
-    //Note:You cant do typeid(decltype(shape)) for the following part because then you get the typeid of the sumtype itself which is different from the typeid of the currently held variant. 
-    //also typeid expects a type parameter, so you cant do typeid(shape) either. You can only do typeid(Circle) or typeid(Rect) and compare it with shape.id
+    //Note:You cant do $typeid{decltype(shape)}() for the following part because then you get the typeid of the sumtype itself which is different from the typeid of the currently held variant.
+    //So although $typeid{decltype(shape)}() is valid but it is pointless
+    //Note  $typeid{decltype(shape)}() is same as $typeid(shape). Just 2 ways for simplicity
+    //also $typeid expects a type parameter, so you cant do $typeid{shape}() either but u can do $typeid(shape) even if pointless. 
+    // You can do $typeid(Circle) or $typeid(Rect) and compare it with shape.id
     match shape.id {//sumtype has an implicit field called id which is the typeid of the currently held variant.
         //typeid is a unique u64 value representing the type of the variable. Set at compile time. Note:It can be diffrent across different compilations and runs,
         //so it should not be used in persistent storage or for serialization. It is only useful for type comparisons at runtime
-        typeid(Circle) {
-            c := cast{Circle}(shape)
+        $typeid{Circle}() {
+            c := $cast{Circle}(shape)
             io::println(f"area:{area(c)}")
         }
-        typeid(Rect) {
-            r := cast{Rect}(shape)
+        $typeid{Rect} {
+            r := $cast{Rect}(shape)
             io::println(f"area:{area(r)}")
         }
         ? { io::println("unknown") }
     }
+    /*
+    Something like typeid can have the following signature
+    fn $typeid{T}(T v)
+    fn $typeid{T}()
+    Yes u can overload compile time function
+    */
 
     // pipe
     piped := 3 |> double |> inc |> square
@@ -496,18 +572,21 @@ pub fn main() {
     v2 := Point(x = 1.0, y = 2.0)
     v3 := v1+v2
     io::println(f"len:{v1.len()}")
-    if { v1!=v2 { io::println("differ") }
+    if { v1!=v2 { io::println("differ") } }
 
     // lambdas
     factor:i32 = 3
     mut acc:i32 = 0
-    lam1 := [](x:i32) -> i32 { ret x*2 }
-    lam2 := [=](x:i32) -> i32 { ret x*factor }
-    lam3 := [&](x:i32) -> i32 { acc+=x
+    //Important note about capture:-IT is mut if the original variable is mut else it is not mut. So acc is mut when captured(Regardless if copied or reference)
+    //But factor is not mut
+    lam1 := fn(x:i32)[] -> i32 { ret x*2 }
+    lam2 := fn(x:i32)[=] -> i32 { ret x*factor }
+    lam3 := fn(x:i32)[&] -> i32 { acc+=x
      ret acc }
-    lam4 := [factor](x:i32) -> i32 { ret x+factor }
-    lam5 := [&acc](x:i32) -> i32 { acc+=x
+    lam4 := fn(x:i32)[factor] -> i32 { ret x+factor }
+    lam5 := fn(x:i32)[&acc] -> i32 { acc+=x
      ret acc }
+    lam6 := fn(x:i32) -> i32 { ret x*factor }//By default copied if u dont specify explicietely
     io::println(lam1(4))
     io::println(lam2(4))
     io::println(lam3(4))

@@ -30,6 +30,7 @@ enum class TokenType {
 
     // Punctuation
     comma,            // ,
+    dollar,           // $
     colon,            // :
     walrus,           // :=
     double_colon,     // ::
@@ -63,6 +64,7 @@ enum class TokenType {
     bang,             // !   (error propagation)
     assign,           // =
     arrow,            // ->
+    thick_arrow,      // =>
     pipeline,         // |>
 
     // Compound assignment
@@ -128,9 +130,9 @@ enum class TokenType {
     kw_lock,//lock
 
     // kw_cast,//Technically not a function but I will treat it as one for simplicity
-    kw_typesize,//typesize
+    // kw_typesize,//typesize
     kw_decltype,//decltype
-    kw_typeid,//typeid
+    // kw_typeid,//typeid
 
     newline,
 };
