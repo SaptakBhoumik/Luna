@@ -126,8 +126,11 @@ enum class TokenType {
 
     kw_atomic,//atomic
     kw_thread_local,//thread_local
+    kw_task_local,//task_local
     kw_thread,//thread
+    kw_task,//task
     kw_lock,//lock
+    kw_select,//select
 
     // kw_cast,//Technically not a function but I will treat it as one for simplicity
     // kw_typesize,//typesize

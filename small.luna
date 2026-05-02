@@ -65,7 +65,7 @@ pub type Buf = {
 fn (mut b:Buf) __drop__() { fs::close(b.fd) }
 
 pub type Stack{T} = {
-    mut data:[32 * T],
+    mut data:[T,32],
     pub mut top:i32,
 }
 
@@ -140,7 +140,7 @@ fn divide(a:f64, b:f64) -> !f64 {
 fn safe_open(path:str) -> !i32 {
     ret fs::open(path)!
 }
-fn find_val(arr:[5*i32], idx:i32) -> ?i32 {
+fn find_val(arr:[i32,5], idx:i32) -> ?i32 {
     if idx < 0 | idx >= 5 { ret None }
     ret arr[idx]
 }
@@ -169,7 +169,7 @@ thread_local mut tid:i32 = 0
 
 fn counter_demo() -> i32 {
     atomic mut count:i32 = 0
-    mut handles:[4 * Thread{void}] = []//The generic parameter of Thread is the return type of the thread function
+    mut handles:[Thread{void},4] = []//The generic parameter of Thread is the return type of the thread function
     loop i :0..4 {
         handles[i] = thread { loop _ :0..100 { count++ } }
     }
@@ -211,6 +211,41 @@ fn chan_demo() -> !void {
     c.join()!
 }
 
+
+fn task_chan_demo() -> !void {
+    //Basically same as thread but for concurrent task
+    ch:TaskChan{i32} = TaskChan{i32}(cap = 4)
+    task_local mut local_var:i32 = 0//This variable is local to each task. Each task will have its own copy of this variable. It is not shared between tasks. 
+    p : Task{Void} = task { 
+        loop i :0..4 { 
+            ch.send(i) 
+            local_var += i
+        } 
+        ch.close() 
+    }
+    c := task { 
+        loop {
+            v := ch.recv() ?? { break }
+            io::println(v) 
+        } 
+    }
+    //We also have task_local like thread_local and does the thing you expect it does. No seperate task_atomic cuz doesnt make sense if you thing about it.
+    p.join()!
+    c.join(timeout = 100)!//In ms
+    //If timeout happens then we will just cancel the task and clean up the resources(But what if an extern C function cancels or creates unjoined threads. Rare case but think about it. Maybe some sort of attribute)
+    //We also have a dedicated .cancel method thread also has it
+}
+fn select_demo() -> !void {
+    ch1:Chan{i32} = Chan{i32}(cap = 4)
+    ch2:Chan{str} = Chan{str}(cap = 4)
+    task {
+        select {
+            v <- ch1 { io::println(f"got {v}") }
+            42 -> ch2 { io::println("sent") }
+            ? { io::println("neither ready") }
+        }
+    }
+}
 // ---- Attributes ----. TODO:Other attributes in future like [unjoined_thread](For saying this function has unjoined threads. Useful for C function where the function is opaque) and more
 @[inline] fn fast_add(a:i32, b:i32) -> i32 { ret a+b }
 @[noinline] fn slow_mul(a:i32, b:i32) -> i32 { ret a*b }
@@ -228,7 +263,7 @@ fn die(msg:str) { std::exit(1) }
 @[export("luna_add")]
 pub fn add(a:i32, b:i32) -> i32 { ret a+b }
 
-@[align(64)] mut cache_buf:[64 * u8] = []
+@[align(64)] mut cache_buf:[u8,64] = []
 
 // ---- Variadic ----
 fn sum_all(*args:i32) -> i32 {
@@ -435,8 +470,8 @@ pub fn main() {
     loop v :maybes { io::println(v ?? -1) }
 
     // arrays
-    arr:[5*i32] = [1,2,3,4,5]
-    mut marr:[5*i32] = [1,2,3,4,5]
+    arr:[i32,5] = [1,2,3,4,5]
+    mut marr:[i32,5] = [1,2,3,4,5]
     marr[2] = 99
 
     // map
@@ -495,8 +530,8 @@ pub fn main() {
     }
 
     // parallel loops
-    @[align(64)] out:[512*f32] = []
-    @[align(64)] inp:[512*f32] = []
+    @[align(64)] out:[f32,512] = []
+    @[align(64)] inp:[f32,512] = []
 
     @[parallel]
     loop i :0..512 { out[i] = inp[i]*2.0 }
@@ -642,9 +677,9 @@ pub fn main() {
     io::println(f"lf={lf}")
 
     // SIMD
-    a_vec:<4*f32> = (1.0, 2.0, 3.0, 4.0)
-    b_vec:<4*f32> = (2.0, 3.0, 4.0, 5.0)
-    ones:<4*f32> = simd::splat{f32,4}(1.0)
+    a_vec:<f32,4> = (1.0, 2.0, 3.0, 4.0)
+    b_vec:<f32,4> = (2.0, 3.0, 4.0, 5.0)
+    ones:<f32,4> = simd::splat{f32,4}(1.0)
 
     sum_v := a_vec+b_vec
     prod_v := a_vec*b_vec
@@ -654,7 +689,7 @@ pub fn main() {
     a_vec[3] = 0.0
     first_lane := a_vec[0]
 
-    mask:<4*bool> = a_vec < b_vec
+    mask:<bool,4> = a_vec < b_vec
     blended := simd::blend(a_vec, b_vec, mask)
     swapped := simd::shuffle(a_vec, b_vec, [1,0,3,2])
     hsum := simd::hadd(a_vec)
@@ -662,14 +697,14 @@ pub fn main() {
     dot_r := simd::dot(a_vec, b_vec)
     io::println(f"dot:{dot_r} hsum:{hsum} hmax:{hmax}")
 
-    @[align(16)] darr:[8*f32] = [1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0]
+    @[align(16)] darr:[f32,8] = [1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0]
     c0 := simd::load(darr, offset = 0)
     c1 := simd::load(darr, offset = 4)
     simd::store(darr, offset = 0, val = c0*c1)
 
-    @[align(64)] oa:[1024*f32] = []
-    @[align(64)] ia:[1024*f32] = []
-    @[align(64)] ib:[1024*f32] = []
+    @[align(64)] oa:[f32,1024] = []
+    @[align(64)] ia:[f32,1024] = []
+    @[align(64)] ib:[f32,1024] = []
     @[simd]
     loop i :0..1024 { oa[i] = ia[i]*ib[i]+1.0 }
 }

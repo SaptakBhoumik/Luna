@@ -341,7 +341,12 @@ fn threading_mem_demo() {
 }   // shared_buf.drop() here - last reference (main's) released after both joins
     // seq_c.drop() here - stack variable, scope exits
     // tl_scratch.drop() called per-thread when each thread exits
-
+/*
+For concurrent `task` we do something similar as threads when it comes to managing memory. Concurrent tasks are M:N threads like goroutines. 
+I am not sure how the compiler will generate code for concurrent tasks(I mean I know how but there are multiple options)
+In case we know which tasks share the same thread(We may not know because this method is more complex with little benifit) then we dont promote to shared even if
+diffrent task but same thread. Let's see
+*/
 // ---- Explicit early drop --------------------------------------------------------------------------------------------------------------
 // drop(v) triggers cleanup immediately rather than waiting for scope exit.
 // The compiler marks v invalid after this point - use-after-drop is a

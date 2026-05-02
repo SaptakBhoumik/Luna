@@ -97,8 +97,11 @@ void Lexer::flush_keyword() {
 
         { "atomic", TokenType::kw_atomic },
         { "thread_local", TokenType::kw_thread_local },
+        { "task_local", TokenType::kw_task_local },
         { "thread", TokenType::kw_thread },
+        { "task", TokenType::kw_task },
         { "lock", TokenType::kw_lock },
+        {"select", TokenType::kw_select},
 
         // { "typesize", TokenType::kw_typesize },
         { "decltype", TokenType::kw_decltype },
