@@ -238,11 +238,21 @@ fn task_chan_demo() -> !void {
 fn select_demo() -> !void {
     ch1:Chan{i32} = Chan{i32}(cap = 4)
     ch2:Chan{str} = Chan{str}(cap = 4)
+    t := timer::after(500)   // Sends a signal after 500ms. Simple but works
     task {
         select {
+            // select for waiting on multiple channels and using the one that is ready first.
             v <- ch1 { io::println(f"got {v}") }
             42 -> ch2 { io::println("sent") }
             ? { io::println("neither ready") }
+        }
+    }
+    task {
+        select {
+            v  <- ch1  { io::println(f"got {v}") }
+            42 -> ch2  { io::println("sent") }
+            _  <- t    { io::println("timed out") }
+            ?          { io::println("neither ready") }
         }
     }
 }
