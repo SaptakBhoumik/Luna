@@ -216,19 +216,26 @@ fn task_chan_demo() -> !void {
     //Basically same as thread but for concurrent task
     ch:TaskChan{i32} = TaskChan{i32}(cap = 4)
     task_local mut local_var:i32 = 0//This variable is local to each task. Each task will have its own copy of this variable. It is not shared between tasks. 
-    p : Task{Void} = task { 
+    p : Task{Void} = task(restart = 100, timeout = 1000) { 
+        //Time out is in ms. If task is running for more than 1000ms then it will be killed and restarted. Note if we have no restart then we just kill the thread on time out
+        //And timeout duration is calculated fresh from each restart
+        //Restart 100 times if task panics. If it panics over 100 times then throw error. No need to wait between failed task
+        //Note:-We keep restarting and not just restart at join i.e restart before join if panics
         loop i :0..4 { 
             ch.send(i) 
             local_var += i
         } 
         ch.close() 
     }
-    c := task { 
+    c := task(always_restart = True,restart_delay = 100) { 
+        //This task will always restart if it panics. No need to specify restart count because it will always restart. 
+        //But we can specify restart delay if we want to wait between failed tasks
         loop {
             v := ch.recv() ?? { break }
             io::println(v) 
         } 
     }
+    //Note:The restart and timeout syntax also works for threads as well
     //We also have task_local like thread_local and does the thing you expect it does. No seperate task_atomic cuz doesnt make sense if you thing about it.
     p.join()!
     c.join(timeout = 100)!//In ms
@@ -242,17 +249,30 @@ fn select_demo() -> !void {
     task {
         select {
             // select for waiting on multiple channels and using the one that is ready first.
-            v <- ch1 { io::println(f"got {v}") }
-            42 -> ch2 { io::println("sent") }
+            v <- ch1 { 
+                io::println(f"got {v}") 
+                break
+            }
+            42 -> ch2 { 
+                io::println("sent") 
+                break
+            }
             ? { io::println("neither ready") }
         }
     }
     task {
         select {
-            v  <- ch1  { io::println(f"got {v}") }
-            42 -> ch2  { io::println("sent") }
-            _  <- t    { io::println("timed out") }
-            ?          { io::println("neither ready") }
+            //Note if multiple cases are ready then the first one in the code will be executed then the next one from code that was ready during select and on.
+            // So even if a channel get's ready while the other is running but it was not ready when select started then it will not be executed in the current select and will have to wait for the next select. 
+            //Use break to avoid that if needed.
+            42   <- ch1 { io::println("got 42") }
+            0    <- ch1 { io::println("got zero") }
+            v    <- ch1 { io::println(f"got {v}") }  // catch-all
+            //If ch1 is not ready then we skip it. If ch1 is ready then we do if else basically. So if ch1 is 42 then we execute the first case and skip the next 2 cases. 
+            //If ch1 is 0 then we skip the first case and execute the second case and skip the third case. If ch1 is some other value then we skip the first 2 cases and 
+            //execute the third case.
+            42 -> ch2 { io::println("sent") }
+            _  <- t { io::println("timed out") }
         }
     }
 }

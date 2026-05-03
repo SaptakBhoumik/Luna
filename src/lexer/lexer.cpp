@@ -101,7 +101,7 @@ void Lexer::flush_keyword() {
         { "thread", TokenType::kw_thread },
         { "task", TokenType::kw_task },
         { "lock", TokenType::kw_lock },
-        {"select", TokenType::kw_select},
+        { "select", TokenType::kw_select},
 
         // { "typesize", TokenType::kw_typesize },
         { "decltype", TokenType::kw_decltype },
