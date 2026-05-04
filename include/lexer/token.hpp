@@ -134,7 +134,7 @@ enum class TokenType {
 
     // kw_cast,//Technically not a function but I will treat it as one for simplicity
     // kw_typesize,//typesize
-    kw_decltype,//decltype
+    // kw_decltype,//decltype
     // kw_typeid,//typeid
 
     newline,

@@ -104,7 +104,7 @@ void Lexer::flush_keyword() {
         { "select", TokenType::kw_select},
 
         // { "typesize", TokenType::kw_typesize },
-        { "decltype", TokenType::kw_decltype },
+        // { "decltype", TokenType::kw_decltype },
         // { "typeid", TokenType::kw_typeid }
     };
 

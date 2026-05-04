@@ -364,7 +364,7 @@ fn minmax(a:i32, b:i32) -> (i32,i32) { ret a<b ? (a,b) :(b,a) }
 fn greet(name:str, msg:str = "Hi") -> str { ret f"{msg} {name}" }
 
 fn sizeof{T}(T val) -> u64 {
-    ret $typesize{T}()//or do $typesize{decltype(val)}(). Both are valid
+    ret $typesize{T}()
 }
 tricky_string1:="//"
 tricky_string2:="///""
@@ -602,10 +602,10 @@ pub fn main() {
         ? { io::println("other") }
     }
     shape:Shape = Circle(c = Point(x = 0.0,y = 0.0), r = 5.0)
-    shape2:decltype(shape) = Rect(tl = Point(x = 0.0,y = 0.0), br = Point(x = 5.0,y = 5.0))//decltype gives the type of the variable/expr
-    //Note:You cant do $typeid{decltype(shape)}() for the following part because then you get the typeid of the sumtype itself which is different from the typeid of the currently held variant.
-    //So although $typeid{decltype(shape)}() is valid but it is pointless
-    //Note  $typeid{decltype(shape)}() is same as $typeid(shape). Just 2 ways for simplicity
+    shape2:Shape = Rect(tl = Point(x = 0.0,y = 0.0), br = Point(x = 5.0,y = 5.0))
+    //Note:You cant do $typeid{Shape}() for the following part because then you get the typeid of the sumtype itself which is different from the typeid of the currently held variant.
+    //So although $typeid{Shape}() is valid but it is pointless
+    //Note  $typeid{Shape}() is same as $typeid(shape). Just 2 ways for simplicity
     //also $typeid expects a type parameter, so you cant do $typeid{shape}() either but u can do $typeid(shape) even if pointless. 
     // You can do $typeid(Circle) or $typeid(Rect) and compare it with shape.id
     match shape.id {//sumtype has an implicit field called id which is the typeid of the currently held variant.
