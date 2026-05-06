@@ -28,10 +28,10 @@ import fs
 import std::io::{println, print}
 import os
 using io = std::io
-
+using math // Same as ``using namespace std`` in c++
 // ---- Enums ----
 pub type Dir = enum{ N, S, E, W }
-pub type Code = enum{ Ok = 0, Err = 1, }
+pub type Code = enum:f32{ Ok = 0, Err = 1, }//U can specify the underlying type of the enum if u want
 pub type Result = enum {
     //Yes. You can have any value(constexpr) associated with enum varients
     Success = "success",
