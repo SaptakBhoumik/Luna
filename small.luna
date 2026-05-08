@@ -1,3 +1,5 @@
+//Luna code example
+
 //Note:- A function and method may have the same name irrespective of type.
 //You can pass function as parameter to other function and method but you cant pass method as parameter to other function or method. 
 //You can have multiple methods with the same name as long as their receiver or atleast one argument type is different. 
@@ -10,6 +12,8 @@
 //Doesnt matter how it exits the scope(Maybe a break if in loop or a return). But it must exit the scope. 
 //This is because if code body doesnt give any value then the whole expr !! code_body or expr ?? code_body will not have any value and it will be a compile error. 
 //So to avoid that we enforce that code body must exit the scope if it doesnt give any value.
+// If u do expr! and expr gives an error then it will throw the error and exit the program. So use !! if you want to handle the error and not exit the program.
+// If u do expr? then syntax error because that is not allowed cuz dont make sense
 
 /*
 In most programming languages we have the following logical and bitwise operators:
@@ -22,6 +26,7 @@ If used in a non-boolean context then it behaves like bitwise operator and evalu
 This is a unique design choice that simplifies the language by having only one set of operators for both logical and bitwise operations, while still providing 
 the benefits of short-circuiting in boolean contexts.
 */
+// Note a..b..c is equivalent to Range(a,b,c) and returns an iter. Not unique to loops. U can even do x := a..b..c
 / ---- Imports ----
 import math
 import fs
@@ -29,6 +34,11 @@ import std::io::{println, print}
 import os
 using io = std::io
 using math // Same as ``using namespace std`` in c++
+/*
+Also in Luna when someone does "import io{print}" then also they have to use io::print. The {print} signifies that u can't do io::other_func() . 
+Use "using io" so that "print" works. Also due to {print}, only print function is imported even when u do using io
+We dont have something like import http::* because u can just do import http and then do using http. Sure more clumky but it is a bad practice anyways
+*/
 // ---- Enums ----
 pub type Dir = enum{ N, S, E, W }
 pub type Code = enum:f32{ Ok = 0, Err = 1, }//U can specify the underlying type of the enum if u want
@@ -177,6 +187,13 @@ fn counter_demo() -> i32 {
     ret count
 }
 
+fn complex_tuple_type{T}(val:T) -> (T[1],T[0]){
+    (A,B) := (val[1], val[0])
+    ret (A,B)
+}
+fn complex_tuple_type(val:((i32,i32),i32)){
+    ((a,b),c) := val
+}
 fn lock_demo() -> !void {
     atomic mut bal:i32 = 100
     mut old_bal:i32 = 100
