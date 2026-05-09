@@ -1,94 +1,90 @@
 #pragma once
 
 #include "lexer/token.hpp"
+#include "ast_utils.hpp"
 #include <map>
 #include <memory>
 #include <optional>
 #include <string>
 #include <string>
 #include <vector>
-
 namespace Luna {
 
-enum AstKind {
+enum class AstKind {
     //Basic nodes
-    KAstProgram,
-    KAstNoLiteral,
+    Program,
+    NoLiteral,
 
-
-    KAstInteger,
-    KAstDecimal,
-    KAstString,
-    KAstBool,
-    KAstNone,
-    KAstIdentifier,
+    // Literal nodes
+    Integer,
+    Decimal,
+    String,
+    Bool,
+    None,
+    Identifier,
 
     // Type nodes
-    KAstTypeExpr,
-    KAstListTypeExpr,
-    KAstPointerTypeExpr,
-    KAstOptionalTypeExpr,
-    KAstErrorTypeExpr,
-    KAstFuncTypeExpr,
-    KAstTupleTypeExpr,
-    KAstSimdTypeExpr,
-    KAstEllipsisTypeExpr,
-    KAstSumType,
+    TypeExpr,
+    ListTypeExpr,
+    PtrTypeExpr,
+    OptionalTypeExpr,
+    ErrorTypeExpr,
+    FuncTypeExpr,
+    TupleTypeExpr,
+    SimdTypeExpr,
+    SumTypeExpr,
+    EnumTypeExpr,
+    StructTypeExpr,
 
     // Expression nodes
-    KAstList,
-    KAstDict,
-    KAstTupleExpr,
-    KAstBinaryOp,
-    KAstPrefixExpr,
-    KAstPostfixExpr,
-    KAstIndexExpr,
-    KAstDotExpr,
-    KAstArrowExpr,
-    KAstFunctionCall,
-    KAstGenericCall,
-    KAstTernaryIf,
-    KAstTernaryFor,
-    KAstCastExpr,
-    KAstCompileTimeExpr,
-    KAstLambda,
-    KAstFormattedStr,
-    KAstDefaultArg,
-    KAstThreadExpr,
-    KAstTaskExpr,
+    List,
+    Dict,
+    TupleExpr,
+    BinaryOp,
+    PrefixExpr,
+    PostfixExpr,
+    IndexExpr,
+    DotExpr,
+    ArrowExpr,
+    FunctionCall,
+    GenericCall,
+    TernaryIf,
+    TernaryFor,
+    CastExpr,
+    CompileTimeExpr,
+    Lambda,
+    FormattedStr,
+    DefaultArg,
+    ThreadExpr,
+    TaskExpr,
 
     // Statement nodes
-    KAstImportStmt,
-    KAstUsingStmt,
-    KAstVariableStmt,
-    KAstMultipleAssign,
-    KAstAugAssign,
-    KAstBlockStmt,
-    KAstFunctionDef,
-    KAstMethodDef,
-    KAstExternFuncDef,
-    KAstStructDef,
-    KAstExternStructDef,
-    KAstUnionDef,
-    KAstExternUnionDef,
-    KAstEnumDef,
-    KAstReturnStmt,
-    KAstGiveStmt,
-    KAstDeferStmt,
-    KAstIfStmt,
-    KAstLoopStmt,
-    KAstBreakStmt,
-    KAstContinueStmt,
-    KAstMatchStmt,
-    KAstTypeDefinition,
-    KAstDecoratorStmt,
-    KAstPubDef,
-    KAstInlineAsm,
-    KAstLockStmt,
-    KAstSelectStmt,
-    KAstCompileTimeIf,
-    KAstCompileTimeLoop,
-    KAstCompileTimeMatch,
+    ImportStmt,
+    UsingStmt,
+    VariableStmt,
+    MultipleAssign,
+    AugAssign,
+    BlockStmt,
+    FunctionDef,
+    MethodDef,
+    ExternFuncDef,
+    ReturnStmt,
+    GiveStmt,
+    DeferStmt,
+    IfStmt,
+    LoopStmt,
+    BreakStmt,
+    ContinueStmt,
+    MatchStmt,
+    TypeDefinition,
+    DecoratorStmt,
+    PubDef,
+    InlineAsm,
+    LockStmt,
+    SelectStmt,
+    CompileTimeIf,
+    CompileTimeLoop,
+    CompileTimeMatch,
 };
 
 // ---- Forward declarations ----
@@ -107,50 +103,6 @@ public:
 };
 
 using AstNodePtr = std::shared_ptr<AstNode>;
-
-// ---- Attribute: @[name] or @[name(args...)] stored directly on owning nodes ----
-
-struct Attribute {
-    std::string name;
-    std::vector<AstNodePtr> args = {}; // empty if no argument list
-    std::map<std::string, AstNodePtr> named_args = {}; // empty if no named arguments
-};
-
-// ---- Parameter ----
-
-enum class ParamKind {
-    Normal,
-    VarArg, // *args
-    CompileTimeVarArg, // *$args 
-    CompileTimeKwarg, // **$kwargs
-};
-
-struct Parameter {
-    AstNodePtr type;
-    std::string name;
-    AstNodePtr default_value; // NoLiteral if absent
-    bool is_mut = false;
-    ParamKind kind = ParamKind::Normal;
-};
-
-// ---- Lambda capture ----
-
-enum class CaptureKind {
-    None,    // []
-    AllCopy, // [=]
-    AllRef,  // [&]
-    List,    // [a, &b, ...]
-};
-
-struct CaptureEntry {
-    bool by_ref;
-    AstNodePtr name;
-};
-
-struct CaptureClause {
-    CaptureKind kind = CaptureKind::None;
-    std::vector<CaptureEntry> entries = {}; // populated when kind == List
-};
 
 // ============================
 //  Basic nodes
@@ -182,14 +134,15 @@ public:
 };
 
 // ============================
-//  Literal / Expression nodes
+//  Literal nodes
 // ============================
 
 class IntegerLiteral : public AstNode {
-    Token m_token;
+    Token tok;
 public:
     IntegerLiteral(Token tok);
-    std::string value() const;// Why std::string here? Because the literal might be too big to fit in built-in integer types, so we keep it as a string and 
+
+    std::string get_value() const;// Why std::string here? Because the literal might be too big to fit in built-in integer types, so we keep it as a string and 
                               // parse it into a big integer type later when needed.
     Token token() const;
     AstKind kind() const;
@@ -199,10 +152,11 @@ public:
 };
 
 class DecimalLiteral : public AstNode {
-    Token m_token;
+    Token tok;
 public:
     DecimalLiteral(Token tok);
-    std::string value() const;//Same reason for string as IntegerLiteral
+
+    std::string get_value() const;//Same reason for string as IntegerLiteral
 
     Token token() const;
     AstKind kind() const;
@@ -212,13 +166,12 @@ public:
 };
 
 class StringLiteral : public AstNode {
-    Token m_token;
-    std::string m_value;
-    bool m_raw;
+    Token tok;
+    bool raw;
 public:
     StringLiteral(Token tok,bool raw = false);
-    std::string value() const;
-    bool raw() const;
+    std::string get_value() const;
+    bool is_raw() const;
 
     Token token() const;
     AstKind kind() const;
@@ -228,10 +181,10 @@ public:
 };
 
 class BoolLiteral : public AstNode {
-    Token m_token;
+    Token tok;
 public:
     BoolLiteral(Token tok);
-    bool value() const;
+    bool get_value() const;
 
     Token token() const;
     AstKind kind() const;
@@ -241,7 +194,7 @@ public:
 };
 
 class NoneLiteral : public AstNode {
-    Token m_token;
+    Token tok;
 public:
     NoneLiteral(Token tok);
 
@@ -253,16 +206,15 @@ public:
 };
 
 class IdentifierExpression : public AstNode {
-    Token m_token;
-    std::vector<std::string> m_name;//The path. Like A::B::C will be ["A", "B", "C"]
-    std::vector<AstNodePtr> m_generic_args; // populated if this identifier is something like func{generic_arg1, generic_arg2} but we dont call the funciton yet. 
+    Token tok;
+    std::vector<std::string> path;//The path. Like A::B::C will be ["A", "B", "C"]
+    std::vector<AstNodePtr> generic_args; // populated if this identifier is something like func{generic_arg1, generic_arg2} but we dont call the funciton yet. 
     // This is just the identifier with generic args, the actual function call will be a separate FunctionCall node with this as the callee.
 public:
-    IdentifierExpression(Token tok, std::vector<std::string> name, std::vector<AstNodePtr> generic_args = {});
+    IdentifierExpression(Token tok, std::vector<std::string> path, std::vector<AstNodePtr> generic_args = {});
 
-    std::string value() const;
-    std::vector<std::string> path() const;
-    std::vector<AstNodePtr> genericArgs() const;
+    std::vector<std::string> get_path() const;
+    std::vector<AstNodePtr> get_generic_args() const;
 
     Token token() const;
     AstKind kind() const;
@@ -276,14 +228,17 @@ public:
 // ============================
 
 // Named type, optionally generic: i32, Stack{T}, Map{K,V}
-class TypeExpression : public AstNode {
-    Token m_token;
-    AstNodePtr m_value;
-    std::vector<AstNodePtr> m_generic_args = {};
+class TypeExpr : public AstNode {
+    Token tok;
+    AstNodePtr value;//Will be a identifier expression node representing the type name and its generic args if any. 
+    AstNodePtr idx; //When we do stuff like T[0] where T is a tuple type. T[0] represents the first type of T. And so on, NoLiteral if not applicable.
+                    //It can also be a string as the idx. Like T["field"] for accessing the field type of a struct
+                    //Note:-Only one itm as idx. Unlike regular indexing, a type expr can have only one idx
 public:
-    TypeExpression(Token tok, AstNodePtr value, std::vector<AstNodePtr> generic_args = {});
-    AstNodePtr value() const;
-    std::vector<AstNodePtr> genericArgs() const;
+    TypeExpr(Token tok, AstNodePtr value, AstNodePtr idx);
+
+    AstNodePtr get_value() const;
+    AstNodePtr get_idx() const;
 
     Token token() const;
     AstKind kind() const;
@@ -294,13 +249,14 @@ public:
 
 // [T, N] — fixed-size array; size is NoLiteral for unsized [T]
 class ListTypeExpr : public AstNode {
-    Token m_token;
-    AstNodePtr m_elem_type;
-    AstNodePtr m_size;
+    Token tok;
+    AstNodePtr elem_type;
+    AstNodePtr size;
 public:
     ListTypeExpr(Token tok, AstNodePtr elem_type, AstNodePtr size);
-    AstNodePtr elemType() const;
-    AstNodePtr size() const;
+
+    AstNodePtr get_elem_type() const;
+    AstNodePtr get_size() const;
 
     Token token() const;
     AstKind kind() const;
@@ -310,12 +266,13 @@ public:
 };
 
 // *T
-class PointerTypeExpr : public AstNode {
-    Token m_token;
-    AstNodePtr m_base_type;
+class PtrTypeExpr : public AstNode {
+    Token tok;
+    AstNodePtr base_type;
 public:
-    PointerTypeExpr(Token tok, AstNodePtr base_type);
-    AstNodePtr baseType() const;
+    PtrTypeExpr(Token tok, AstNodePtr base_type);
+
+    AstNodePtr get_base_type() const;
 
     Token token() const;
     AstKind kind() const;
@@ -326,11 +283,12 @@ public:
 
 // ?T
 class OptionalTypeExpr : public AstNode {
-    Token m_token;
-    AstNodePtr m_base_type;
+    Token tok;
+    AstNodePtr base_type;
 public:
     OptionalTypeExpr(Token tok, AstNodePtr base_type);
-    AstNodePtr baseType() const;
+
+    AstNodePtr get_base_type() const;
 
     Token token() const;
     AstKind kind() const;
@@ -341,11 +299,12 @@ public:
 
 // !T — error-or-value type
 class ErrorTypeExpr : public AstNode {
-    Token m_token;
-    AstNodePtr m_base_type;
+    Token tok;
+    AstNodePtr base_type;
 public:
     ErrorTypeExpr(Token tok, AstNodePtr base_type);
-    AstNodePtr baseType() const;
+
+    AstNodePtr get_base_type() const;
 
     Token token() const;
     AstKind kind() const;
@@ -355,14 +314,18 @@ public:
 };
 
 // fn(T1, T2) -> T; return_type is NoLiteral for void
-class FunctionTypeExpr : public AstNode {
-    Token m_token;
-    std::vector<AstNodePtr> m_param_types = {};
-    AstNodePtr m_return_type;
+class FuncTypeExpr : public AstNode {
+    Token tok;
+    std::vector<AstNodePtr> param_types = {};
+    bool c_variadic = false; // true if ... is present at the end of the parameter list
+    AstNodePtr return_type;
 public:
-    FunctionTypeExpr(Token tok, std::vector<AstNodePtr> param_types, AstNodePtr return_type);
-    std::vector<AstNodePtr> paramTypes() const;
-    AstNodePtr returnType() const;
+    FuncTypeExpr(Token tok, std::vector<AstNodePtr> param_types, bool c_variadic, AstNodePtr return_type);
+
+    std::vector<AstNodePtr> get_param_types() const;
+    AstNodePtr get_return_type() const;
+    bool has_c_variadic() const;
+
 
     Token token() const;
     AstKind kind() const;
@@ -373,11 +336,12 @@ public:
 
 // (T1, T2, T3) — tuple type
 class TupleTypeExpr : public AstNode {
-    Token m_token;
-    std::vector<AstNodePtr> m_elem_types;
+    Token tok;
+    std::vector<AstNodePtr> elem_types;
 public:
     TupleTypeExpr(Token tok, std::vector<AstNodePtr> elem_types);
-    std::vector<AstNodePtr> elemTypes() const;
+
+    std::vector<AstNodePtr> get_elem_types() const;
 
     Token token() const;
     AstKind kind() const;
@@ -388,27 +352,14 @@ public:
 
 // <T, N> — SIMD vector type
 class SimdTypeExpr : public AstNode {
-    Token m_token;
+    Token tok;
 
-    AstNodePtr m_elem_type;
-    AstNodePtr m_lanes; // integer literal/compile time for lane count
+    AstNodePtr elem_type;
+    AstNodePtr lanes; // integer literal/compile time for lane count
 public:
     SimdTypeExpr(Token tok, AstNodePtr elem_type, AstNodePtr lanes);
-    AstNodePtr elemType() const;
-    AstNodePtr lanes() const;
-
-    Token token() const;
-    AstKind kind() const;
-    std::string stringify() const;
-
-    void accept(AstVisitor& visitor) const;
-};
-
-// ... — C-style variadic marker inside extern fn signatures
-class EllipsisTypeExpr : public AstNode {
-    Token m_token;
-public:
-    EllipsisTypeExpr(Token tok);
+    AstNodePtr get_elem_type() const;
+    AstNodePtr get_lanes() const;
 
     Token token() const;
     AstKind kind() const;
@@ -418,12 +369,12 @@ public:
 };
 
 // T1 | T2 | T3 — sum / tagged-union type alias
-class SumType : public AstNode {
-    Token m_token;
-    std::vector<AstNodePtr> m_variants;
+class SumTypeExpr : public AstNode {
+    Token tok;
+    std::vector<AstNodePtr> variants;
 public:
-    SumType(Token tok, std::vector<AstNodePtr> variants);
-    std::vector<AstNodePtr> variants() const;
+    SumTypeExpr(Token tok, std::vector<AstNodePtr> variants);
+    std::vector<AstNodePtr> get_variants() const;
     
     Token token() const;
     AstKind kind() const;
@@ -432,6 +383,41 @@ public:
     void accept(AstVisitor& visitor) const;
 };
 
+
+// enum { A = expr, B, ... }  or  type Name = enum:base_type { ... }
+// variant value is NoLiteral when not explicitly set.
+class EnumTypeExpr : public AstNode {
+    Token tok;
+    AstNodePtr base_type; // NoLiteral -> default underlying type
+    std::vector<std::pair<AstNodePtr, AstNodePtr>> variants; // (name, value)
+public:
+    EnumTypeExpr(Token tok, AstNodePtr base_type, std::vector<std::pair<AstNodePtr, AstNodePtr>> variants);
+
+    AstNodePtr get_base_type() const;
+    std::vector<std::pair<AstNodePtr, AstNodePtr>> get_variants() const;
+
+    Token token() const;
+    AstKind kind() const;
+    std::string stringify() const;
+
+    void accept(AstVisitor& visitor) const;
+};
+
+// { fields... }
+class StructTypeExpr : public AstNode {
+    Token tok;
+    std::vector<StructField> fields;
+public:
+    StructTypeExpr(Token tok, std::vector<StructField> fields);
+
+    std::vector<StructField> get_fields() const;
+
+    Token token() const;
+    AstKind kind() const;
+    std::string stringify() const;
+
+    void accept(AstVisitor& visitor) const;
+};
 // ============================
 //  Expression nodes
 // ============================
@@ -1081,51 +1067,6 @@ public:
     AstNodePtr baseType() const;
     std::vector<Attribute> attributes() const;
     bool isPub() const;
-
-    Token token() const;
-    AstKind kind() const;
-    std::string stringify() const;
-
-    void accept(AstVisitor& visitor) const;
-};
-
-// enum { A = expr, B, ... }  or  type Name = enum:base_type { ... }
-// variant value is NoLiteral when not explicitly set.
-class EnumType : public AstNode {
-    Token m_token;
-    AstNodePtr m_base_type; // NoLiteral -> default underlying type
-    std::vector<std::pair<AstNodePtr, AstNodePtr>> m_variants; // (name, value)
-public:
-    EnumType(Token tok, AstNodePtr base_type, std::vector<std::pair<AstNodePtr, AstNodePtr>> variants);
-    AstNodePtr baseType() const;
-    std::vector<std::pair<AstNodePtr, AstNodePtr>> variants() const;
-
-    Token token() const;
-    AstKind kind() const;
-    std::string stringify() const;
-
-    void accept(AstVisitor& visitor) const;
-};
-
-// A single field inside a struct definition
-struct StructField {
-    AstNodePtr name;
-    AstNodePtr type;
-    AstNodePtr default_value; // NoLiteral when absent
-    bool is_pub = false;
-    bool is_mut = false;
-    std::vector<Attribute> attributes;
-};
-
-// { fields... }
-class StructType : public AstNode {
-    Token m_token;
-    AstNodePtr m_name;
-    std::vector<StructField> m_fields;
-public:
-    StructType(Token tok, std::vector<StructField> fields);
-    AstNodePtr name() const;
-    std::vector<StructField> fields() const;
 
     Token token() const;
     AstKind kind() const;

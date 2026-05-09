@@ -12,9 +12,15 @@
 //Doesnt matter how it exits the scope(Maybe a break if in loop or a return). But it must exit the scope. 
 //This is because if code body doesnt give any value then the whole expr !! code_body or expr ?? code_body will not have any value and it will be a compile error. 
 //So to avoid that we enforce that code body must exit the scope if it doesnt give any value.
+// Actually for the above 2, I will think in future if the code should implecitely exit the scope or the programmer should do it and throw error if programmer forgets
 // If u do expr! and expr gives an error then it will throw the error and exit the program. So use !! if you want to handle the error and not exit the program.
 // If u do expr? then syntax error because that is not allowed cuz dont make sense
 
+/*
+has_value() method for both ?T and !T . !T also has get_error method. Returns an optional error
+
+Also stuff like == and != Work on them without null/error coalescing and work as u would expect but <,> etc don't for obvious reason
+*/
 /*
 In most programming languages we have the following logical and bitwise operators:
 Logical (`&&`, `||`): These short-circuit. If the first part of an `if` statement fails, the second part never runs. This prevents crashes (e.g., checking `if (obj != null && obj.prop)`) and saves performance.
@@ -98,7 +104,8 @@ type Node = {
 }
 fn is_odd(n:i32) -> bool { ret n % 2 != 0 }
 fn (p:Point)len() -> f64 { ret math::sqrt(p.x*p.x + p.y*p.y) }
-
+// Regarding structs. When u do something like Point(1,0) then it acts like a function call and will create a Point struct. So yes, if you want u can pass it like
+// A lambda function. That means a struct is just a function that returns a struct. 
 // ---- Methods ----
 //Magic methods for operator overloading and indexing
 fn (p:Point)__add__(o:Point) -> Point { ret Point(x = p.x+o.x, y = p.y+o.y) }
@@ -424,6 +431,12 @@ The above is same as _test({})
 _test(0) => {}
 The above is same as _test(0,{})
 */
+
+fn tensor_example(){
+    a:Tensor{f32} = Tensor{f32}(shape = [2,3], data = [1.0,2.0,3.0,4.0,5.0,6.0])
+    a[0,1] = 10.0//Yes you can do [A,B,C.....] indexing for tensors and any class that supports multiple input for __getitem__ and __setitem__. 
+                 //Use *args in method defination if number of item is not known
+}
 // ---- Main ----
 pub fn main() {
 
@@ -578,7 +591,8 @@ pub fn main() {
 
     // parallel loops
     @[align(64)] out:[f32,512] = []
-    @[align(64)] inp:[f32,512] = []
+    @[align(64)]//Yes u can also place it here. Attributes can be placed on the same line or the line before. Both are valid and do the same thing.
+    inp:[f32,512] = []
 
     @[parallel]
     loop i :0..512 { out[i] = inp[i]*2.0 }

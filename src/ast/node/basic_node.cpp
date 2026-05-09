@@ -13,7 +13,7 @@ Token Program::token() const{
     return Token{};
 }
 AstKind Program::kind() const{
-    return AstKind::KAstProgram;
+    return AstKind::Program;
 }
 
 std::string Program::stringify() const{
@@ -30,7 +30,7 @@ Token NoLiteral::token() const{
     return Token{};
 }
 AstKind NoLiteral::kind() const{
-    return AstKind::KAstNoLiteral;
+    return AstKind::NoLiteral;
 }
 std::string NoLiteral::stringify() const{
     return "<No literal>";
