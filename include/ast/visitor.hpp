@@ -45,5 +45,20 @@ class AstVisitor {
     virtual bool visit(const LambdaExpr& node) { return false; };
     virtual bool visit(const FormattedStr& node) { return false; };
     virtual bool visit(const ThreadOrTaskExpr& node) { return false; };
+    //Simple Statement nodes
+    virtual bool visit(const DeferStmt& node) { return false; };
+    virtual bool visit(const ScopeStmt& node) { return false; };
+    virtual bool visit(const BreakStmt& node) { return false; };
+    virtual bool visit(const ContinueStmt& node) { return false; };
+    virtual bool visit(const ReturnStmt& node) { return false; };
+    virtual bool visit(const GiveStmt& node) { return false; };
+    virtual bool visit(const LockStmt& node) { return false; };
+    //Module statement nodes
+    virtual bool visit(const ImportStmt& node) { return false; };
+    virtual bool visit(const UsingStmt& node) { return false; };
+    //Branch statement nodes
+    virtual bool visit(const WhenStmt& node) { return false; };
+    virtual bool visit(const LoopStmt& node) { return false; };
+    virtual bool visit(const SelectStmt& node) { return false; };
 };
 }

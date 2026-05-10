@@ -37,7 +37,7 @@ the benefits of short-circuiting in boolean contexts.
 import math
 import fs
 import std::io::{println, print}
-import os
+import os::{platform::Linux}
 using io = std::io
 using math // Same as ``using namespace std`` in c++
 /*
@@ -51,6 +51,12 @@ We dont have something like import http::* because u can just do import http and
 //NOTE TO SELF:Do not add the feature to use continue for fall back. No. If continue is used then the loop in which the when clause is will continue and 
 // not the when clause fallbacking
 // NOTE:-For when statement, u do ``when (cond):{.....}`` or when (VaR1, Var2, Var3....) {....}. The first bracket is compulsory just like in C/C++
+/*
+For for loop of form 
+loop var:iter{...}
+The var is immutable by default but if u want to make it mutable then do 
+loop mut var:iter{...}
+*/
 // ---- Enums ----
 pub type Dir = enum{ N, S, E, W }
 pub type Code = enum:f32{ Ok = 0, Err = 1, }//U can specify the underlying type of the enum if u want
@@ -158,7 +164,7 @@ fn divide(a:f64, b:f64) -> !f64 {
     //    ?:{....} // else case. ? is used for else case in if else if ladder. It is optional but good for readability
     //}``
 
-
+    (a,b) += (1.0,1.0) //Yes you can do tuple assignment like this. It is basically the same as a=a+1.0 and b=b+1.0
     ret a / b
 }
 fn safe_open(path:str) -> !i32 {
@@ -173,6 +179,8 @@ fn find_val(arr:[i32,5], idx:i32) -> ?i32 {
 fn read_file(path:str) -> !str {
     f := fs::open(path)!
     defer { fs::close(f) }
+    //Note:-You dont need to enclose it in ```{...}``` if only one statement so something like the following also works
+    defer fs::close(f)
     ret fs::read(f)!
 }
 
@@ -194,10 +202,10 @@ thread_local mut tid:i32 = 0
 fn counter_demo() -> i32 {
     atomic mut count:i32 = 0
     mut handles:[Thread{void},4] = []//The generic parameter of Thread is the return type of the thread function
-    loop i :0..4 {
+    loop mut i :0..4 {
         handles[i] = thread { loop _ :0..100 { count++ } }
     }
-    loop t :handles { t.join()! }
+    loop mut t :handles { t.join()! }
     ret count
 }
 
@@ -213,7 +221,7 @@ fn lock_demo() -> !void {
     mut old_bal:i32 = 100
     t1 := thread { lock bal { bal = bal - 10 } }
     t2 := thread { 
-        lock (bal,old_bal) { 
+        lock (bal,old_bal) { //The bracket is needed to signify that it is a tuple of variables and not just a single variable.
             old_bal = bal
             bal = bal + 20 
         } 
@@ -296,6 +304,8 @@ fn select_demo() -> !void {
             //Note if multiple cases are ready then the first one in the code will be executed then the next one from code that was ready during select and on.
             // So even if a channel get's ready while the other is running but it was not ready when select started then it will not be executed in the current select and will have to wait for the next select. 
             //Use break to avoid that if needed.
+            //Btw when 2 cases share the same body(like 5 <-- ch1 and 42 <-- ch1) then if any of them is ready then the body will be executed 
+            //and the other case will be skipped even if it is ready(Not choosen randomly. Based on order in code). So in that case also only one case will be executed and not both.
             5    <-- ch1//No : after ch1 because we want to execute the same code for both 5 and 42. So if ch1 is 5 or 42 then we will execute the same code.
             42   <-- ch1:{ io::println("got 42 or 5") }
             0    <-- ch1:{ io::println("got zero") }
@@ -328,7 +338,7 @@ pub fn add(a:i32, b:i32) -> i32 { ret a+b }
 @[align(64)] mut cache_buf:[u8,64] = []
 
 // ---- Variadic ----
-fn sum_all(*args:i32) -> i32 {
+fn sum_all(*args:i32) -> i32 {//*args means just an array i.e args is of type [i32] and usual ops work
     mut t := 0
     loop v :args { t += v }
     ret t
@@ -413,7 +423,7 @@ fn $compile_time_fn($arg:i8){//Note:-U can also have a regular(Not compile time)
     //$has_attribute(value,"method_u_are_searching_for") , $has_attribute{type}("method_u_are_searching_for") and more
 }
 //We do allow compile time methods for the sake of generalization but only pass by value
-fn python_style_variadic(*$args,**$kwarg){
+fn python_style_variadic($regular_arg:i8,*$args,**$kwarg){//Yes even in non compile time function we can have compile time argument
     //Note:-Not a compile time function
     $loop $arg : $args{
         $when{
@@ -425,6 +435,10 @@ fn python_style_variadic(*$args,**$kwarg){
             }
         }
     }
+}
+
+fn python_style_variadic2($regular_arg:i8,*$args:i32,**$kwarg:str){
+    //YEs u can specify the type of $args and $kwarg also 
 }
 fn _test{T}(lambda:T){
 
@@ -546,13 +560,14 @@ pub fn main() {
     marr[2] = 99
 
     // map
-    mut scores:map{str,i32} = {}
+    mut scores:map{str,i32} = []//Yes. Maps use []
     scores["a"] = 1
     scores["b"] = 2
     entry := scores["a"] !! 0
+    scores = ["c":3, "d":4]
 
     // multiple return + tuple index
-    lo, hi := minmax(10,3)
+    (lo, hi) := minmax(10,3)
     t := minmax(5,8)
     io::println(f"{t[0]} {t[1]}")  // tuple index must be const expr
 
@@ -585,7 +600,7 @@ pub fn main() {
     loop i :0..5 { io::print(f"{i} ") }
     loop i :0..10..2 { io::print(f"{i} ") }         // step
     loop v :arr { io::print(f"{v} ") }               // array iter
-    loop k, v :scores { io::println(f"{k}={v}") }    // map iter
+    loop (k, v) :scores { io::println(f"{k}={v}") }    // map iter. YEs the bracket is needed to signify that it is a tuple unpacking
     loop kv :scores { io::println(f"{kv[0]}={kv[1]}") }    // map iter
     mut m := 3
     loop m>0 { m-- }                                  // while-style

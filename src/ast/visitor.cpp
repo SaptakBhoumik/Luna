@@ -114,4 +114,43 @@ void FormattedStr::accept(AstVisitor& visitor) const {
 void ThreadOrTaskExpr::accept(AstVisitor& visitor) const {
     visitor.visit(*this);
 }
+// Simple Statement nodes
+void DeferStmt::accept(AstVisitor& visitor) const {
+    visitor.visit(*this);
+}
+void ScopeStmt::accept(AstVisitor& visitor) const {
+    visitor.visit(*this);
+}
+void BreakStmt::accept(AstVisitor& visitor) const {
+    visitor.visit(*this);
+}
+void ContinueStmt::accept(AstVisitor& visitor) const {
+    visitor.visit(*this);
+}
+void ReturnStmt::accept(AstVisitor& visitor) const {
+    visitor.visit(*this);
+}
+void GiveStmt::accept(AstVisitor& visitor) const {
+    visitor.visit(*this);
+}
+void LockStmt::accept(AstVisitor& visitor) const {
+    visitor.visit(*this);
+}
+//Module statement nodes
+void ImportStmt::accept(AstVisitor& visitor) const {
+    visitor.visit(*this);
+}
+void UsingStmt::accept(AstVisitor& visitor) const {
+    visitor.visit(*this);
+}
+//Branch statement nodes
+void WhenStmt::accept(AstVisitor& visitor) const {
+    visitor.visit(*this);
+}
+void LoopStmt::accept(AstVisitor& visitor) const {
+    visitor.visit(*this);
+}
+void SelectStmt::accept(AstVisitor& visitor) const {
+    visitor.visit(*this);
+}
 }

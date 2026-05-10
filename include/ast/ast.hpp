@@ -50,39 +50,39 @@ enum class AstKind {
     DotExpr,
     ArrowExpr,
     FuncCall,
-    GenericCall,
     TernaryIf,
-    TernaryFor,
-    CastExpr,
     CompTimeExpr,
     LambdaExpr,
     FormattedStr,
     ThreadOrTaskExpr,
     ArrowBlockCallExpr,
 
-    // Statement nodes
+    // Simple Statement nodes
+    DeferStmt,
+    ScopeStmt,
+    BreakStmt,
+    ContinueStmt,
+    ReturnStmt,
+    GiveStmt,
+    LockStmt,
+
+    //Module statement nodes
     ImportStmt,
     UsingStmt,
+
+    //Branch statement nodes
+    WhenStmt,
+    LoopStmt,
+    SelectStmt,
+
+
     VariableStmt,
-    MultipleAssign,
     AugAssign,
     FunctionDef,
     MethodDef,
-    ExternFuncDef,
-    ReturnStmt,
-    GiveStmt,
-    DeferStmt,
-    IfStmt,
-    LoopStmt,
-    BreakStmt,
-    ContinueStmt,
-    MatchStmt,
-    TypeDefinition,
+    TypeDef,
     DecoratorStmt,
-    PubDef,
-    InlineAsm,
-    LockStmt,
-    SelectStmt,
+
 };
 
 // ---- Forward declarations ----
@@ -182,7 +182,7 @@ class StringLiteral : public AstNode {
     Token tok;
     bool raw;
 public:
-    StringLiteral(Token tok,bool raw = false);
+    StringLiteral(Token tok,bool raw);
     std::string get_value() const;
     bool is_raw() const;
 
@@ -224,7 +224,7 @@ class IdentifierLiteral : public AstNode {
     std::vector<AstNodePtr> generic_args; // populated if this identifier is something like func{generic_arg1, generic_arg2} but we dont call the funciton yet. 
     // This is just the identifier with generic args, the actual function call will be a separate FunctionCall node with this as the callee.
 public:
-    IdentifierLiteral(Token tok, std::vector<std::string> path, std::vector<AstNodePtr> generic_args = {});
+    IdentifierLiteral(Token tok, std::vector<std::string> path, std::vector<AstNodePtr> generic_args);
 
     std::vector<std::string> get_path() const;
     std::vector<AstNodePtr> get_generic_args() const;
@@ -240,7 +240,7 @@ class ListLiteral : public AstNode {
     Token tok;
     std::vector<AstNodePtr> elements;
 public:
-    ListLiteral(Token tok, std::vector<AstNodePtr> elements = {});
+    ListLiteral(Token tok, std::vector<AstNodePtr> elements);
     std::vector<AstNodePtr> get_elements() const;
 
     Token token() const;
@@ -778,19 +778,142 @@ public:
     void accept(AstVisitor& visitor) const;
 };
 
+
 // ============================
-//  Statement nodes
+//  Simple Statement nodes
+// ============================
+class DeferStmt : public AstNode {
+    Token tok;
+    AstNodePtr body;//A block or a single expression statement. Like the following are all valid defer statements:-
+    /*
+    defer {
+        //some statements
+    }
+    defer some_function()
+*/
+public:
+    DeferStmt(Token tok, AstNodePtr body);
+
+    AstNodePtr get_body() const;
+
+    Token token() const;
+    AstKind kind() const;
+    std::string stringify() const;
+
+    void accept(AstVisitor& visitor) const;
+};
+
+class ScopeStmt : public AstNode {
+    Token tok;
+    AstNodePtr body;
+public:
+    ScopeStmt(Token tok, AstNodePtr body);
+    
+    AstNodePtr get_body() const;
+
+    Token token() const;
+    AstKind kind() const;
+    std::string stringify() const;
+
+    void accept(AstVisitor& visitor) const;
+};
+
+class BreakStmt : public AstNode {
+    Token tok;
+public:
+    BreakStmt(Token tok);
+    
+    Token token() const;
+    AstKind kind() const;
+    std::string stringify() const;
+
+    void accept(AstVisitor& visitor) const;
+};
+
+class ContinueStmt : public AstNode {
+    Token tok;
+public:
+    ContinueStmt(Token tok);
+
+    Token token() const;
+    AstKind kind() const;
+    std::string stringify() const;
+
+    void accept(AstVisitor& visitor) const;
+};
+
+// ret expr  (expr is NoLiteral for bare `ret`)
+class ReturnStmt : public AstNode {
+    Token tok;
+    AstNodePtr value;
+public:
+    ReturnStmt(Token tok, AstNodePtr value);
+
+    AstNodePtr get_value() const;
+
+    Token token() const;
+    AstKind kind() const;
+    std::string stringify() const;
+
+    void accept(AstVisitor& visitor) const;
+};
+
+// give expr - value-yielding exit from a ?? / !! handler block
+class GiveStmt : public AstNode {
+    Token tok;
+    AstNodePtr value;
+public:
+    GiveStmt(Token tok, AstNodePtr value);
+
+    AstNodePtr get_value() const;
+
+    Token token() const;
+    AstKind kind() const;
+    std::string stringify() const;
+    void accept(AstVisitor& visitor) const;
+};
+
+// lock var { body }  or  lock (var1, var2) { body }
+class LockStmt : public AstNode {
+    Token tok;
+    AstNodePtr target;//Either a tuple of identifiers or an identifier
+    AstNodePtr body;
+public:
+    LockStmt(Token tok, AstNodePtr target, AstNodePtr body);
+
+    AstNodePtr get_target() const;
+    AstNodePtr get_body() const;
+    
+    Token token() const;
+    AstKind kind() const;
+    std::string stringify() const;
+    
+    void accept(AstVisitor& visitor) const;
+};
+
+// ============================
+//  Module statement nodes
 // ============================
 
 // import path::sym  or  import path::{s1, s2}  
-class ImportStatement : public AstNode {
-    Token m_token;
-    std::vector<std::string> m_module_path;
-    std::vector<std::string> m_imported_symbols;
+class ImportStmt : public AstNode {
+    Token tok;
+    std::vector<std::string> module_path;
+    std::vector<std::vector<std::string>> imported_symbols;
+    /*
+    import std::io::{println, print}
+    For the above imported_symbols = {{println}, {print}} and module_path = {std, io}
+
+    import os::{platform::Linux}
+    For the above imported_symbols = {{platform, Linux}} and module_path = {os}
+
+    Basically each element of imported symbols is the path of the imported symbol
+    */
 public:
-    ImportStatement(Token tok, std::vector<std::string> module_path, std::vector<std::string> imported_symbols);
-    std::vector<std::string> modulePath() const;
-    std::vector<std::string> importedSymbols() const;
+    ImportStmt(Token tok, std::vector<std::string> module_path, std::vector<std::vector<std::string>> imported_symbols);
+
+    std::vector<std::string> get_module_path() const;
+    std::vector<std::vector<std::string>> get_imported_symbols() const;
 
     Token token() const;
     AstKind kind() const;
@@ -800,14 +923,15 @@ public:
 };
 
 // using alias = path  or  using path  (alias is NoLiteral for the second form)
-class UsingStatement : public AstNode {
-    Token m_token;
-    std::vector<std::string> m_path;
-    std::optional<std::string> m_alias;
+class UsingStmt : public AstNode {
+    Token tok;
+    std::vector<std::string> path;
+    std::optional<std::string> alias;
 public:
-    UsingStatement(Token tok, std::vector<std::string> path, std::optional<std::string> alias);
-    std::vector<std::string> path() const;
-    std::optional<std::string> alias() const;
+    UsingStmt(Token tok, std::vector<std::string> path, std::optional<std::string> alias);
+
+    std::vector<std::string> get_path() const;
+    std::optional<std::string> get_alias() const;
 
     Token token() const;
     AstKind kind() const;
@@ -816,6 +940,148 @@ public:
     void accept(AstVisitor& visitor) const;
 };
 
+
+// ============================
+//  Branch statement nodes
+// ============================
+
+// when { cond1 { body1 }  cond2 { body2 }  ? { else_body } }
+// or  when expr { case1: body1  case2: body2  ? : else_body }
+class WhenStmt : public AstNode {
+    Token tok;
+    std::vector<AstNodePtr> subjects;//For switch style when statement. IT will be empty for if-else style when statement
+    /*
+    when expr {
+        case1
+        case2:
+        {
+            //body for both case1 and case2
+        }
+        case3:
+        {
+            //body for case3
+        }
+    }
+    Here the subjects will be [expr] and branches will be [([case1, case2], body_for_case1_and_case2), ([case3], body_for_case3)]
+    when {
+        cond1 {
+            //body1 
+        }
+    }
+    Here the subjects will be empty and branches will be [([cond1], body1)]
+    */
+    std::vector<std::pair<std::vector<std::vector<AstNodePtr>>, AstNodePtr>> branches;//<conditions,body> pairs. or <cases, body> 
+    /*
+        when(p, q) {
+            3, 5 
+            1, 2:{
+                //body for both 3,5 and 1,2 cases
+            }
+            1, ?:{
+                //body for 1,? case
+            }
+            ?:{ 
+                //else body
+            }
+        }
+        branches = {
+            {{{3, 5},{1, 2}}, body_for_3_5_and_1_2},
+            {{{1, ?}}, body_for_1_and_wildcard},
+            {{{?}}, else_body}
+        }
+
+        The ? is represented by a NoLiteral.
+
+        when {
+            cond1 {
+                //body1
+            }
+            cond2
+            cond3 {
+                //body for both cond2 and cond3
+            }
+            ? {
+                //else body
+            }
+        }
+        branches = {
+            {{{cond1}}, body1},
+            {{{cond2}, {cond3}}, body_for_cond2_and_cond3},
+            {{{?}}, else_body}
+        }
+    */
+public:
+    WhenStmt(Token tok, std::vector<AstNodePtr> subjects, std::vector<std::pair<std::vector<std::vector<AstNodePtr>>, AstNodePtr>> branches);
+
+    std::vector<AstNodePtr> get_subjects() const;
+    std::vector<std::pair<std::vector<std::vector<AstNodePtr>>, AstNodePtr>> get_branches() const;
+
+    Token token() const;
+    AstKind kind() const;
+    std::string stringify() const;
+
+    void accept(AstVisitor& visitor) const;
+};
+
+
+
+// Fields that are irrelevant for a given LoopKind hold NoLiteral.
+class LoopStmt : public AstNode {
+    Token tok;
+    LoopKind loop_kind;
+    std::pair<AstNodePtr,bool> variable; // loop variable; empty for Infinite/WhileStyle. Tuple for multiple variables. The second part is true if the variable is mutable
+    AstNodePtr value;// Iterable for `for` loop and condition for `while`, no literal for infinite loop
+    AstNodePtr body;
+    std::vector<Attribute> attributes; // @[parallel], @[simd], etc.
+public:
+    LoopStmt(Token tok, LoopKind loop_kind,std::pair<AstNodePtr,bool> variable,AstNodePtr value,AstNodePtr body,std::vector<Attribute> attributes);
+
+    LoopKind get_loop_kind() const;
+    std::pair<AstNodePtr,bool> get_variable() const;
+    AstNodePtr get_value() const;
+    AstNodePtr get_body() const;
+    std::vector<Attribute> get_attributes() const;
+
+    Token token() const;
+    AstKind kind() const;
+    std::string stringify() const;
+
+    void accept(AstVisitor& visitor) const;
+};
+
+// select { arm1  arm2  ... }
+class SelectStmt : public AstNode {
+    Token tok;
+    std::vector<std::pair<std::vector<SelectArm>, AstNodePtr>> cases;
+    //The above is a vector of (arms, body) pairs. Each arm is a separate case that can trigger the same body. Like for the following select statement:-
+    /*
+    select {
+        case1:
+        case2:
+        {
+            //body for both case1 and case2
+        }
+        case3:
+        {
+            //body for case3
+        }
+    }
+    */
+public:
+    SelectStmt(Token tok, std::vector<std::pair<std::vector<SelectArm>, AstNodePtr>> cases);
+
+    std::vector<std::pair<std::vector<SelectArm>, AstNodePtr>> get_cases() const;
+
+    Token token() const;
+    AstKind kind() const;
+    std::string stringify() const;
+
+    void accept(AstVisitor& visitor) const;
+};
+
+// ============================
+//  Branch statement nodes
+// ============================
 
 enum class VarKind {
     Normal,
@@ -838,14 +1104,16 @@ class VariableStatement : public AstNode {
     AstNodePtr m_type;
     AstNodePtr m_value;
     bool m_is_mut   = false;
-    bool m_is_def = false;//Means if it is an assignment or defination
+    bool m_is_def = false;//Means if it is an assignment or defination. IF false then the type and stuff is no literal but the type checker will fill that up later. 
+                          //Like for the following statement:- x = 5. It is an assignment and not a defination. So is_def will be false and type and value will be 
+                          //no literal. But the type checker will fill the type as i32 and value as 5 later when it processes this statement.
     VarKind m_var_kind = VarKind::Normal;
     std::vector<Attribute> m_attributes;
 public:
     VariableStatement(Token tok, AstNodePtr name, AstNodePtr type,
                       AstNodePtr value, bool is_mut, bool is_def,
-                      VarKind var_kind = VarKind::Normal,
-                      std::vector<Attribute> attributes = {});
+                      VarKind var_kind,
+                      std::vector<Attribute> attributes);
     AstNodePtr name() const;
     AstNodePtr varType() const;
     AstNodePtr value() const;
@@ -895,7 +1163,7 @@ public:
                        std::vector<std::string> generics,
                        std::vector<Parameter> parameters,
                        AstNodePtr return_type, AstNodePtr body,
-                       std::vector<Attribute> attributes = {});
+                       std::vector<Attribute> attributes);
     std::string name() const;
     std::vector<std::string> generics() const;
     std::vector<Parameter> parameters() const;
@@ -925,7 +1193,7 @@ public:
                      std::vector<std::string> generics,
                      std::vector<Parameter> parameters,
                      AstNodePtr return_type, AstNodePtr body,
-                     std::vector<Attribute> attributes = {});
+                     std::vector<Attribute> attributes);
     Parameter receiver() const;
     std::string name() const;
     std::vector<std::string> generics() const;
@@ -941,143 +1209,6 @@ public:
     void accept(AstVisitor& visitor) const;
 };
 
-// ret expr  (expr is NoLiteral for bare `ret`)
-class ReturnStatement : public AstNode {
-    Token m_token;
-    AstNodePtr m_value;
-public:
-    ReturnStatement(Token tok, AstNodePtr value);
-    AstNodePtr value() const;
-
-    Token token() const;
-    AstKind kind() const;
-    std::string stringify() const;
-
-    void accept(AstVisitor& visitor) const;
-};
-
-// give expr - value-yielding exit from a ?? / !! handler block
-class GiveStatement : public AstNode {
-    Token m_token;
-    AstNodePtr m_value;
-public:
-    GiveStatement(Token tok, AstNodePtr value);
-    AstNodePtr value() const;
-
-    Token token() const;
-    AstKind kind() const;
-    std::string stringify() const;
-    void accept(AstVisitor& visitor) const;
-};
-
-// defer { body }
-class DeferStatement : public AstNode {
-    Token m_token;
-    AstNodePtr m_body;
-public:
-    DeferStatement(Token tok, AstNodePtr body);
-    AstNodePtr body() const;
-
-    Token token() const;
-    AstKind kind() const;
-    std::string stringify() const;
-
-    void accept(AstVisitor& visitor) const;
-};
-
-// if { cond1 { body1 }  cond2 { body2 }  ? { else_body } }
-// Each branch is (condition, body); condition is NoLiteral for the ? (else) arm.
-class IfStatement : public AstNode {
-    Token m_token;
-    std::vector<std::pair<AstNodePtr, AstNodePtr>> m_branches;
-public:
-    IfStatement(Token tok, std::vector<std::pair<AstNodePtr, AstNodePtr>> branches);
-    std::vector<std::pair<AstNodePtr, AstNodePtr>> branches() const;
-
-    Token token() const;
-    AstKind kind() const;
-    std::string stringify() const;
-
-    void accept(AstVisitor& visitor) const;
-};
-
-// Unified loop node - all forms use the single `loop` keyword.
-enum class LoopKind {
-    Infinite,    // loop { }
-    WhileStyle,  // loop cond { }
-    IteratorFor, // loop v :iter  or  loop k, v :iter
-};
-
-// Fields that are irrelevant for a given LoopKind hold NoLiteral.
-class LoopStatement : public AstNode {
-    Token m_token;
-    LoopKind m_loop_kind;
-    std::vector<AstNodePtr> m_variables; // loop variable(s); empty for Infinite/WhileStyle. Not a string cuz u can have complex stuff like tuples and all
-    AstNodePtr m_value;// Iterable for `for` loop and condition for `while`, no literal for infinite loop
-    AstNodePtr m_body;
-    std::vector<Attribute> m_attributes; // @[parallel], @[simd], etc.
-public:
-    LoopStatement(Token tok, LoopKind loop_kind,
-                  std::vector<AstNodePtr> variables,
-                  AstNodePtr value,
-                  AstNodePtr body,
-                  std::vector<Attribute> attributes = {});
-    LoopKind loopKind() const;
-    std::vector<AstNodePtr> variables() const;
-    AstNodePtr value() const;
-    AstNodePtr body() const;
-    std::vector<Attribute> attributes() const;
-
-    Token token() const;
-    AstKind kind() const;
-    std::string stringify() const;
-
-    void accept(AstVisitor& visitor) const;
-};
-
-
-class BreakStatement : public AstNode {
-    Token m_token;
-public:
-    BreakStatement(Token tok);
-    
-    Token token() const;
-    AstKind kind() const;
-    std::string stringify() const;
-
-    void accept(AstVisitor& visitor) const;
-};
-
-class ContinueStatement : public AstNode {
-    Token m_token;
-public:
-    ContinueStatement(Token tok);
-
-    Token token() const;
-    AstKind kind() const;
-    std::string stringify() const;
-
-    void accept(AstVisitor& visitor) const;
-};
-
-// match subj1, subj2 { pat1, pat2 { body }  ? { default_body } }
-// default body is the one where the m_cases[i] has only one pattern which is the ?
-class MatchStatement : public AstNode {
-    Token m_token;
-    std::vector<AstNodePtr> m_subjects;
-    std::vector<std::pair<std::vector<AstNodePtr>, AstNodePtr>> m_cases;
-public:
-    MatchStatement(Token tok, std::vector<AstNodePtr> subjects,
-                   std::vector<std::pair<std::vector<AstNodePtr>, AstNodePtr>> cases);
-    std::vector<AstNodePtr> subjects() const;
-    std::vector<std::pair<std::vector<AstNodePtr>, AstNodePtr>> cases() const;
-
-    Token token() const;
-    AstKind kind() const;
-    std::string stringify() const;
-
-    void accept(AstVisitor& visitor) const;
-};
 
 // type Name{generics} = base_type
 class TypeDefinition : public AstNode {
@@ -1089,7 +1220,7 @@ class TypeDefinition : public AstNode {
     std::vector<Attribute> m_attributes; // e.g. @[align(16)]
 public:
     TypeDefinition(Token tok, AstNodePtr name,
-                   std::vector<std::string> generics, AstNodePtr base_type,std::vector<Attribute> attributes, bool is_pub = false);
+                   std::vector<std::string> generics, AstNodePtr base_type,std::vector<Attribute> attributes, bool is_pub);
     AstNodePtr name() const;
     std::vector<std::string> generics() const;
     AstNodePtr baseType() const;
@@ -1121,63 +1252,5 @@ public:
     void accept(AstVisitor& visitor) const;
 };
 
-class ScopeStmt : public AstNode {
-    Token m_token;
-    AstNodePtr m_body;
-public:
-    ScopeStmt(Token tok, AstNodePtr body);
-    AstNodePtr body() const;
 
-    Token token() const;
-    AstKind kind() const;
-    std::string stringify() const;
-
-    void accept(AstVisitor& visitor) const;
-};
-// lock var { body }  or  lock (var1, var2) { body }
-class LockStatement : public AstNode {
-    Token m_token;
-    std::vector<AstNodePtr> m_targets;
-    AstNodePtr m_body;
-public:
-    LockStatement(Token tok, std::vector<AstNodePtr> targets,AstNodePtr body);
-    std::vector<AstNodePtr> targets() const;
-    AstNodePtr body() const;
-    
-    Token token() const;
-    AstKind kind() const;
-    std::string stringify() const;
-    
-    void accept(AstVisitor& visitor) const;
-};
-
-enum class SelectArmKind {
-    Recv,    // pattern <- channel { body }
-    Send,    // value -> channel { body }
-    Default, // ? { body }
-};
-
-// A single arm inside a select block.
-// For Default arms, pattern and channel are NoLiteral.
-struct SelectArm {
-    SelectArmKind arm_kind;
-    AstNodePtr pattern; // receive variable or literal pattern for value-matching recv
-    AstNodePtr channel;
-    AstNodePtr body;
-};
-
-// select { arm1  arm2  ... }
-class SelectStatement : public AstNode {
-    Token m_token;
-    std::vector<SelectArm> m_arms;
-public:
-    SelectStatement(Token tok, std::vector<SelectArm> arms);
-    std::vector<SelectArm> arms() const;
-
-    Token token() const;
-    AstKind kind() const;
-    std::string stringify() const;
-
-    void accept(AstVisitor& visitor) const;
-};
 } // namespace ast

@@ -49,7 +49,7 @@ AstKind Block::kind() const {
 std::string Block::stringify() const {
     std::string result;
     for (size_t i = 0; i < this->statements.size(); i++) {
-        result += this->statements[i]->stringify();
+        result += "\t" + this->statements[i]->stringify();
         if (i != this->statements.size() - 1) {
             result += "\n";
         }

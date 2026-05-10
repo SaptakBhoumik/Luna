@@ -24,6 +24,7 @@ enum class ParamKind {
     VarArg, // *args
     CompileTimeVarArg, // *$args 
     CompileTimeKwarg, // **$kwargs
+    CompileTime,// $param
 };
 
 struct Parameter {
@@ -67,4 +68,28 @@ struct StructField {
 };
 
 std::string to_string(const StructField& field);
+
+// ---- Loop and select arms ----
+// Unified loop node - all forms use the single `loop` keyword.
+enum class LoopKind {
+    Infinite,    // loop { }
+    WhileStyle,  // loop cond { }
+    IteratorFor, // loop v :iter  or  loop (k, v) :iter
+};
+
+enum class SelectArmKind {
+    Recv,    // pattern <-- channel { body }
+    Send,    // value --> channel { body }
+    Default, // ? { body }
+};
+
+// A single arm inside a select block.
+// For Default arms, pattern and channel are NoLiteral.
+struct SelectArm {
+    SelectArmKind arm_kind;
+    AstNodePtr value; // receive variable or literal pattern for value-matching recv
+    AstNodePtr channel;
+};
+
+std::string to_string(const SelectArm& arm);
 }

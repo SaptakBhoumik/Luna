@@ -39,6 +39,9 @@ std::string to_string(const Parameter& param){
     else if(param.kind == ParamKind::CompileTimeKwarg){
         res = "**$" + res;
     }
+    else if(param.kind == ParamKind::CompileTime){
+        res = "$" + res;
+    }
     if(param.is_mut){
         res = "mut " + res;
     }
@@ -85,6 +88,23 @@ std::string to_string(const StructField& field){
     res += field.name->stringify() + ":" + field.type->stringify();
     if(field.default_value->kind() != AstKind::NoLiteral){
         res += " = " + field.default_value->stringify();
+    }
+    return res;
+}
+
+// ---- Loop and select arms ----
+std::string to_string(const SelectArm& arm){
+    std::string res;
+    switch(arm.arm_kind){
+        case SelectArmKind::Recv:
+            res +=  arm.value->stringify() + " <-- " + arm.channel->stringify();
+            break;
+        case SelectArmKind::Send:
+            res +=  arm.value->stringify() + " --> " + arm.channel->stringify();
+            break;
+        case SelectArmKind::Default:
+            res = "?";
+            break;
     }
     return res;
 }
