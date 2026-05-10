@@ -12,9 +12,9 @@ bool Lexer::advance() {
     return false;
 }
 
-char Lexer::peek() const {
-    if ((this->curr_index + 1) < this->input.size()) {
-        return this->input[this->curr_index + 1];
+char Lexer::peek(std::size_t i) const {
+    if ((this->curr_index + i) < this->input.size()) {
+        return this->input[this->curr_index + i];
     }
     return '\0';
 }

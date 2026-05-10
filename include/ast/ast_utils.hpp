@@ -15,6 +15,7 @@ struct Attribute {
     std::map<std::string, AstNodePtr> named_args = {}; // empty if no named arguments
 };
 
+std::string to_string(const Attribute& attr);
 // ---- Parameter ----
 
 enum class ParamKind {
@@ -27,12 +28,12 @@ enum class ParamKind {
 
 struct Parameter {
     AstNodePtr type;
-    std::string name;//No literal for CVariadic
+    std::string name;//"" for CVariadic
     AstNodePtr default_value; // NoLiteral if absent
     bool is_mut = false;
     ParamKind kind = ParamKind::Normal;
 };
-
+std::string to_string(const Parameter& param);
 // ---- Lambda capture ----
 
 enum class CaptureKind {
@@ -52,6 +53,7 @@ struct CaptureClause {
     std::vector<CaptureEntry> entries = {}; // populated when kind == List
 };
 
+std::string to_string(const CaptureClause& capture);
 // ---- Struct field (for struct definitions) ----
 
 // A single field inside a struct definition
@@ -63,4 +65,6 @@ struct StructField {
     bool is_mut = false;
     std::vector<Attribute> attributes;
 };
+
+std::string to_string(const StructField& field);
 }

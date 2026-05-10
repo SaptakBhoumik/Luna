@@ -1,4 +1,5 @@
 #include "ast/ast.hpp"
+#include <cstddef>
 
 namespace Luna{
 Program::Program(std::vector<AstNodePtr> statements){
@@ -18,13 +19,43 @@ AstKind Program::kind() const{
 
 std::string Program::stringify() const{
     std::string result;
-    for (const auto& stmt : this->statements) {
-        result += stmt->stringify() + "\n";
+    for (size_t i = 0; i < this->statements.size(); i++) {
+        result += this->statements[i]->stringify();
+        if (i != this->statements.size() - 1) {
+            result += "\n";
+        }
     }
     return result;
 };
 
 
+Block::Block(Token tok, std::vector<AstNodePtr> statements){
+    this->tok = tok;
+    this->statements = statements;
+}
+
+std::vector<AstNodePtr> Block::get_statements() const {
+    return this->statements;
+}
+
+Token Block::token() const {
+    return this->tok;
+}
+
+AstKind Block::kind() const {
+    return AstKind::Block;
+}
+
+std::string Block::stringify() const {
+    std::string result;
+    for (size_t i = 0; i < this->statements.size(); i++) {
+        result += this->statements[i]->stringify();
+        if (i != this->statements.size() - 1) {
+            result += "\n";
+        }
+    }
+    return result;
+}
 
 Token NoLiteral::token() const{
     return Token{};

@@ -45,6 +45,12 @@ Also in Luna when someone does "import io{print}" then also they have to use io:
 Use "using io" so that "print" works. Also due to {print}, only print function is imported even when u do using io
 We dont have something like import http::* because u can just do import http and then do using http. Sure more clumky but it is a bad practice anyways
 */
+
+// Important:- For when clause, unlike C++ switch case, you dont have to break at the end of each case because there is no fallthrough. Each case is independent and only one case will be executed. 
+// So no need for break to prevent fallthrough.
+//NOTE TO SELF:Do not add the feature to use continue for fall back. No. If continue is used then the loop in which the when clause is will continue and 
+// not the when clause fallbacking
+// NOTE:-For when statement, u do ``when (cond):{.....}`` or when (VaR1, Var2, Var3....) {....}. The first bracket is compulsory just like in C/C++
 // ---- Enums ----
 pub type Dir = enum{ N, S, E, W }
 pub type Code = enum:f32{ Ok = 0, Err = 1, }//U can specify the underlying type of the enum if u want
@@ -140,15 +146,16 @@ fn area(r:Rect) -> f64 {
 
 // ---- Error handling ----
 fn divide(a:f64, b:f64) -> !f64 {
-    if b == 0.0 { ret Error("div by zero") }//Note:-Error is just a struct with string field. Nothing fancy. Error is a builtin type and is meant specifically 
+    //THe : signifies if block without any else if and stuff i.e npt a match statement
+    when (b == 0.0):{ ret Error("div by zero") } //Note:-Error is just a struct with string field. Nothing fancy. Error is a builtin type and is meant specifically 
                                             //for error handling. The Error struct has an implicit field called msg which is the error message. You can access it using err.msg in the !! block. 
                                             // You can not create your own error types
-    //Note:For only one if statement, u can just do ``if cond {.....}``
+    //Note:For when statement, u can just do ``when (cond) {.....}``
     //But if else if is needed then u do 
-    //``if {
-    //    cond1 {....}
-    //    cond2 {....}
-    //    ? {....} // else case. ? is used for else case in if else if ladder. It is optional but good for readability
+    //``when {
+    //    cond1:{....}
+    //    cond2:{....}
+    //    ?:{....} // else case. ? is used for else case in if else if ladder. It is optional but good for readability
     //}``
 
 
@@ -158,7 +165,7 @@ fn safe_open(path:str) -> !i32 {
     ret fs::open(path)!
 }
 fn find_val(arr:[i32,5], idx:i32) -> ?i32 {
-    if idx < 0 | idx >= 5 { ret None }
+    when (idx < 0 | idx >= 5):{ ret None }
     ret arr[idx]
 }
 
@@ -240,7 +247,7 @@ fn task_chan_demo() -> !void {
     //Basically same as thread but for concurrent task
     ch:TaskChan{i32} = TaskChan{i32}(cap = 4)
     task_local mut local_var:i32 = 0//This variable is local to each task. Each task will have its own copy of this variable. It is not shared between tasks. 
-    p : Task{Void} = task(restart = 100, timeout = 1000) { 
+    p : Task{Void} = task(restart_count = 100, timeout = 1000) { 
         //Time out is in ms. If task is running for more than 1000ms then it will be killed and restarted. Note if we have no restart then we just kill the thread on time out
         //And timeout duration is calculated fresh from each restart
         //Restart 100 times if task panics. If it panics over 100 times then throw error. No need to wait between failed task
@@ -273,15 +280,15 @@ fn select_demo() -> !void {
     task {
         select {
             // select for waiting on multiple channels and using the one that is ready first.
-            v <- ch1 { 
+            v <-- ch1:{ 
                 io::println(f"got {v}") 
                 break
             }
-            42 -> ch2 { 
+            42 --> ch2:{ 
                 io::println("sent") 
                 break
             }
-            ? { io::println("neither ready") }
+            ?:{ io::println("neither ready") }
         }
     }
     task {
@@ -289,14 +296,15 @@ fn select_demo() -> !void {
             //Note if multiple cases are ready then the first one in the code will be executed then the next one from code that was ready during select and on.
             // So even if a channel get's ready while the other is running but it was not ready when select started then it will not be executed in the current select and will have to wait for the next select. 
             //Use break to avoid that if needed.
-            42   <- ch1 { io::println("got 42") }
-            0    <- ch1 { io::println("got zero") }
-            v    <- ch1 { io::println(f"got {v}") }  // catch-all
+            5    <-- ch1//No : after ch1 because we want to execute the same code for both 5 and 42. So if ch1 is 5 or 42 then we will execute the same code.
+            42   <-- ch1:{ io::println("got 42 or 5") }
+            0    <-- ch1:{ io::println("got zero") }
+            v    <-- ch1:{ io::println(f"got {v}") }  // catch-all
             //If ch1 is not ready then we skip it. If ch1 is ready then we do if else basically. So if ch1 is 42 then we execute the first case and skip the next 2 cases. 
             //If ch1 is 0 then we skip the first case and execute the second case and skip the third case. If ch1 is some other value then we skip the first 2 cases and 
             //execute the third case.
-            42 -> ch2 { io::println("sent") }
-            _  <- t { io::println("timed out") }
+            42 --> ch2:{ io::println("sent") }
+            _  <-- t:{ io::println("timed out") }
         }
     }
 }
@@ -363,19 +371,19 @@ fn clamp(v:i8, lo:i8, hi:i8) -> i8 { ret 0 } // non-generic overload
 // ---- Regular functions ----
 fn fact(n:i32) -> i32 { ret n<=1 ? 1 :n*fact(n-1) }
 fn fib(n:i32) -> i32 {
-    if {
-        n<=1 { ret n }
+    when {
+        n<=1:{ ret n }
     }
     ret fib(n-1)+fib(n-2)
 }
 fn is_prime(n:i32) -> bool {
-    if {
-        n<2 { ret False }
+    when {
+        n<2:{ ret False }
     }
     mut i := 2
     loop i*i <= n { 
-        if {
-            n%i==0 { ret False }
+        when {
+            n%i==0:{ ret False }
         }
         i++ 
     }
@@ -397,7 +405,7 @@ $compile_time_var:="Hello"//Only limited to simple types so string, any kind of 
                           //So no complex types like ptr
 fn $compile_time_fn($arg:i8){//Note:-U can also have a regular(Not compile time) function named compile_time_fn because both are diffrent type so no collision
     //As the name suggest
-    $if True{
+    $when (True):{
         $print("Hello")
     }
     //Btw u have to use $ while calling/using compile time stuff. Even if u are inside a compile time function then also to reduce ambiguity it is needed
@@ -408,11 +416,11 @@ fn $compile_time_fn($arg:i8){//Note:-U can also have a regular(Not compile time)
 fn python_style_variadic(*$args,**$kwarg){
     //Note:-Not a compile time function
     $loop $arg : $args{
-        $if{
-            $kwarg.$contains("decay") {
+        $when{
+            $kwarg.$contains("decay"):{
                 io::println($arg*kwarg["decay"])
             }
-            ? {
+            ?:{
                 io::println($arg)
             }
         }
@@ -443,6 +451,9 @@ pub fn main() {
     _test => {
         //Equivalent to a lambda that has no input variable or return type. Note in other places to define lambda u need fn and stuff. Just a special syntactic sugar here
     }
+    _test => [&]{
+        
+    }
     _test() => fn(a:i8)->i8{
 
     }
@@ -451,15 +462,15 @@ pub fn main() {
     }
     //Compile time
     $loop $i:0..10 {$print("Hello {$i}")}
-    $match os::$platform(){//The platform compile time func is from the os library that is why
+    $when (os::$platform()){//The platform compile time func is from the os library that is why
         //OS is an enum type which is basically const expr so....
-        OS.Windows {
+        OS.Windows:{
 
         }
-        OS.Mac {
+        OS.Mac:{
 
         }
-        OS.Linux {
+        OS.Linux:{
             //I am on linux so only this part will be compiled, For the other part, we will check the syntax but not check the types. That is how it is done in C++
             $print("Hello")//Done at compile time
             io::println("Hello")//Done at runtime
@@ -515,8 +526,8 @@ pub fn main() {
     ptr:*i32 = &val
     *ptr = 99
     null_ptr:*i32 = None
-    if {
-        null_ptr == None { io::println("null") }
+    when {
+        null_ptr == None:{ io::println("null") }
     }
 
     pt := Point(x = 1.0, y = 2.0)
@@ -579,13 +590,13 @@ pub fn main() {
     mut m := 3
     loop m>0 { m-- }                                  // while-style
     loop {                                            // infinite+break
-        if { 
-            !flag { break } 
+        when { 
+            !flag:{ break } 
         }
         flag = False
     }
     loop i :0..6 {                                    // continue
-        if { i%2==0 { continue } }
+        when { i%2==0:{ continue } }
         io::print(f"{i} ")
     }
 
@@ -611,26 +622,31 @@ pub fn main() {
 
     // if/else if/else
     sc:i32 = 75
-    if {
-        sc>=90 { io::println("A") }
-        sc>=80 { io::println("B") }
-        sc>=70 { io::println("C") }
-        ? { io::println("F") }
+    when {
+        sc==81 //No : here becase we want the same block for both the conditions
+        sc>=90:{ io::println("A") }
+        sc>=80:{ io::println("B") }
+        sc>=70:{ io::println("C") }
+        ?:{ io::println("F") }
     }
 
     // match
     p:i32=1
      q:i32=2
-    match p, q {
-        1, 2 { io::println("1,2") }
-        1, ? { io::println("1,?") }
-        ? { io::println("?")   }
+    when(p, q) {
+        //Important clarification:-Dont use (...) for the multiple value i.e dont do (1,2) or (3,5) because that will be treated as a tuple and it will not match
+        //with the (p,q) which is not a tuple. So just do 1,2 or
+        3, 5 //Here no : because we want to execute the same code for both cases. : is used only before the body
+        1, 2:{ io::println("1,2 or 3, 5") }//This is simliar to how C/C++ cases work/ But no fallthrough. 
+                                           //So only this case will be executed if p,q is 1,2 or 3,5 and then it will break automatically.
+        1, ?:{ io::println("1,?") }
+        ?:{ io::println("?")   }
     }
     dir := Dir.N
-    match dir {
-        Dir.N { io::println("north") }
-        Dir.S { io::println("south") }
-        ? { io::println("other") }
+    when(dir){
+        Dir.N:{ io::println("north") }
+        Dir.S:{ io::println("south") }
+        ?:{ io::println("other") }
     }
     shape:Shape = Circle(c = Point(x = 0.0,y = 0.0), r = 5.0)
     shape2:Shape = Rect(tl = Point(x = 0.0,y = 0.0), br = Point(x = 5.0,y = 5.0))
@@ -639,18 +655,18 @@ pub fn main() {
     //Note  $typeid{Shape}() is same as $typeid(shape). Just 2 ways for simplicity
     //also $typeid expects a type parameter, so you cant do $typeid{shape}() either but u can do $typeid(shape) even if pointless. 
     // You can do $typeid(Circle) or $typeid(Rect) and compare it with shape.id
-    match shape.id {//sumtype has an implicit field called id which is the typeid of the currently held variant.
+    when(shape.id) {//sumtype has an implicit field called id which is the typeid of the currently held variant.
         //typeid is a unique u64 value representing the type of the variable. Set at compile time. Note:It can be diffrent across different compilations and runs,
         //so it should not be used in persistent storage or for serialization. It is only useful for type comparisons at runtime
-        $typeid{Circle}() {
+        $typeid{Circle}():{
             c := $cast{Circle}(shape)
             io::println(f"area:{area(c)}")
         }
-        $typeid{Rect} {
+        $typeid{Rect}():{
             r := $cast{Rect}(shape)
             io::println(f"area:{area(r)}")
         }
-        ? { io::println("unknown") }
+        ?:{ io::println("unknown") }
     }
     /*
     Something like typeid can have the following signature
@@ -668,7 +684,7 @@ pub fn main() {
     v2 := Point(x = 1.0, y = 2.0)
     v3 := v1+v2
     io::println(f"len:{v1.len()}")
-    if { v1!=v2 { io::println("differ") } }
+    when { v1!=v2:{ io::println("differ") } }
 
     // lambdas
     factor:i32 = 3
@@ -711,8 +727,8 @@ pub fn main() {
     io::println(f"5!={fact(5)}")
     io::println(f"fib(7)={fib(7)}")
     loop i :2..20 { 
-        if { 
-            is_prime(i) { 
+        when { 
+            is_prime(i):{ 
                 io::print(f"{i}") 
             } 
         }

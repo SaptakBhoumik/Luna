@@ -14,7 +14,10 @@ class AstVisitor {
     virtual bool visit(const StringLiteral& node) { return false; };
     virtual bool visit(const BoolLiteral& node) { return false; };
     virtual bool visit(const NoneLiteral& node) { return false; };
-    virtual bool visit(const IdentifierExpression& node) { return false; };
+    virtual bool visit(const IdentifierLiteral& node) { return false; };
+    virtual bool visit(const ListLiteral& node) { return false; };
+    virtual bool visit(const DictLiteral& node) { return false; };
+    virtual bool visit(const TupleLiteral& node) { return false; };
     //Type expression nodes
     virtual bool visit(const TypeExpr& node) { return false; };
     virtual bool visit(const ListTypeExpr& node) { return false; };
@@ -27,5 +30,20 @@ class AstVisitor {
     virtual bool visit(const SumTypeExpr& node) { return false; };
     virtual bool visit(const EnumTypeExpr& node) { return false; };
     virtual bool visit(const StructTypeExpr& node) { return false; };
+    //Expression/Operator nodes
+    virtual bool visit(const BinOp& node) { return false; };
+    virtual bool visit(const PrefixOp& node) { return false; };
+    virtual bool visit(const PostfixOp& node) { return false; };
+    virtual bool visit(const CoalescingOP& node) { return false; };
+    virtual bool visit(const RangeExpr& node) { return false; };
+    virtual bool visit(const IndexExpr& node) { return false; };
+    virtual bool visit(const DotExpr& node) { return false; };
+    virtual bool visit(const ArrowExpr& node) { return false; };
+    virtual bool visit(const FuncCall& node) { return false; };
+    virtual bool visit(const TernaryIf& node) { return false; };
+    virtual bool visit(const CompTimeExpr& node) { return false; };
+    virtual bool visit(const LambdaExpr& node) { return false; };
+    virtual bool visit(const FormattedStr& node) { return false; };
+    virtual bool visit(const ThreadOrTaskExpr& node) { return false; };
 };
 }

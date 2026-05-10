@@ -301,35 +301,7 @@ AstKind StructTypeExpr::kind() const{
 std::string StructTypeExpr::stringify() const{
     std::string res = "{";
     for (size_t i = 0; i < this->fields.size(); i++){
-        for(const auto& attr : this->fields[i].attributes){
-            res += "@[" + attr.name;
-            if (!attr.args.empty() || !attr.named_args.empty()){
-                res += "(";
-                for (size_t j = 0; j < attr.args.size(); j++){
-                    res += attr.args[j]->stringify();
-                    if (j != attr.args.size() - 1 || !attr.named_args.empty()){
-                        res += ", ";
-                    }
-                }
-                size_t count = 0;
-                for (const auto& [k, v] : attr.named_args){
-                    res += k + "=" + v->stringify();
-                    if (count != attr.named_args.size() - 1){
-                        res += ", ";
-                    }
-                    count++;
-                }
-                res += ")";
-            }
-            res += "] ";
-        }
-        if(this->fields[i].is_pub){
-            res += "pub ";
-        }
-        if(this->fields[i].is_mut){
-            res += "mut ";
-        }
-        res += this->fields[i].name->stringify() + ": " + this->fields[i].type->stringify();
+        res += to_string(this->fields[i]);
         if (i != this->fields.size() - 1){
             res += ", ";
         }

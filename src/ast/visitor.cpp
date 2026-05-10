@@ -2,14 +2,8 @@
 #include "ast/visitor.hpp"
 namespace Luna{
 //Basic nodes  
-// TODO: have a default behaviour in case the visitor does not provide a visit
-// method for the node
 void Program::accept(AstVisitor& visitor) const {
-    if (!visitor.visit(*this)){
-        for (auto& stmt : this->statements){
-            stmt->accept(visitor);
-        }
-    }
+    visitor.visit(*this);
 }
 void NoLiteral::accept(AstVisitor& visitor) const {
     visitor.visit(*this);
@@ -31,7 +25,16 @@ void BoolLiteral::accept(AstVisitor& visitor) const {
 void NoneLiteral::accept(AstVisitor& visitor) const {
     visitor.visit(*this);
 }
-void IdentifierExpression::accept(AstVisitor& visitor) const {
+void IdentifierLiteral::accept(AstVisitor& visitor) const {
+    visitor.visit(*this);
+}
+void ListLiteral::accept(AstVisitor& visitor) const {
+    visitor.visit(*this);
+}
+void DictLiteral::accept(AstVisitor& visitor) const {
+    visitor.visit(*this);
+}
+void TupleLiteral::accept(AstVisitor& visitor) const {
     visitor.visit(*this);
 }
 //Type expression nodes
@@ -66,6 +69,49 @@ void EnumTypeExpr::accept(AstVisitor& visitor) const {
     visitor.visit(*this);
 }
 void StructTypeExpr::accept(AstVisitor& visitor) const {
+    visitor.visit(*this);
+}
+//Expression/Operator nodes
+void BinOp::accept(AstVisitor& visitor) const {
+    visitor.visit(*this);
+}
+void PrefixOp::accept(AstVisitor& visitor) const {
+    visitor.visit(*this);
+}
+void PostfixOp::accept(AstVisitor& visitor) const {
+    visitor.visit(*this);
+}
+void CoalescingOP::accept(AstVisitor& visitor) const {
+    visitor.visit(*this);
+}
+void RangeExpr::accept(AstVisitor& visitor) const {
+    visitor.visit(*this);
+}
+void IndexExpr::accept(AstVisitor& visitor) const {
+    visitor.visit(*this);
+}
+void DotExpr::accept(AstVisitor& visitor) const {
+    visitor.visit(*this);
+}
+void ArrowExpr::accept(AstVisitor& visitor) const {
+    visitor.visit(*this);
+}
+void FuncCall::accept(AstVisitor& visitor) const {
+    visitor.visit(*this);
+}
+void TernaryIf::accept(AstVisitor& visitor) const {
+    visitor.visit(*this);
+}
+void CompTimeExpr::accept(AstVisitor& visitor) const {
+    visitor.visit(*this);
+}
+void LambdaExpr::accept(AstVisitor& visitor) const {
+    visitor.visit(*this);
+}
+void FormattedStr::accept(AstVisitor& visitor) const {
+    visitor.visit(*this);
+}
+void ThreadOrTaskExpr::accept(AstVisitor& visitor) const {
     visitor.visit(*this);
 }
 }

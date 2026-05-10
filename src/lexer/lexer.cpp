@@ -78,14 +78,14 @@ void Lexer::flush_keyword() {
 
         { "mut", TokenType::kw_mut },
         { "ret", TokenType::kw_ret },
-        { "if", TokenType::kw_if },
+        // { "if", TokenType::kw_if },
         // { "elif", TokenType::kw_elif },
         // { "else", TokenType::kw_else },
         { "loop", TokenType::kw_loop },
         { "break", TokenType::kw_break },
         { "continue", TokenType::kw_continue },
         
-        { "match", TokenType::kw_match },
+        { "when", TokenType::kw_when },
         // { "case", TokenType::kw_case },
 
         { "True", TokenType::kw_true },
@@ -595,7 +595,13 @@ void Lexer::lex_minus() {
     const size_t start = this->curr_index;
     if (this->peek() == '-') {
         this->advance();
-        this->push("--", TokenType::decr, start, this->curr_index + 1);
+        if(this->peek() == '>') {
+            this->advance();
+            this->push("-->", TokenType::select_send, start, this->curr_index + 1);
+        }
+        else {
+            this->push("--", TokenType::decr, start, this->curr_index + 1);
+        }
     } 
     else if (this->peek() == '=') {
         this->advance();
@@ -778,12 +784,18 @@ void Lexer::lex_less() {
         this->advance();
         this->push("<=", TokenType::leq, start, this->curr_index + 1);
     } 
+    else if(this->peek() == '-' && this->peek(2) == '-') {
+        this->advance(); // consume '-'
+        this->advance(); // consume '-'
+        this->push("<--", TokenType::select_recv, start, this->curr_index + 1);
+    }
     else if (this->peek() == '<') {
         this->advance();
         if (this->peek() == '=') {
             this->advance();
             this->push("<<=", TokenType::shl_eq, start, this->curr_index + 1);
-        } else {
+        } 
+        else {
             this->push("<<", TokenType::shl, start, this->curr_index + 1);
         }
     }

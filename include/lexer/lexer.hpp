@@ -1,6 +1,7 @@
 #pragma once
 #include "lexer/token.hpp"
 #include "error/error.hpp"
+#include <cstddef>
 #include <string>
 #include <vector>
 
@@ -36,7 +37,7 @@ class Lexer {
 
     // ---- navigation ----
     bool advance();
-    char peek() const;
+    char peek(std::size_t i=1) const;// peek the char at curr_index + i without advancing
 
     // ---- helpers ----
     static std::vector<std::string> split_lines(const std::string& code);

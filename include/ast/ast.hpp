@@ -13,15 +13,19 @@ namespace Luna {
 enum class AstKind {
     //Basic nodes
     Program,
+    Block,
     NoLiteral,
 
     // Literal nodes
-    Integer,
-    Decimal,
-    String,
-    Bool,
-    None,
-    Identifier,
+    IntegerLiteral,
+    DecimalLiteral,
+    StringLiteral,
+    BoolLiteral,
+    NoneLiteral,
+    IdentifierLiteral,
+    ListLiteral,
+    DictLiteral,
+    TupleLiteral,
 
     // Type nodes
     TypeExpr,
@@ -37,26 +41,24 @@ enum class AstKind {
     StructTypeExpr,
 
     // Expression nodes
-    List,
-    Dict,
-    TupleExpr,
-    BinaryOp,
-    PrefixExpr,
-    PostfixExpr,
+    BinOp,
+    PrefixOp,
+    PostfixOp,
+    CoalescingOP,
+    RangeExpr,
     IndexExpr,
     DotExpr,
     ArrowExpr,
-    FunctionCall,
+    FuncCall,
     GenericCall,
     TernaryIf,
     TernaryFor,
     CastExpr,
-    CompileTimeExpr,
-    Lambda,
+    CompTimeExpr,
+    LambdaExpr,
     FormattedStr,
-    DefaultArg,
-    ThreadExpr,
-    TaskExpr,
+    ThreadOrTaskExpr,
+    ArrowBlockCallExpr,
 
     // Statement nodes
     ImportStmt,
@@ -64,7 +66,6 @@ enum class AstKind {
     VariableStmt,
     MultipleAssign,
     AugAssign,
-    BlockStmt,
     FunctionDef,
     MethodDef,
     ExternFuncDef,
@@ -82,9 +83,6 @@ enum class AstKind {
     InlineAsm,
     LockStmt,
     SelectStmt,
-    CompileTimeIf,
-    CompileTimeLoop,
-    CompileTimeMatch,
 };
 
 // ---- Forward declarations ----
@@ -111,6 +109,21 @@ class Program : public AstNode {
     std::vector<AstNodePtr> statements;
 public:
     Program(std::vector<AstNodePtr> statements);
+
+    std::vector<AstNodePtr> get_statements() const;
+
+    Token token() const;
+    AstKind kind() const;
+    std::string stringify() const;
+
+    void accept(AstVisitor& visitor) const;
+};
+
+class Block : public AstNode {
+    Token tok;
+    std::vector<AstNodePtr> statements;
+public:
+    Block(Token tok, std::vector<AstNodePtr> statements);
 
     std::vector<AstNodePtr> get_statements() const;
 
@@ -205,13 +218,13 @@ public:
     void accept(AstVisitor& visitor) const;
 };
 
-class IdentifierExpression : public AstNode {
+class IdentifierLiteral : public AstNode {
     Token tok;
     std::vector<std::string> path;//The path. Like A::B::C will be ["A", "B", "C"]
     std::vector<AstNodePtr> generic_args; // populated if this identifier is something like func{generic_arg1, generic_arg2} but we dont call the funciton yet. 
     // This is just the identifier with generic args, the actual function call will be a separate FunctionCall node with this as the callee.
 public:
-    IdentifierExpression(Token tok, std::vector<std::string> path, std::vector<AstNodePtr> generic_args = {});
+    IdentifierLiteral(Token tok, std::vector<std::string> path, std::vector<AstNodePtr> generic_args = {});
 
     std::vector<std::string> get_path() const;
     std::vector<AstNodePtr> get_generic_args() const;
@@ -223,6 +236,48 @@ public:
     void accept(AstVisitor& visitor) const;
 };
 
+class ListLiteral : public AstNode {
+    Token tok;
+    std::vector<AstNodePtr> elements;
+public:
+    ListLiteral(Token tok, std::vector<AstNodePtr> elements = {});
+    std::vector<AstNodePtr> get_elements() const;
+
+    Token token() const;
+    AstKind kind() const;
+    std::string stringify() const;
+
+    void accept(AstVisitor& visitor) const;
+};
+
+class DictLiteral : public AstNode {
+    Token tok;
+    std::vector<std::pair<AstNodePtr, AstNodePtr>> elements; // (key, value)
+public:
+    DictLiteral(Token tok,std::vector<std::pair<AstNodePtr, AstNodePtr>> elements);
+    std::vector<std::pair<AstNodePtr, AstNodePtr>> get_elements() const;
+
+    Token token() const;
+    AstKind kind() const;
+    std::string stringify() const;
+
+    void accept(AstVisitor& visitor) const;
+};
+
+// (a, b, c) - expression tuple / multiple-return value
+class TupleLiteral : public AstNode {
+    Token tok;
+    std::vector<AstNodePtr> elements;
+public:
+    TupleLiteral(Token tok, std::vector<AstNodePtr> elements);
+    std::vector<AstNodePtr> get_elements() const;
+
+    Token token() const;
+    AstKind kind() const;
+    std::string stringify() const;
+
+    void accept(AstVisitor& visitor) const;
+};
 // ============================
 //  Type expression nodes
 // ============================
@@ -247,7 +302,7 @@ public:
     void accept(AstVisitor& visitor) const;
 };
 
-// [T, N] — fixed-size array; size is NoLiteral for unsized [T]
+// [T, N] - fixed-size array; size is NoLiteral for unsized [T]
 class ListTypeExpr : public AstNode {
     Token tok;
     AstNodePtr elem_type;
@@ -297,7 +352,7 @@ public:
     void accept(AstVisitor& visitor) const;
 };
 
-// !T — error-or-value type
+// !T - error-or-value type
 class ErrorTypeExpr : public AstNode {
     Token tok;
     AstNodePtr base_type;
@@ -334,7 +389,7 @@ public:
     void accept(AstVisitor& visitor) const;
 };
 
-// (T1, T2, T3) — tuple type
+// (T1, T2, T3) - tuple type
 class TupleTypeExpr : public AstNode {
     Token tok;
     std::vector<AstNodePtr> elem_types;
@@ -350,7 +405,7 @@ public:
     void accept(AstVisitor& visitor) const;
 };
 
-// <T, N> — SIMD vector type
+// <T, N> - SIMD vector type
 class SimdTypeExpr : public AstNode {
     Token tok;
 
@@ -368,7 +423,7 @@ public:
     void accept(AstVisitor& visitor) const;
 };
 
-// T1 | T2 | T3 — sum / tagged-union type alias
+// T1 | T2 | T3 - sum / tagged-union type alias
 class SumTypeExpr : public AstNode {
     Token tok;
     std::vector<AstNodePtr> variants;
@@ -419,15 +474,19 @@ public:
     void accept(AstVisitor& visitor) const;
 };
 // ============================
-//  Expression nodes
+//  Expression/Operator nodes
 // ============================
-
-class ListLiteral : public AstNode {
-    Token m_token;
-    std::vector<AstNodePtr> m_elements;
+class BinOp : public AstNode {
+    Token tok;
+    AstNodePtr left;
+    Token op;
+    AstNodePtr right;
 public:
-    ListLiteral(Token tok, std::vector<AstNodePtr> elements = {});
-    std::vector<AstNodePtr> elements() const;
+    BinOp(Token tok, AstNodePtr left, Token op, AstNodePtr right);
+
+    AstNodePtr get_left() const;
+    Token get_op() const;
+    AstNodePtr get_right() const;
 
     Token token() const;
     AstKind kind() const;
@@ -436,63 +495,14 @@ public:
     void accept(AstVisitor& visitor) const;
 };
 
-class DictLiteral : public AstNode {
-    Token m_token;
-    std::vector<std::pair<AstNodePtr, AstNodePtr>> m_elements; // (key, value)
+class PrefixOp : public AstNode {
+    Token tok;
+    Token prefix;
+    AstNodePtr right;
 public:
-    DictLiteral(Token tok,std::vector<std::pair<AstNodePtr, AstNodePtr>> elements);
-    std::vector<std::pair<AstNodePtr, AstNodePtr>> elements() const;
-
-    Token token() const;
-    AstKind kind() const;
-    std::string stringify() const;
-
-    void accept(AstVisitor& visitor) const;
-};
-
-// (a, b, c) — expression tuple / multiple-return value
-class TupleExpression : public AstNode {
-    Token m_token;
-    std::vector<AstNodePtr> m_elements;
-public:
-    TupleExpression(Token tok, std::vector<AstNodePtr> elements);
-    std::vector<AstNodePtr> elements() const;
-
-    Token token() const;
-    AstKind kind() const;
-    std::string stringify() const;
-
-    void accept(AstVisitor& visitor) const;
-};
-
-class BinaryOperation : public AstNode {
-    Token m_token;
-
-    AstNodePtr m_left;
-    Token m_operator;
-    AstNodePtr m_right;
-public:
-    BinaryOperation(Token tok, AstNodePtr left, Token op, AstNodePtr right);
-
-    AstNodePtr left() const;
-    Token op() const;
-    AstNodePtr right() const;
-
-    Token token() const;
-    AstKind kind() const;
-    std::string stringify() const;
-
-    void accept(AstVisitor& visitor) const;
-};
-
-class PrefixExpression : public AstNode {
-    Token m_token;
-    Token m_prefix;
-    AstNodePtr m_right;
-public:
-    PrefixExpression(Token tok, Token prefix, AstNodePtr right);
-    Token prefix() const;
-    AstNodePtr right() const;
+    PrefixOp(Token tok, Token prefix, AstNodePtr right);
+    Token get_prefix() const;
+    AstNodePtr get_right() const;
 
     Token token() const;
     AstKind kind() const;
@@ -502,15 +512,52 @@ public:
 };
 
 // Covers ++, --, ! (error propagation)
-class PostfixExpression : public AstNode {
-    Token m_token;
-    
-    Token m_postfix;
-    AstNodePtr m_left;
+class PostfixOp : public AstNode {
+    Token tok;
+    Token postfix;//Must be the operator token
+    AstNodePtr left;
 public:
-    PostfixExpression(Token tok, Token postfix, AstNodePtr left);
-    Token postfix() const;
-    AstNodePtr left() const;
+    PostfixOp(Token tok, Token postfix, AstNodePtr left);
+    Token get_postfix() const;
+    AstNodePtr get_left() const;
+
+    Token token() const;
+    AstKind kind() const;
+    std::string stringify() const;
+
+    void accept(AstVisitor& visitor) const;
+};
+
+//expr ?? block , expr !! block
+class CoalescingOP : public AstNode {
+    Token tok;
+    AstNodePtr left;
+    AstNodePtr right;
+    bool null_coalescing; // true for ??, false for !!
+public:
+    CoalescingOP(Token tok, AstNodePtr left, AstNodePtr right, bool null_coalescing);
+
+    AstNodePtr get_left() const;
+    AstNodePtr get_right() const;
+    bool is_null_coalescing() const;
+
+    Token token() const;
+    AstKind kind() const;
+    std::string stringify() const;
+
+    void accept(AstVisitor& visitor) const;
+};
+
+class RangeExpr : public AstNode {
+    Token tok;
+    AstNodePtr start;
+    AstNodePtr end;   
+    AstNodePtr step;  // NoLiteral for default step of 1
+public:
+    RangeExpr(Token tok, AstNodePtr start, AstNodePtr end, AstNodePtr step);
+    AstNodePtr get_start() const;
+    AstNodePtr get_end() const;
+    AstNodePtr get_step() const;
 
     Token token() const;
     AstKind kind() const;
@@ -520,31 +567,31 @@ public:
 };
 
 // a[i]  or  a[i, j]  (multi-index for magic __getitem__)
-class IndexExpression : public AstNode {
-    Token m_token;
-    AstNodePtr m_container;
-    std::vector<AstNodePtr> m_indices;
+class IndexExpr : public AstNode {
+    Token tok;
+    AstNodePtr container;
+    std::vector<AstNodePtr> indices;
 public:
-    IndexExpression(Token tok, AstNodePtr container,std::vector<AstNodePtr> indices);
-    AstNodePtr container() const;
+    IndexExpr(Token tok, AstNodePtr container,std::vector<AstNodePtr> indices);
 
-    std::vector<AstNodePtr> indices() const;
+    AstNodePtr get_container() const;
+    std::vector<AstNodePtr> get_indices() const;
+
     Token token() const;
     AstKind kind() const;
-    
     std::string stringify() const;
     void accept(AstVisitor& visitor) const;
 };
 
 // a.b
-class DotExpression : public AstNode {
-    Token m_token;
-    AstNodePtr m_owner;
-    AstNodePtr m_member;
+class DotExpr : public AstNode {
+    Token tok;
+    AstNodePtr owner;
+    AstNodePtr member;
 public:
-    DotExpression(Token tok, AstNodePtr owner, AstNodePtr member);
-    AstNodePtr owner() const;
-    AstNodePtr member() const;
+    DotExpr(Token tok, AstNodePtr owner, AstNodePtr member);
+    AstNodePtr get_owner() const;
+    AstNodePtr get_member() const;
 
     Token token() const;
     AstKind kind() const;
@@ -553,14 +600,14 @@ public:
 };
 
 // a->b  (pointer member access)
-class ArrowExpression : public AstNode {
-    Token m_token;
-    AstNodePtr m_owner;
-    AstNodePtr m_member;
+class ArrowExpr : public AstNode {
+    Token tok;
+    AstNodePtr owner;
+    AstNodePtr member;
 public:
-    ArrowExpression(Token tok, AstNodePtr owner, AstNodePtr member);
-    AstNodePtr owner() const;
-    AstNodePtr member() const;
+    ArrowExpr(Token tok, AstNodePtr owner, AstNodePtr member);
+    AstNodePtr get_owner() const;
+    AstNodePtr get_member() const;
 
     Token token() const;
     AstKind kind() const;
@@ -569,19 +616,17 @@ public:
     void accept(AstVisitor& visitor) const;
 };
 
-class FunctionCall : public AstNode {
-    Token m_token;
-    AstNodePtr m_callee;
-    std::vector<AstNodePtr> m_generic_args;
-    std::vector<AstNodePtr> m_arguments;
-    std::map<std::string, AstNodePtr> m_named_arguments; // for calls with named arguments
+class FuncCall : public AstNode {
+    Token tok;
+    AstNodePtr callee;
+    std::vector<AstNodePtr> args;
+    std::map<std::string, AstNodePtr> named_args; // for calls with named arguments
 public:
-    FunctionCall(Token tok, AstNodePtr callee,std::vector<AstNodePtr> arguments = {}, 
-                std::map<std::string, AstNodePtr> named_arguments = {}, std::vector<AstNodePtr> generic_args = {});
-    AstNodePtr callee() const;
-    std::vector<AstNodePtr> arguments() const;
-    std::map<std::string, AstNodePtr> namedArguments() const;
-    std::vector<AstNodePtr> genericArgs() const;
+    FuncCall(Token tok, AstNodePtr callee,std::vector<AstNodePtr> args, std::map<std::string, AstNodePtr> named_args);
+
+    AstNodePtr get_callee() const;
+    std::vector<AstNodePtr> get_arguments() const;
+    std::map<std::string, AstNodePtr> get_named_arguments() const;
 
     Token token() const;
     AstKind kind() const;
@@ -589,36 +634,19 @@ public:
 
     void accept(AstVisitor& visitor) const;
 };
-
-// // f{T1, T2}  — the generic-instantiation expression; wraps the callee.
-// // The surrounding FunctionCall node carries the actual argument list.
-// class GenericCall : public AstNode {
-//     Token m_token;
-//     AstNodePtr m_callee;
-//     std::vector<AstNodePtr> m_generic_args;
-// public:
-//     GenericCall(Token tok, AstNodePtr callee,
-//                 std::vector<AstNodePtr> generic_args);
-//     AstNodePtr callee() const;
-//     std::vector<AstNodePtr> genericArgs() const;
-//     Token token() const;
-//     AstKind kind() const;
-//     std::string stringify() const;
-//     void accept(AstVisitor& visitor) const;
-// };
 
 // condition ? then_value : else_value
 class TernaryIf : public AstNode {
-    Token m_token;
-    AstNodePtr m_condition;
-    AstNodePtr m_then_value;
-    AstNodePtr m_else_value;
+    Token tok;
+    AstNodePtr condition;
+    AstNodePtr then_value;
+    AstNodePtr else_value;
 public:
-    TernaryIf(Token tok, AstNodePtr condition, AstNodePtr then_value,
-              AstNodePtr else_value);
-    AstNodePtr condition() const;
-    AstNodePtr thenValue() const;
-    AstNodePtr elseValue() const;
+    TernaryIf(Token tok, AstNodePtr condition, AstNodePtr then_value,AstNodePtr else_value);
+    
+    AstNodePtr get_condition() const;
+    AstNodePtr get_then_value() const;
+    AstNodePtr get_else_value() const;
 
     Token token() const;
     AstKind kind() const;
@@ -627,12 +655,12 @@ public:
     void accept(AstVisitor& visitor) const;
 };
 
-// $expr — any compile-time expression ($typesize, $typeid, $has_method, etc. Even for compile time functiona and stuff)
-class CompileTimeExpression : public AstNode {
+// $expr - any compile-time expression ($typesize, $typeid, $has_method, etc. Even for compile time functions,loop,when and stuff)
+class CompTimeExpr : public AstNode {
     Token m_token;
     AstNodePtr m_expression;
 public:
-    CompileTimeExpression(Token tok, AstNodePtr expression);
+    CompTimeExpr(Token tok, AstNodePtr expression);
     AstNodePtr expression() const;
 
     Token token() const;
@@ -643,18 +671,19 @@ public:
 };
 
 // fn(params)[capture] -> ret_type { body }
-class LambdaDefinition : public AstNode {
-    Token m_token;
-    std::vector<Parameter> m_parameters;//Note for lambda parameter:-Only regular parameters without named argument is allowed
-    CaptureClause m_capture;
-    AstNodePtr m_return_type; // NoLiteral if inferred to be void
-    AstNodePtr m_body;
+class LambdaExpr : public AstNode {
+    Token tok;
+    CaptureClause capture;
+    std::vector<Parameter> parameters;//Note for lambda parameter:-Only regular parameters without named argument is allowed
+    AstNodePtr return_type; // NoLiteral if inferred to be void
+    AstNodePtr body;
 public:
-    LambdaDefinition(Token tok, std::vector<Parameter> parameters, CaptureClause capture, AstNodePtr return_type, AstNodePtr body);
-    std::vector<Parameter> parameters() const;
-    CaptureClause capture() const;
-    AstNodePtr returnType() const;
-    AstNodePtr body() const;
+    LambdaExpr(Token tok, CaptureClause capture, std::vector<Parameter> parameters,AstNodePtr return_type, AstNodePtr body);
+
+    CaptureClause get_capture() const;
+    std::vector<Parameter> get_parameters() const;
+    AstNodePtr get_return_type() const;
+    AstNodePtr get_body() const;
 
     Token token() const;
     AstKind kind() const;
@@ -665,12 +694,17 @@ public:
 
 // f"text {expr} more text"
 // parts alternates: StringLiteral segments and interpolated expression nodes
-class FormattedString : public AstNode {
-    Token m_token;
-    std::vector<AstNodePtr> m_parts;
+class FormattedStr : public AstNode {
+    Token tok;
+    std::vector<std::string> string_parts; // The literal string segments, in order. Will have one more element than embedded_expr
+    std::vector<AstNodePtr> embedded_expr;
+    //The above 2 just alternates. Like for f"Hello {name}, you are {age} years old!" string_parts will be ["Hello ", ", you are ", " years old!"] and 
+    //embedded_expr will be [IdentifierLiteral(name), IdentifierLiteral(age)]
 public:
-    FormattedString(Token tok, std::vector<AstNodePtr> parts);
-    std::vector<AstNodePtr> parts() const;
+    FormattedStr(Token tok, std::vector<std::string> string_parts, std::vector<AstNodePtr> embedded_expr);
+
+    std::vector<std::string> get_string_parts() const;
+    std::vector<AstNodePtr> get_embedded_expr() const;
 
     Token token() const;
     AstKind kind() const;
@@ -681,24 +715,26 @@ public:
 
 
 // thread { body }  or  thread single_expr or task { body } or task single_expr
-// restart_count / timeout_ms / restart_delay_ms are NoLiteral when absent
+// restart_count / timeout / restart_delay are NoLiteral when absent
 class ThreadOrTaskExpr : public AstNode {
-    Token m_token;
-    bool is_thread; // true for thread, false for task
-    AstNodePtr m_body;
-    AstNodePtr m_restart_count;
-    AstNodePtr m_timeout_ms;
-    AstNodePtr m_always_restart;
-    AstNodePtr m_restart_delay_ms;
+    Token tok;
+    bool thread; // true for thread, false for task
+    AstNodePtr body;
+    AstNodePtr restart_count;
+    AstNodePtr timeout;
+    AstNodePtr always_restart;
+    AstNodePtr restart_delay;
 public:
-    ThreadOrTaskExpr(Token tok, bool is_thread, AstNodePtr body,
-                     AstNodePtr restart_count, AstNodePtr timeout_ms,
-                     AstNodePtr always_restart, AstNodePtr restart_delay_ms);
-    AstNodePtr body() const;
-    AstNodePtr restartCount() const;
-    AstNodePtr timeoutMs() const;
-    AstNodePtr alwaysRestart() const;
-    AstNodePtr restartDelayMs() const;
+    ThreadOrTaskExpr(Token tok, bool thread, AstNodePtr body,
+                     AstNodePtr restart_count, AstNodePtr timeout,
+                     AstNodePtr always_restart, AstNodePtr restart_delay);
+    
+    bool is_thread() const;
+    AstNodePtr get_body() const;
+    AstNodePtr get_restart_count() const;
+    AstNodePtr get_timeout() const;
+    AstNodePtr get_always_restart() const;
+    AstNodePtr get_restart_delay_mss() const;
 
     Token token() const;
     AstKind kind() const;
@@ -707,7 +743,40 @@ public:
     void accept(AstVisitor& visitor) const;
 };
 
+//Something like func => {...} or func(args) => {...} 
+class ArrowBlockCallExpr:public AstNode{
+    Token tok;
+    AstNodePtr callee; // For func(args) => {...} case we need it callee to store ``func`` and not the whole func(args) as callee because dont make sense
+    std::vector<Parameter> args; // empty for func => {...}
+    AstNodePtr body;//THis is a lamda defination. 
+    /*
+    For something like the following:-
+    _test(123) => fn(a:i8)[=]->i8{
 
+    }
+
+    This is a lambda. Parse it like any other lambda
+
+    But dor something like the following:-
+    _test => {
+
+    }
+
+    We still store it in LambdaExpr where capture is [] and no parameter and void return type
+    */
+public:
+    ArrowBlockCallExpr(Token tok, AstNodePtr callee, std::vector<Parameter> args, AstNodePtr body);
+
+    AstNodePtr get_callee() const;
+    std::vector<Parameter> get_arguments() const;
+    AstNodePtr get_body() const;
+
+    Token token() const;
+    AstKind kind() const;
+    std::string stringify() const;
+
+    void accept(AstVisitor& visitor) const;
+};
 
 // ============================
 //  Statement nodes
@@ -747,19 +816,6 @@ public:
     void accept(AstVisitor& visitor) const;
 };
 
-class ExternalModuleSymbol {
-    Token m_token;
-    std::vector<std::string> m_path;
-public:
-    ExternalModuleSymbol(Token tok, std::vector<std::string> path);
-    std::vector<std::string> path() const;
-
-    Token token() const;
-    AstKind kind() const;
-    std::string stringify() const;
-
-    void accept(AstVisitor& visitor) const;
-};
 
 enum class VarKind {
     Normal,
@@ -821,18 +877,6 @@ public:
     AstKind kind() const;
     std::string stringify() const;
 
-    void accept(AstVisitor& visitor) const;
-};
-
-class BlockStatement : public AstNode {
-    Token m_token;
-    std::vector<AstNodePtr> m_statements;
-public:
-    BlockStatement(Token tok, std::vector<AstNodePtr> statements);
-    std::vector<AstNodePtr> statements() const;
-    Token token() const;
-    AstKind kind() const;
-    std::string stringify() const;
     void accept(AstVisitor& visitor) const;
 };
 
@@ -912,7 +956,7 @@ public:
     void accept(AstVisitor& visitor) const;
 };
 
-// give expr — value-yielding exit from a ?? / !! handler block
+// give expr - value-yielding exit from a ?? / !! handler block
 class GiveStatement : public AstNode {
     Token m_token;
     AstNodePtr m_value;
@@ -957,7 +1001,7 @@ public:
     void accept(AstVisitor& visitor) const;
 };
 
-// Unified loop node — all forms use the single `loop` keyword.
+// Unified loop node - all forms use the single `loop` keyword.
 enum class LoopKind {
     Infinite,    // loop { }
     WhileStyle,  // loop cond { }
@@ -991,23 +1035,7 @@ public:
     void accept(AstVisitor& visitor) const;
 };
 
-class RangeStatement : public AstNode {
-    Token m_token;
-    AstNodePtr m_start;
-    AstNodePtr m_end;   
-    AstNodePtr m_step;  // NoLiteral for default step of 1
-public:
-    RangeStatement(Token tok, AstNodePtr start, AstNodePtr end, AstNodePtr step);
-    AstNodePtr start() const;
-    AstNodePtr end() const;
-    AstNodePtr step() const;
 
-    Token token() const;
-    AstKind kind() const;
-    std::string stringify() const;
-
-    void accept(AstVisitor& visitor) const;
-};
 class BreakStatement : public AstNode {
     Token m_token;
 public:
@@ -1078,7 +1106,7 @@ public:
 // @decorator  or  @decorator(args)  applied to the wrapped definition
 class DecoratorStatement : public AstNode {
     Token m_token;
-    // Each decorator is an IdentifierExpression or a FunctionCall
+    // Each decorator is an IdentifierLiteral or a FuncCall
     std::vector<AstNodePtr> m_decorators;
     AstNodePtr m_body;
 public:
@@ -1093,6 +1121,19 @@ public:
     void accept(AstVisitor& visitor) const;
 };
 
+class ScopeStmt : public AstNode {
+    Token m_token;
+    AstNodePtr m_body;
+public:
+    ScopeStmt(Token tok, AstNodePtr body);
+    AstNodePtr body() const;
+
+    Token token() const;
+    AstKind kind() const;
+    std::string stringify() const;
+
+    void accept(AstVisitor& visitor) const;
+};
 // lock var { body }  or  lock (var1, var2) { body }
 class LockStatement : public AstNode {
     Token m_token;

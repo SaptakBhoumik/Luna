@@ -13,7 +13,7 @@ Token IntegerLiteral::token() const{
     return this->tok;
 }
 AstKind IntegerLiteral::kind() const{
-    return AstKind::Integer;
+    return AstKind::IntegerLiteral;
 }
 std::string IntegerLiteral::stringify() const{
     return this->tok.value;
@@ -32,7 +32,7 @@ Token DecimalLiteral::token() const{
     return this->tok;
 }
 AstKind DecimalLiteral::kind() const{
-    return AstKind::Decimal;
+    return AstKind::DecimalLiteral;
 }
 std::string DecimalLiteral::stringify() const{
     return this->tok.value;
@@ -55,7 +55,7 @@ Token StringLiteral::token() const{
     return this->tok;
 }
 AstKind StringLiteral::kind() const{
-    return AstKind::String;
+    return AstKind::StringLiteral;
 }
 std::string StringLiteral::stringify() const{
     std::string res = this->tok.value;
@@ -80,7 +80,7 @@ Token BoolLiteral::token() const{
     return this->tok;
 }
 AstKind BoolLiteral::kind() const{
-    return AstKind::Bool;
+    return AstKind::BoolLiteral;
 }
 std::string BoolLiteral::stringify() const{
     return this->tok.value;
@@ -95,32 +95,32 @@ Token NoneLiteral::token() const{
     return this->tok;
 }
 AstKind NoneLiteral::kind() const{
-    return AstKind::None;
+    return AstKind::NoneLiteral;
 }
 std::string NoneLiteral::stringify() const{
     return "None";
 }
 
-IdentifierExpression::IdentifierExpression(Token tok, std::vector<std::string> path, std::vector<AstNodePtr> generic_args){
+IdentifierLiteral::IdentifierLiteral(Token tok, std::vector<std::string> path, std::vector<AstNodePtr> generic_args){
     this->tok = tok;
     this->path = path;
     this->generic_args = generic_args;
 }
 
-std::vector<std::string> IdentifierExpression::get_path() const{
+std::vector<std::string> IdentifierLiteral::get_path() const{
     return this->path;
 }
-std::vector<AstNodePtr> IdentifierExpression::get_generic_args() const{
+std::vector<AstNodePtr> IdentifierLiteral::get_generic_args() const{
     return this->generic_args;
 }
 
-Token IdentifierExpression::token() const{
+Token IdentifierLiteral::token() const{
     return this->tok;
 }
-AstKind IdentifierExpression::kind() const{
-    return AstKind::Identifier;
+AstKind IdentifierLiteral::kind() const{
+    return AstKind::IdentifierLiteral;
 }
-std::string IdentifierExpression::stringify() const{
+std::string IdentifierLiteral::stringify() const{
     std::string res;
     for(size_t i = 0; i < this->path.size(); i++){
         res += this->path[i];
@@ -138,6 +138,89 @@ std::string IdentifierExpression::stringify() const{
         }
         res += "}";
     }
+    return res;
+}
+
+
+ListLiteral::ListLiteral(Token tok, std::vector<AstNodePtr> elements){
+    this->tok = tok;
+    this->elements = elements;
+}
+
+std::vector<AstNodePtr> ListLiteral::get_elements() const{
+    return this->elements;
+}
+
+Token ListLiteral::token() const{
+    return this->tok;
+}
+AstKind ListLiteral::kind() const{
+    return AstKind::ListLiteral;
+}
+std::string ListLiteral::stringify() const{
+    std::string res = "[";
+    for(size_t i = 0; i < this->elements.size(); i++){
+        res += this->elements[i]->stringify();
+        if(i != this->elements.size() - 1){
+            res += ", ";
+        }
+    }
+    res += "]";
+    return res;
+}
+
+
+DictLiteral::DictLiteral(Token tok, std::vector<std::pair<AstNodePtr, AstNodePtr>> elements){
+    this->tok = tok;
+    this->elements = elements;
+}
+
+std::vector<std::pair<AstNodePtr, AstNodePtr>> DictLiteral::get_elements() const{
+    return this->elements;
+}
+
+Token DictLiteral::token() const{
+    return this->tok;
+}
+AstKind DictLiteral::kind() const{
+    return AstKind::DictLiteral;
+}
+std::string DictLiteral::stringify() const{
+    std::string res = "{";
+    for(size_t i = 0; i < this->elements.size(); i++){
+        res += this->elements[i].first->stringify() + ": " + this->elements[i].second->stringify();
+        if(i != this->elements.size() - 1){
+            res += ", ";
+        }
+    }
+    res += "}";
+    return res;
+}
+
+
+TupleLiteral::TupleLiteral(Token tok, std::vector<AstNodePtr> elements){
+    this->tok = tok;
+    this->elements = elements;
+}
+std::vector<AstNodePtr> TupleLiteral::get_elements() const{
+    return this->elements;
+}
+
+Token TupleLiteral::token() const{
+    return this->tok;
+}
+AstKind TupleLiteral::kind() const{
+    return AstKind::TupleLiteral;
+}
+std::string TupleLiteral::stringify() const{
+    std::string res = "(";
+    for(size_t i = 0; i < this->elements.size(); i++){
+        res += this->elements[i]->stringify();
+        if(i != this->elements.size() - 1){
+            res += ", ";
+        }
+    }
+    res += ")";
     return res;
 }
 }

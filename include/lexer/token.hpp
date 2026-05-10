@@ -67,6 +67,9 @@ enum class TokenType {
     thick_arrow,      // =>
     pipeline,         // |>
 
+    select_recv,      // <--
+    select_send,      // -->
+
     // Compound assignment
     plus_eq,          // +=
     minus_eq,         // -=
@@ -107,14 +110,14 @@ enum class TokenType {
 
     kw_mut,//mut
     kw_ret,//ret
-    kw_if,//if
+    // kw_if,//if
     // kw_elif,//elif
     // kw_else,//else
     kw_loop,//loop
     kw_break,//break
     kw_continue,//continue
     
-    kw_match,//match
+    kw_when,//match
     // kw_case,//case
 
     kw_true,//True
