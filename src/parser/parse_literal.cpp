@@ -42,6 +42,9 @@ AstNodePtr Parser::parse_identifier(){
             advance_on_newline();
             if(this->curr_tok.type == TokenType::newline){
                 advance();
+                if(this->curr_tok.type == TokenType::rbrace){
+                    break;
+                }
                 continue;
             }
             generic_args.push_back(parse_type_expr());
