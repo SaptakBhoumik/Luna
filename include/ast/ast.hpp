@@ -9,7 +9,6 @@
 #include <string>
 #include <vector>
 namespace Luna {
-
 enum class AstKind {
     //Basic nodes
     Program,
@@ -75,14 +74,12 @@ enum class AstKind {
     LoopStmt,
     SelectStmt,
 
-
-    VariableStmt,
-    AugAssign,
-    FunctionDef,
-    MethodDef,
-    TypeDef,
-    DecoratorStmt,
-
+    //Defination/Assignment statement nodes
+    TypeDefStmt,
+    VarStmt,
+    AugAssignStmt,
+    FuncDefStmt,
+    MethodDefStmt,
 };
 
 // ---- Forward declarations ----
@@ -1080,47 +1077,63 @@ public:
 };
 
 // ============================
-//  Branch statement nodes
+//  Defination/Assignment statement nodes
 // ============================
+// type Name{generics} = base_type
+class TypeDefStmt : public AstNode {
+    Token tok;
+    std::vector<Attribute> attributes; // e.g. @[align(16)]
+    bool pub = false;
+    std::string name;
+    std::vector<std::string> generics;
+    AstNodePtr base_type; //No literal for opaque type defination like `type Name{generics}`
+public:
+    TypeDefStmt(Token tok, std::vector<Attribute> attributes, bool pub, std::string name, std::vector<std::string> generics, AstNodePtr base_type);
+    
+    std::vector<Attribute> get_attributes() const;
+    bool is_pub() const;
+    std::string get_name() const;
+    std::vector<std::string> get_generics() const;
+    AstNodePtr get_base_type() const;
 
-enum class VarKind {
-    Normal,
-    Atomic,
-    ThreadLocal,
-    TaskLocal,
+    Token token() const;
+    AstKind kind() const;
+    std::string stringify() const;
+
+    void accept(AstVisitor& visitor) const;
 };
 
 // Covers all variable introduction forms:
+//   x:T
 //   x := expr
-//   x:T = expr
+//   pub x:T = expr
 //   mut x:T = expr
-//   atomic mut x:T = expr
 //   thread_local mut x:T = expr
 //   task_local mut x:T = expr
 // type is NoLiteral when inferred; value is NoLiteral when uninitialized.
-class VariableStatement : public AstNode {
-    Token m_token;
-    AstNodePtr m_name;
-    AstNodePtr m_type;
-    AstNodePtr m_value;
-    bool m_is_mut   = false;
-    bool m_is_def = false;//Means if it is an assignment or defination. IF false then the type and stuff is no literal but the type checker will fill that up later. 
+class VarStmt : public AstNode {
+    Token tok;
+    AstNodePtr name;//Can be tuple, list access or dot access etc etc
+    AstNodePtr type;
+    AstNodePtr value;
+    bool pub = false;
+    bool mut   = false;
+    bool def = false;//Means if it is an assignment or defination. IF false then the type and stuff is no literal but the type checker will fill that up later. 
                           //Like for the following statement:- x = 5. It is an assignment and not a defination. So is_def will be false and type and value will be 
                           //no literal. But the type checker will fill the type as i32 and value as 5 later when it processes this statement.
-    VarKind m_var_kind = VarKind::Normal;
-    std::vector<Attribute> m_attributes;
+    VarKind varkind = VarKind::Normal;
+    std::vector<Attribute> attributes;
 public:
-    VariableStatement(Token tok, AstNodePtr name, AstNodePtr type,
-                      AstNodePtr value, bool is_mut, bool is_def,
-                      VarKind var_kind,
-                      std::vector<Attribute> attributes);
-    AstNodePtr name() const;
-    AstNodePtr varType() const;
-    AstNodePtr value() const;
-    bool isMut() const;
-    bool isDef() const;
-    VarKind varKind() const;
-    std::vector<Attribute> attributes() const;
+    VarStmt(Token tok, AstNodePtr name, AstNodePtr type, AstNodePtr value, bool is_mut, bool is_def, bool pub, VarKind varkind, std::vector<Attribute> attributes);
+    
+    AstNodePtr get_name() const;
+    AstNodePtr get_var_type() const;
+    AstNodePtr get_value() const;
+    bool is_pub() const;
+    bool is_mut() const;
+    bool is_def() const;
+    VarKind get_varkind() const;
+    std::vector<Attribute> get_attributes() const;
 
     Token token() const;
     AstKind kind() const;
@@ -1130,16 +1143,17 @@ public:
 };
 
 
-class AugAssign : public AstNode {
-    Token m_token;
-    Token m_op;
-    AstNodePtr m_target;
-    AstNodePtr m_value;
+class AugAssignStmt : public AstNode {
+    Token tok;
+    Token op;
+    AstNodePtr target;
+    AstNodePtr value;
 public:
-    AugAssign(Token tok, Token op, AstNodePtr target, AstNodePtr value);
-    AstNodePtr target() const;
-    Token op() const;
-    AstNodePtr value() const;
+    AugAssignStmt(Token tok, Token op, AstNodePtr target, AstNodePtr value);
+
+    AstNodePtr get_target() const;
+    Token get_op() const;
+    AstNodePtr get_value() const;
 
     Token token() const;
     AstKind kind() const;
@@ -1150,26 +1164,26 @@ public:
 
 // fn name{generics}(params) -> return_type { body }
 // body is NoLiteral for a forward declaration.
-class FunctionDefinition : public AstNode {
-    Token m_token;
-    std::string m_name;
-    std::vector<std::string> m_generics;
-    std::vector<Parameter> m_parameters;
-    AstNodePtr m_return_type; // NoLiteral for void / inferred
-    AstNodePtr m_body;
-    std::vector<Attribute> m_attributes;
+class FuncDefStmt : public AstNode {
+    Token tok;
+    bool pub;
+    std::string name;
+    std::vector<std::string> generics;
+    std::vector<Parameter> parameters;
+    AstNodePtr return_type; // NoLiteral for void / inferred
+    AstNodePtr body;// NoLiteral for forward declaration
+    std::vector<Annotation> annotation;
 public:
-    FunctionDefinition(Token tok, std::string name,
-                       std::vector<std::string> generics,
-                       std::vector<Parameter> parameters,
-                       AstNodePtr return_type, AstNodePtr body,
-                       std::vector<Attribute> attributes);
-    std::string name() const;
-    std::vector<std::string> generics() const;
-    std::vector<Parameter> parameters() const;
-    AstNodePtr returnType() const;
-    AstNodePtr body() const;
-    std::vector<Attribute> attributes() const;
+    FuncDefStmt(Token tok, bool pub, std::string name, std::vector<std::string> generics,std::vector<Parameter> parameters,AstNodePtr return_type, 
+                AstNodePtr body, std::vector<Annotation> annotation);
+    
+    bool is_pub() const;
+    std::string get_name() const;
+    std::vector<std::string> get_generics() const;
+    std::vector<Parameter> get_parameters() const;
+    AstNodePtr get_return_type() const;
+    AstNodePtr get_body() const;
+    std::vector<Annotation> get_annotation() const;
 
     Token token() const;
     AstKind kind() const;
@@ -1179,28 +1193,28 @@ public:
 };
 
 // fn (receiver) name{generics}(params) -> return_type { body }
-class MethodDefinition : public AstNode {
-    Token m_token;
-    Parameter m_receiver;//Only normal type with no default value
-    std::string m_name;
-    std::vector<std::string> m_generics;
-    std::vector<Parameter> m_parameters;
-    AstNodePtr m_return_type;
-    AstNodePtr m_body;
-    std::vector<Attribute> m_attributes;
+class MethodDefStmt : public AstNode {
+    Token tok;
+    bool pub;
+    Parameter receiver;//Only normal type with no default value
+    std::string name;
+    std::vector<std::string> generics;
+    std::vector<Parameter> parameters;
+    AstNodePtr return_type;
+    AstNodePtr body;
+    std::vector<Attribute> attributes;//A method cant have decorator
 public:
-    MethodDefinition(Token tok, Parameter receiver, std::string name,
-                     std::vector<std::string> generics,
-                     std::vector<Parameter> parameters,
-                     AstNodePtr return_type, AstNodePtr body,
-                     std::vector<Attribute> attributes);
-    Parameter receiver() const;
-    std::string name() const;
-    std::vector<std::string> generics() const;
-    std::vector<Parameter> parameters() const;
-    AstNodePtr returnType() const;
-    AstNodePtr body() const;
-    std::vector<Attribute> attributes() const;
+    MethodDefStmt(Token tok, bool pub, Parameter receiver, std::string name, std::vector<std::string> generics, std::vector<Parameter> parameters, 
+                  AstNodePtr return_type, AstNodePtr body, std::vector<Attribute> attributes);
+
+    bool is_pub() const;
+    Parameter get_receiver() const;
+    std::string get_name() const;
+    std::vector<std::string> get_generics() const;
+    std::vector<Parameter> get_parameters() const;
+    AstNodePtr get_return_type() const;
+    AstNodePtr get_body() const;
+    std::vector<Attribute> get_attributes() const;
 
     Token token() const;
     AstKind kind() const;
@@ -1208,49 +1222,4 @@ public:
 
     void accept(AstVisitor& visitor) const;
 };
-
-
-// type Name{generics} = base_type
-class TypeDefinition : public AstNode {
-    Token m_token;
-    AstNodePtr m_name;
-    std::vector<std::string> m_generics;
-    AstNodePtr m_base_type;
-    bool m_is_pub = false;
-    std::vector<Attribute> m_attributes; // e.g. @[align(16)]
-public:
-    TypeDefinition(Token tok, AstNodePtr name,
-                   std::vector<std::string> generics, AstNodePtr base_type,std::vector<Attribute> attributes, bool is_pub);
-    AstNodePtr name() const;
-    std::vector<std::string> generics() const;
-    AstNodePtr baseType() const;
-    std::vector<Attribute> attributes() const;
-    bool isPub() const;
-
-    Token token() const;
-    AstKind kind() const;
-    std::string stringify() const;
-
-    void accept(AstVisitor& visitor) const;
-};
-
-// @decorator  or  @decorator(args)  applied to the wrapped definition
-class DecoratorStatement : public AstNode {
-    Token m_token;
-    // Each decorator is an IdentifierLiteral or a FuncCall
-    std::vector<AstNodePtr> m_decorators;
-    AstNodePtr m_body;
-public:
-    DecoratorStatement(Token tok, std::vector<AstNodePtr> decorators,AstNodePtr body);
-    std::vector<AstNodePtr> decorators() const;
-    AstNodePtr body() const;
-
-    Token token() const;
-    AstKind kind() const;
-    std::string stringify() const;
-    
-    void accept(AstVisitor& visitor) const;
-};
-
-
 } // namespace ast

@@ -127,7 +127,7 @@ enum class TokenType {
     kw_give,//give
     kw_defer,//defer
 
-    kw_atomic,//atomic
+    // kw_atomic,//atomic
     kw_thread_local,//thread_local
     kw_task_local,//task_local
     kw_thread,//thread

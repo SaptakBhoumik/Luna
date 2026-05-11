@@ -2,6 +2,7 @@
 #include "lexer/token.hpp"
 
 namespace Luna{
+// ---- Attribute: @[name] or @[name(args...)] stored directly on owning nodes ----
 std::string to_string(const Attribute& attr){
     std::string res = "@["+attr.name;
     if(attr.args.empty() && attr.named_args.empty()){
@@ -24,6 +25,40 @@ std::string to_string(const Attribute& attr){
     return res + ")]";
 }
 
+// ---- Decorator: @name or @name(args...) stored directly on owning nodes ----
+std::string to_string(const Decorator& decorator){
+    std::string res = "@" + decorator.decorator->stringify();
+    if(decorator.args.empty() && decorator.named_args.empty()){
+        return res;
+    }
+    res += "(";
+    for(size_t i = 0; i < decorator.args.size(); i++){
+        res += decorator.args[i]->stringify();
+        if(i != decorator.args.size() - 1 || !decorator.named_args.empty()){
+            res += ", ";
+        }
+    }
+    if(!decorator.named_args.empty()){
+        for(const auto& [name, arg] : decorator.named_args){
+            res += name + "=" + arg->stringify() + ", ";
+        }
+        res.pop_back(); // remove last space
+        res.pop_back(); // remove last comma
+    }
+    return res + ")";
+}
+
+// ---- Annotation: A decorator or a attribute used on a function
+std::string to_string(const Annotation& annotation){
+    if(annotation.is_decorator){
+        return to_string(annotation.decorator);
+    } 
+    else {
+        return to_string(annotation.attributes);
+    }
+}
+
+// ---- Parameter ----
 std::string to_string(const Parameter& param){
     if(param.kind == ParamKind::CVariadic){
         return "...";
@@ -51,6 +86,7 @@ std::string to_string(const Parameter& param){
     return res;
 }
 
+// ---- Lambda capture ----
 std::string to_string(const CaptureClause& capture){
     switch(capture.kind){
         case CaptureKind::None:
@@ -74,6 +110,7 @@ std::string to_string(const CaptureClause& capture){
     return "[]"; // should never reach here
 }
 
+// ---- Struct field (for struct definitions) ----
 std::string to_string(const StructField& field){
     std::string res;
     for(const auto& attr : field.attributes){

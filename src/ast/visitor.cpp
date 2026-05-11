@@ -153,4 +153,20 @@ void LoopStmt::accept(AstVisitor& visitor) const {
 void SelectStmt::accept(AstVisitor& visitor) const {
     visitor.visit(*this);
 }
+//  Defination/Assignment statement nodes
+void TypeDefStmt::accept(AstVisitor& visitor) const {
+    visitor.visit(*this);
+}
+void VarStmt::accept(AstVisitor& visitor) const {
+    visitor.visit(*this);
+}
+void AugAssignStmt::accept(AstVisitor& visitor) const {
+    visitor.visit(*this);
+}
+void FuncDefStmt::accept(AstVisitor& visitor) const {
+    visitor.visit(*this);
+}
+void MethodDefStmt::accept(AstVisitor& visitor) const {
+    visitor.visit(*this);
+}
 }

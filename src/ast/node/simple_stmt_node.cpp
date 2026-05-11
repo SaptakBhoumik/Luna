@@ -1,5 +1,4 @@
 #include "ast/ast.hpp"
-#include "lexer/token.hpp"
 
 namespace Luna{
 DeferStmt::DeferStmt(Token tok, AstNodePtr body){

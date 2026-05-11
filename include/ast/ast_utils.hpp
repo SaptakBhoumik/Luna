@@ -16,6 +16,32 @@ struct Attribute {
 };
 
 std::string to_string(const Attribute& attr);
+
+// ---- Decorator: @name or @name(args...) stored directly on owning nodes ----
+struct Decorator{
+    /*
+    @func(args)
+    The decorator field can only contain the callee of the FuncCall i.e it is just the ast of the identifier func
+    Parsing tips:-U use the parse_expr to parse it. It may return a FuncCall. If FuncCall then just deconstruct to this form and done.
+                 If not FuncCall then just use the returned ast as the decorator and args will be empty. 
+                 This way we can support complex expressions as decorators like @decorator_factory(arg1)(arg2)
+    */
+    AstNodePtr decorator; // An IdentifierLiteral or some expression
+    std::vector<AstNodePtr> args = {}; // empty if no argument list. 
+    std::map<std::string, AstNodePtr> named_args = {}; // empty if no named arguments
+};
+
+std::string to_string(const Decorator& decorator);
+
+// ---- Annotation: A decorator or a attribute used on a function
+struct Annotation {
+    Decorator decorator;
+    Attribute attributes;
+    bool is_decorator; // true if this annotation is a decorator, false if its an attribute
+};
+
+std::string to_string(const Annotation& annotation);
+
 // ---- Parameter ----
 
 enum class ParamKind {
@@ -35,6 +61,7 @@ struct Parameter {
     ParamKind kind = ParamKind::Normal;
 };
 std::string to_string(const Parameter& param);
+
 // ---- Lambda capture ----
 
 enum class CaptureKind {
@@ -55,6 +82,7 @@ struct CaptureClause {
 };
 
 std::string to_string(const CaptureClause& capture);
+
 // ---- Struct field (for struct definitions) ----
 
 // A single field inside a struct definition
@@ -92,4 +120,11 @@ struct SelectArm {
 };
 
 std::string to_string(const SelectArm& arm);
+
+// ----Types of variable----
+enum class VarKind {
+    Normal,
+    ThreadLocal,
+    TaskLocal,
+};
 }

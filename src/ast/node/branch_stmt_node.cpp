@@ -1,5 +1,4 @@
 #include "ast/ast.hpp"
-#include "lexer/token.hpp"
 
 namespace Luna{
 WhenStmt::WhenStmt(Token tok, std::vector<AstNodePtr> subjects, std::vector<std::pair<std::vector<std::vector<AstNodePtr>>, AstNodePtr>> branches){

@@ -60,5 +60,11 @@ class AstVisitor {
     virtual bool visit(const WhenStmt& node) { return false; };
     virtual bool visit(const LoopStmt& node) { return false; };
     virtual bool visit(const SelectStmt& node) { return false; };
+    //Defination/Assignment statement nodes
+    virtual bool visit(const TypeDefStmt& node) { return false; };
+    virtual bool visit(const VarStmt& node) { return false; };
+    virtual bool visit(const AugAssignStmt& node) { return false; };
+    virtual bool visit(const FuncDefStmt& node) { return false; };
+    virtual bool visit(const MethodDefStmt& node) { return false; };
 };
 }

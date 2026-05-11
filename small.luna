@@ -196,11 +196,11 @@ fn fetch(url:str) -> !str {
     ret resp.body
 }
 
-atomic mut hit_count:i32 = 0
+mut hit_count:atomic{i32} = 0
 thread_local mut tid:i32 = 0
-
+thread_local mut (T1,T2) := (0,0)//yes u can do with tuple also
 fn counter_demo() -> i32 {
-    atomic mut count:i32 = 0
+    mut count:atomic{i32} = 0
     mut handles:[Thread{void},4] = []//The generic parameter of Thread is the return type of the thread function
     loop mut i :0..4 {
         handles[i] = thread { loop _ :0..100 { count++ } }
@@ -217,7 +217,7 @@ fn complex_tuple_type(val:((i32,i32),i32)){
     ((a,b),c) := val
 }
 fn lock_demo() -> !void {
-    atomic mut bal:i32 = 100
+    mut bal:atomic{i32} = 100
     mut old_bal:i32 = 100
     t1 := thread { lock bal { bal = bal - 10 } }
     t2 := thread { 
@@ -589,7 +589,7 @@ pub fn main() {
         io::println(f"err:{err}")
         give 0.0
     }
-
+    mut var:i32//Without a set default value
     r5 := divide(4.0, 0.0)//This means type of r5 is !f64. Also we didnt use divide(...)! because if error we dont want to throw it
                          //We just want to save it. If we did divide(...)! then we would throw an error and exit if divide throws an Error
     //You cant use r5 as a normal f64 variable because it can also hold an error value. So you can use it only after applying !! operator to handle it

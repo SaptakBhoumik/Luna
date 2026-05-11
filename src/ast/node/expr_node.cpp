@@ -1,5 +1,4 @@
 #include "ast/ast.hpp"
-#include "lexer/token.hpp"
 
 namespace Luna{
 BinOp::BinOp(Token tok, AstNodePtr left, Token op, AstNodePtr right){
