@@ -585,7 +585,7 @@ pub fn main() {
     }
     r2 := divide(10.0, 2.0) !! 0.0
     r3 := find_val(arr, 10) ?? -1
-    r4 := divide(4.0, 2.0) !! (err){
+    r4 := divide(4.0, 2.0) !! (mut err){//You can mark them mutable
         io::println(f"err:{err}")
         give 0.0
     }

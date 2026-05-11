@@ -79,11 +79,12 @@ std::string PostfixOp::stringify() const {
 }
 
 
-CoalescingOP::CoalescingOP(Token tok, AstNodePtr left, AstNodePtr right, bool null_coalescing){
+CoalescingOP::CoalescingOP(Token tok, AstNodePtr left, AstNodePtr right, bool null_coalescing, std::optional<std::pair<std::string,bool>> error_var_name){
     this->tok = tok;
     this->left = left;
     this->right = right;
     this->null_coalescing = null_coalescing;
+    this->error_var_name = error_var_name;
 }
 
 AstNodePtr CoalescingOP::get_left() const {
@@ -95,6 +96,9 @@ AstNodePtr CoalescingOP::get_right() const {
 bool CoalescingOP::is_null_coalescing() const {
     return this->null_coalescing;
 }
+std::optional<std::pair<std::string,bool>> CoalescingOP::get_error_var_name() const {
+    return this->error_var_name;
+}
 
 Token CoalescingOP::token() const {
     return this->tok;
@@ -103,8 +107,17 @@ AstKind CoalescingOP::kind() const {
     return AstKind::CoalescingOP;
 }
 std::string CoalescingOP::stringify() const {
-    std::string op_str = this->null_coalescing ? "??" : "!!";
-    return "(" + this->left->stringify() + " " + op_str + " " + this->right->stringify() + ")";
+    std::string res = this->left->stringify() + (this->null_coalescing ? " ?? " : " !! ");
+    if(this->error_var_name.has_value()){
+        res += "(" + this->error_var_name->first + (this->error_var_name->second ? ": mut" : "") + ")";
+    }
+    if(this->right->kind() == AstKind::Block){
+        res += "{\n" + this->right->stringify() + "\n}";
+    }
+    else{
+        res += this->right->stringify();
+    }
+    return res;
 }
 
 

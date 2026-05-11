@@ -531,12 +531,14 @@ class CoalescingOP : public AstNode {
     AstNodePtr left;
     AstNodePtr right;
     bool null_coalescing; // true for ??, false for !!
+    std::optional<std::pair<std::string,bool>> error_var_name; // populated for !! (err){...} form, empty otherwise. The pair is (variable name, is_mutable)
 public:
-    CoalescingOP(Token tok, AstNodePtr left, AstNodePtr right, bool null_coalescing);
+    CoalescingOP(Token tok, AstNodePtr left, AstNodePtr right, bool null_coalescing, std::optional<std::pair<std::string,bool>> error_var_name);
 
     AstNodePtr get_left() const;
     AstNodePtr get_right() const;
     bool is_null_coalescing() const;
+    std::optional<std::pair<std::string,bool>> get_error_var_name() const;
 
     Token token() const;
     AstKind kind() const;
