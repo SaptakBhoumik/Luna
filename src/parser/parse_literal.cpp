@@ -40,11 +40,11 @@ AstNodePtr Parser::parse_identifier(){
         advance(); // consume '{'
         while(peek().type != TokenType::rbrace){
             advance_on_newline();
+            if(peek().type == TokenType::rbrace){
+                break;
+            }
             if(this->curr_tok.type == TokenType::newline){
                 advance();
-                if(this->curr_tok.type == TokenType::rbrace){
-                    break;
-                }
                 continue;
             }
             generic_args.push_back(parse_type_expr());
