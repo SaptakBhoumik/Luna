@@ -1,0 +1,65 @@
+#pragma once
+
+#include "ast/ast.hpp"
+#include "ast/visitor.hpp"
+#include "lexer/lexer.hpp"
+#include "lexer/token.hpp"
+#include <cstddef>
+
+namespace Luna {
+enum class PrecedenceType {
+    //TODO: Finalize operator precedence levels
+    pr_lowest,      // lowest possible precedence
+    pr_range,       // ..
+    pr_or,      // or
+    pr_and,      // and
+    pr_not,         // not
+    pr_compare,     // ==, !=, <, >, <=, >=
+    pr_bit_or,      // |
+    pr_bit_xor,     // ^
+    pr_bit_and,     // &
+    pr_bit_shift_pipeline,   // >> , <<
+    pr_sum_minus,   // +, -
+    pr_mul_div,     // *, /, %, //
+    pr_expo,        // **
+    pr_prefix,      // -x
+    pr_dot_arrow_ref,     // x.test(), x.prop ,x->y
+    pr_list_access, // x[0], x["test"]
+    pr_call,         // x()
+    pr_postfix      // x++
+};
+
+class Parser{
+    std::size_t curr_index = 0;
+    Token curr_tok;
+    std::vector<Token> toks;
+    std::string filename;
+    std::map<TokenType, PrecedenceType> precedence_map;// We set the value in the constructor
+
+    void advance();
+    void advance_on_newline();
+    Token peek(std::size_t i=1) const;// peek the token at curr_index + i without advancing
+    PrecedenceType peek_precedence(size_t i=1) const;
+    void expect(TokenType expected_type, std::string msg="",std::string submsg="",std::string ecode="");
+    void error(Token tok, std::string msg,std::string submsg="",std::string ecode="");
+
+    // Parse literal nodes
+    AstNodePtr parse_int();
+    AstNodePtr parse_decimal();
+    AstNodePtr parse_string();
+    AstNodePtr parse_bool();
+    AstNodePtr parse_none();
+    AstNodePtr parse_identifier();
+    AstNodePtr parse_map_or_list();
+    AstNodePtr parse_tuple_or_paren_expr();
+
+    // Parse type expression nodes
+    AstNodePtr parse_type_expr();
+    // Parse expression nodes
+    AstNodePtr parse_expression(PrecedenceType precedence = PrecedenceType::pr_lowest);
+    public:
+    Parser(const std::vector<Token>& toks, const std::string& filename);
+
+    AstNodePtr parse();
+};
+}

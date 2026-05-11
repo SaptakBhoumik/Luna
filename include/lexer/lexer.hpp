@@ -84,6 +84,7 @@ class Lexer {
 
 public:
     Lexer(const std::string& source, const std::string& filename);
+    std::string get_filename() const;
     TokenList get_tokens()  const;
     bool has_errors()  const;
 

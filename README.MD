@@ -16,7 +16,7 @@ My main inspiration was Lua(Although it is significantly different from Lua righ
  - [ ] Test error lib
  - [x] Lexer
  - [ ] Test Lexer
- - [ ] Ast
+ - [x] Ast
  - [ ] Parser
  - [ ] Test Parser
  - [ ] Expand this list as I add more features to the language

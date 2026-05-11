@@ -143,6 +143,7 @@ enum class TokenType {
     newline,
 };
 
+std::string to_string(TokenType type);//TODO: Implement it
 struct Token {
     size_t col;          // column of the token start
     std::string source_line;  // the full source line for diagnostics

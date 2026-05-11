@@ -19,8 +19,8 @@ namespace colour {
 }
 
 struct Location {
-    size_t line   = 1;
-    size_t col    = 0;
+    size_t line = 1;
+    size_t col  = 0;
     std::string file;
     std::string source_line;   // the full text of the offending line
 };
