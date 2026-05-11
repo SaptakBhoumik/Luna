@@ -33,6 +33,16 @@ This is a unique design choice that simplifies the language by having only one s
 the benefits of short-circuiting in boolean contexts.
 */
 // Note a..b..c is equivalent to Range(a,b,c) and returns an iter. Not unique to loops. U can even do x := a..b..c
+
+
+/*
+For simd type <elem_type, lanes>, the lanes must be an integer or a compile time variable
+What I mean by only compile time variable is that we can have the following
+<f32,4>,<f32,$lanes>
+But not <f32, 2+2> or <f32, $some_func()>, <f32, $some_var + 1> and so on. 
+This is just done for making the parser simpler without reducing features 
+*/
+//Why is there no &Type? Because it is a bit confusing. Sure it makes life easy but can be error prone so we just use *Type when needed. 
 / ---- Imports ----
 import math
 import fs
@@ -768,7 +778,7 @@ pub fn main() {
     lf:Num = 2.71
     io::println(f"lf={lf}")
 
-    // SIMD
+    // SIMD.TODO: Should I use (...) or [...] for simd?
     a_vec:<f32,4> = (1.0, 2.0, 3.0, 4.0)
     b_vec:<f32,4> = (2.0, 3.0, 4.0, 5.0)
     ones:<f32,4> = simd::splat{f32,4}(1.0)

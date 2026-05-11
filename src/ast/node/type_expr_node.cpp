@@ -1,4 +1,5 @@
 #include "ast/ast.hpp"
+#include <string>
 
 namespace Luna{
 TypeExpr::TypeExpr(Token tok, AstNodePtr value, AstNodePtr idx){
@@ -244,7 +245,7 @@ std::string SumTypeExpr::stringify() const{
 }
 
 
-EnumTypeExpr::EnumTypeExpr(Token tok, AstNodePtr base_type, std::vector<std::pair<AstNodePtr, AstNodePtr>> variants){
+EnumTypeExpr::EnumTypeExpr(Token tok, AstNodePtr base_type, std::vector<std::pair<std::string, AstNodePtr>> variants){
     this->tok = tok;
     this->base_type = base_type;
     this->variants = variants;
@@ -253,7 +254,7 @@ EnumTypeExpr::EnumTypeExpr(Token tok, AstNodePtr base_type, std::vector<std::pai
 AstNodePtr EnumTypeExpr::get_base_type() const{
     return this->base_type;
 }
-std::vector<std::pair<AstNodePtr, AstNodePtr>> EnumTypeExpr::get_variants() const{
+std::vector<std::pair<std::string, AstNodePtr>> EnumTypeExpr::get_variants() const{
     return this->variants;
 }
 
@@ -270,7 +271,7 @@ std::string EnumTypeExpr::stringify() const{
     }
     res += " {";
     for (size_t i = 0; i < this->variants.size(); i++){
-        res += this->variants[i].first->stringify();
+        res += this->variants[i].first;
         if (this->variants[i].second->kind() != AstKind::NoLiteral){
             res += " = " + this->variants[i].second->stringify();
         }

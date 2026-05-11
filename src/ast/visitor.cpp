@@ -34,6 +34,9 @@ void ListLiteral::accept(AstVisitor& visitor) const {
 void DictLiteral::accept(AstVisitor& visitor) const {
     visitor.visit(*this);
 }
+void EmptyDictOrListLiteral::accept(AstVisitor& visitor) const {
+    visitor.visit(*this);
+}
 void TupleLiteral::accept(AstVisitor& visitor) const {
     visitor.visit(*this);
 }

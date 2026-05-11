@@ -17,6 +17,7 @@ class AstVisitor {
     virtual bool visit(const IdentifierLiteral& node) { return false; };
     virtual bool visit(const ListLiteral& node) { return false; };
     virtual bool visit(const DictLiteral& node) { return false; };
+    virtual bool visit(const EmptyDictOrListLiteral& node) { return false; };
     virtual bool visit(const TupleLiteral& node) { return false; };
     //Type expression nodes
     virtual bool visit(const TypeExpr& node) { return false; };

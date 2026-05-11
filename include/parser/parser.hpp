@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ast/ast.hpp"
+#include "ast/ast_utils.hpp"
 #include "ast/visitor.hpp"
 #include "lexer/lexer.hpp"
 #include "lexer/token.hpp"
@@ -43,6 +44,10 @@ class Parser{
     void expect(TokenType expected_type, std::string msg="",std::string submsg="",std::string ecode="");
     void error(Token tok, std::string msg,std::string submsg="",std::string ecode="");
 
+    //Parse utils
+    Attribute parse_attribute();
+    StructField parse_struct_field();
+
     // Parse literal nodes
     AstNodePtr parse_int();
     AstNodePtr parse_decimal();
@@ -54,9 +59,19 @@ class Parser{
     AstNodePtr parse_tuple_or_paren_expr();
 
     // Parse type expression nodes
-    AstNodePtr parse_type_expr();
+    AstNodePtr parse_type_expr(bool can_be_sumtype = false);
+    AstNodePtr parse_identifier_type_expr();
+    AstNodePtr parse_list_type_expr();
+    AstNodePtr parse_ptr_optional_error_type_expr();
+    AstNodePtr parse_func_type_expr();
+    AstNodePtr parse_tuple_or_paren_type_expr();
+    AstNodePtr parse_simd_type_expr();
+    AstNodePtr parse_enum_type_expr();
+    AstNodePtr parse_struct_type_expr();
+
     // Parse expression nodes
     AstNodePtr parse_expression(PrecedenceType precedence = PrecedenceType::pr_lowest);
+
     public:
     Parser(const std::vector<Token>& toks, const std::string& filename);
 

@@ -197,6 +197,19 @@ std::string DictLiteral::stringify() const{
     return res;
 }
 
+EmptyDictOrListLiteral::EmptyDictOrListLiteral(Token tok){
+    this->tok = tok;
+}
+
+Token EmptyDictOrListLiteral::token() const{
+    return this->tok;
+}
+AstKind EmptyDictOrListLiteral::kind() const{
+    return AstKind::EmptyDictOrListLiteral;
+}
+std::string EmptyDictOrListLiteral::stringify() const{
+    return "[]";
+}
 
 TupleLiteral::TupleLiteral(Token tok, std::vector<AstNodePtr> elements){
     this->tok = tok;

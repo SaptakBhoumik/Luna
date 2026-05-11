@@ -1,5 +1,7 @@
 #include "ast/ast.hpp"
+#include "lexer/token.hpp"
 #include "parser/parser.hpp"
+#include <vector>
 
 namespace Luna {
 AstNodePtr Parser::parse_int(){
@@ -23,6 +25,7 @@ AstNodePtr Parser::parse_none(){
     return std::make_shared<NoneLiteral>(this->curr_tok);
 }
 AstNodePtr Parser::parse_identifier(){
+    const Token tok = this->curr_tok;
     std::vector<std::string> path = {this->curr_tok.value};
     std::vector<AstNodePtr> generic_args = {};
     if(peek().type == TokenType::double_colon){
@@ -58,6 +61,81 @@ AstNodePtr Parser::parse_identifier(){
         }
         advance(); // consume '}'
     }
-    return std::make_shared<IdentifierLiteral>(this->curr_tok,path,generic_args);
+    return std::make_shared<IdentifierLiteral>(tok,path,generic_args);
 }
+
+AstNodePtr Parser::parse_map_or_list(){
+    const Token tok = this->curr_tok;
+    advance(); // consume '['
+    if(this->curr_tok.type == TokenType::rbracket){
+        // empty list or dict literal. We will decide which one it is in the semantic analysis phase when we have type information. For now we just create a special node for it.
+        return std::make_shared<EmptyDictOrListLiteral>(tok);
+    }
+    // std::vector<AstNodePtr> list_elements;
+    // std::vector<std::pair<AstNodePtr, AstNodePtr>> dict_elements;
+    AstNodePtr key_or_itm = parse_expression();
+    if(peek().type == TokenType::colon){
+        // dict literal
+        std::vector<std::pair<AstNodePtr, AstNodePtr>> dict_elements;
+        while(peek().type == TokenType::colon){
+            advance(); // on :
+            advance(); // on value after :
+            dict_elements.push_back({key_or_itm, parse_expression()});
+            if(peek().type == TokenType::comma){
+                advance(); // consume comma and continue parsing dict elements
+                if(peek().type == TokenType::rbracket){
+                    break; // allow trailing comma
+                }
+                advance(); // on the element after comma
+                key_or_itm = parse_expression(); // parse key of next element
+            }
+            else if(peek().type != TokenType::rbracket){
+                error(peek(),"expected ',' or ']' in dict literal");
+            }
+        }
+        advance(); // consume ']'
+        return std::make_shared<DictLiteral>(tok,dict_elements);
+    }
+    else{
+        std::vector<AstNodePtr> list_elements = {key_or_itm};
+        // list literal
+        while(peek().type == TokenType::comma){
+            advance(); // on ,
+            if(peek().type == TokenType::rbracket){
+                break;
+            }
+            advance(); // on the element after ,
+            list_elements.push_back(parse_expression());
+        }
+        expect(TokenType::rbracket,"expected ']' after list literal");
+        return std::make_shared<ListLiteral>(tok,list_elements);
+    }
+}
+
+AstNodePtr Parser::parse_tuple_or_paren_expr(){
+    //Note:- () is not allowed cuz not makes sense
+    const Token tok = this->curr_tok;
+    advance(); // consume '('
+    std::vector<AstNodePtr> elements;
+    elements.push_back(parse_expression());
+    if(peek().type == TokenType::comma){
+        // tuple literal
+        while(peek().type == TokenType::comma){
+            advance(); // on ,
+            if(peek().type == TokenType::rparen){
+                break;
+            }
+            advance(); // On the element after ,
+            elements.push_back(parse_expression());
+        }
+        advance(); // consume ')'
+        return std::make_shared<TupleLiteral>(tok,elements);
+    }
+    else{
+        // parenthesized expression
+        expect(TokenType::rparen,"expected ')' after parenthesized expression");
+        return elements[0];
+    }
+}
+
 }

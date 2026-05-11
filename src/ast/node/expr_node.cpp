@@ -232,7 +232,7 @@ std::string ArrowExpr::stringify() const {
 }
 
 
-FuncCall::FuncCall(Token tok, AstNodePtr callee, std::vector<AstNodePtr> args, std::map<std::string, AstNodePtr> named_args){
+FuncCall::FuncCall(Token tok, AstNodePtr callee, std::vector<AstNodePtr> args, std::vector<std::pair<std::string, AstNodePtr>> named_args){
     this->tok = tok;
     this->callee = callee;
     this->args = args;
@@ -245,7 +245,7 @@ AstNodePtr FuncCall::get_callee() const {
 std::vector<AstNodePtr> FuncCall::get_arguments() const {
     return this->args;
 }
-std::map<std::string, AstNodePtr> FuncCall::get_named_arguments() const {
+std::vector<std::pair<std::string, AstNodePtr>> FuncCall::get_named_arguments() const {
     return this->named_args;
 }
 

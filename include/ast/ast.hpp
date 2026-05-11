@@ -24,6 +24,7 @@ enum class AstKind {
     IdentifierLiteral,
     ListLiteral,
     DictLiteral,
+    EmptyDictOrListLiteral,
     TupleLiteral,
 
     // Type nodes
@@ -261,6 +262,19 @@ public:
     void accept(AstVisitor& visitor) const;
 };
 
+class EmptyDictOrListLiteral : public AstNode {
+    //Both empty dict and empty list is represented by [] and we have no way of knowing it is what until we do semantic analysis and see how it is used. 
+    //So we use this node for both empty dict and empty list literals and later replace it with either DictLiteral or ListLiteral during semantic analysis.
+    Token tok;
+public:    
+    EmptyDictOrListLiteral(Token tok);
+
+    Token token() const;
+    AstKind kind() const;
+    std::string stringify() const;
+
+    void accept(AstVisitor& visitor) const;
+};
 // (a, b, c) - expression tuple / multiple-return value
 class TupleLiteral : public AstNode {
     Token tok;
@@ -407,7 +421,13 @@ class SimdTypeExpr : public AstNode {
     Token tok;
 
     AstNodePtr elem_type;
-    AstNodePtr lanes; // integer literal/compile time for lane count
+    AstNodePtr lanes; // integer literal/compile time variable for lane count
+    /*
+    What I mean by only compile time variable is that we can have the following
+    <f32,4>,<f32,$lanes>
+    But not <f32, 2+2> or <f32, $some_func()>, <f32, $some_var + 1> and so on. 
+    This is just done for making the parser simpler without reducing features 
+    */
 public:
     SimdTypeExpr(Token tok, AstNodePtr elem_type, AstNodePtr lanes);
     AstNodePtr get_elem_type() const;
@@ -436,17 +456,17 @@ public:
 };
 
 
-// enum { A = expr, B, ... }  or  type Name = enum:base_type { ... }
+// enum { A = expr, B, ... }  or  enum:base_type { ... }
 // variant value is NoLiteral when not explicitly set.
 class EnumTypeExpr : public AstNode {
     Token tok;
     AstNodePtr base_type; // NoLiteral -> default underlying type
-    std::vector<std::pair<AstNodePtr, AstNodePtr>> variants; // (name, value)
+    std::vector<std::pair<std::string, AstNodePtr>> variants; // (name, value)
 public:
-    EnumTypeExpr(Token tok, AstNodePtr base_type, std::vector<std::pair<AstNodePtr, AstNodePtr>> variants);
+    EnumTypeExpr(Token tok, AstNodePtr base_type, std::vector<std::pair<std::string, AstNodePtr>> variants);
 
     AstNodePtr get_base_type() const;
-    std::vector<std::pair<AstNodePtr, AstNodePtr>> get_variants() const;
+    std::vector<std::pair<std::string, AstNodePtr>> get_variants() const;
 
     Token token() const;
     AstKind kind() const;
@@ -619,13 +639,13 @@ class FuncCall : public AstNode {
     Token tok;
     AstNodePtr callee;
     std::vector<AstNodePtr> args;
-    std::map<std::string, AstNodePtr> named_args; // for calls with named arguments
+    std::vector<std::pair<std::string, AstNodePtr>> named_args; // for calls with named arguments
 public:
-    FuncCall(Token tok, AstNodePtr callee,std::vector<AstNodePtr> args, std::map<std::string, AstNodePtr> named_args);
+    FuncCall(Token tok, AstNodePtr callee,std::vector<AstNodePtr> args, std::vector<std::pair<std::string, AstNodePtr>> named_args);
 
     AstNodePtr get_callee() const;
     std::vector<AstNodePtr> get_arguments() const;
-    std::map<std::string, AstNodePtr> get_named_arguments() const;
+    std::vector<std::pair<std::string, AstNodePtr>> get_named_arguments() const;
 
     Token token() const;
     AstKind kind() const;
