@@ -1,4 +1,5 @@
 #pragma once
+#include "lexer/token.hpp"
 #include <memory>
 #include <map>
 #include <vector>
@@ -10,9 +11,9 @@ using AstNodePtr = std::shared_ptr<AstNode>;
 // ---- Attribute: @[name] or @[name(args...)] stored directly on owning nodes ----
 
 struct Attribute {
-    std::string name;
+    Token name;
     std::vector<AstNodePtr> args = {}; // empty if no argument list
-    std::vector<std::pair<std::string, AstNodePtr>> named_args = {}; // empty if no named arguments
+    std::vector<std::pair<Token, AstNodePtr>> named_args = {}; // empty if no named arguments
 };
 
 std::string to_string(const Attribute& attr);
@@ -28,7 +29,7 @@ struct Decorator{
     */
     AstNodePtr decorator; // An IdentifierLiteral or some expression
     std::vector<AstNodePtr> args = {}; // empty if no argument list. 
-    std::vector<std::pair<std::string, AstNodePtr>> named_args = {}; // empty if no named arguments
+    std::vector<std::pair<Token, AstNodePtr>> named_args = {}; // empty if no named arguments
 };
 
 std::string to_string(const Decorator& decorator);
@@ -55,7 +56,7 @@ enum class ParamKind {
 
 struct Parameter {
     AstNodePtr type;
-    std::string name;//"" for CVariadic
+    Token name;//"" for CVariadic
     AstNodePtr default_value; // NoLiteral if absent
     bool is_mut = false;
     ParamKind kind = ParamKind::Normal;
@@ -87,7 +88,7 @@ std::string to_string(const CaptureClause& capture);
 
 // A single field inside a struct definition
 struct StructField {
-    AstNodePtr name;
+    Token name;
     AstNodePtr type;
     AstNodePtr default_value; // NoLiteral when absent
     bool is_pub = false;

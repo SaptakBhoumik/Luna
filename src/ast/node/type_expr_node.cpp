@@ -245,7 +245,7 @@ std::string SumTypeExpr::stringify() const{
 }
 
 
-EnumTypeExpr::EnumTypeExpr(Token tok, AstNodePtr base_type, std::vector<std::pair<std::string, AstNodePtr>> variants){
+EnumTypeExpr::EnumTypeExpr(Token tok, AstNodePtr base_type, std::vector<std::pair<Token, AstNodePtr>> variants){
     this->tok = tok;
     this->base_type = base_type;
     this->variants = variants;
@@ -254,7 +254,7 @@ EnumTypeExpr::EnumTypeExpr(Token tok, AstNodePtr base_type, std::vector<std::pai
 AstNodePtr EnumTypeExpr::get_base_type() const{
     return this->base_type;
 }
-std::vector<std::pair<std::string, AstNodePtr>> EnumTypeExpr::get_variants() const{
+std::vector<std::pair<Token, AstNodePtr>> EnumTypeExpr::get_variants() const{
     return this->variants;
 }
 
@@ -271,7 +271,7 @@ std::string EnumTypeExpr::stringify() const{
     }
     res += " {";
     for (size_t i = 0; i < this->variants.size(); i++){
-        res += this->variants[i].first;
+        res += this->variants[i].first.value;
         if (this->variants[i].second->kind() != AstKind::NoLiteral){
             res += " = " + this->variants[i].second->stringify();
         }

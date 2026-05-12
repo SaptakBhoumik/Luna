@@ -79,7 +79,7 @@ std::string PostfixOp::stringify() const {
 }
 
 
-CoalescingOP::CoalescingOP(Token tok, AstNodePtr left, AstNodePtr right, bool null_coalescing, std::optional<std::pair<std::string,bool>> error_var_name){
+CoalescingOP::CoalescingOP(Token tok, AstNodePtr left, AstNodePtr right, bool null_coalescing, std::optional<std::pair<Token,bool>> error_var_name){
     this->tok = tok;
     this->left = left;
     this->right = right;
@@ -96,7 +96,7 @@ AstNodePtr CoalescingOP::get_right() const {
 bool CoalescingOP::is_null_coalescing() const {
     return this->null_coalescing;
 }
-std::optional<std::pair<std::string,bool>> CoalescingOP::get_error_var_name() const {
+std::optional<std::pair<Token,bool>> CoalescingOP::get_error_var_name() const {
     return this->error_var_name;
 }
 
@@ -109,7 +109,7 @@ AstKind CoalescingOP::kind() const {
 std::string CoalescingOP::stringify() const {
     std::string res = this->left->stringify() + (this->null_coalescing ? " ?? " : " !! ");
     if(this->error_var_name.has_value()){
-        res += "(" + this->error_var_name->first + (this->error_var_name->second ? ": mut" : "") + ")";
+        res += "(" + this->error_var_name->first.value + (this->error_var_name->second ? ": mut" : "") + ")";
     }
     if(this->right->kind() == AstKind::Block){
         res += "{\n" + this->right->stringify() + "\n}";
@@ -232,7 +232,7 @@ std::string ArrowExpr::stringify() const {
 }
 
 
-FuncCall::FuncCall(Token tok, AstNodePtr callee, std::vector<AstNodePtr> args, std::vector<std::pair<std::string, AstNodePtr>> named_args){
+FuncCall::FuncCall(Token tok, AstNodePtr callee, std::vector<AstNodePtr> args, std::vector<std::pair<Token, AstNodePtr>> named_args){
     this->tok = tok;
     this->callee = callee;
     this->args = args;
@@ -245,7 +245,7 @@ AstNodePtr FuncCall::get_callee() const {
 std::vector<AstNodePtr> FuncCall::get_arguments() const {
     return this->args;
 }
-std::vector<std::pair<std::string, AstNodePtr>> FuncCall::get_named_arguments() const {
+std::vector<std::pair<Token, AstNodePtr>> FuncCall::get_named_arguments() const {
     return this->named_args;
 }
 
@@ -265,7 +265,7 @@ std::string FuncCall::stringify() const {
     }
     size_t count = 0;
     for(const auto& [name, arg] : this->named_args){
-        res += name + "=" + arg->stringify();
+        res += name.value + "=" + arg->stringify();
         if(count != this->named_args.size() - 1){
             res += ", ";
         }
@@ -368,13 +368,13 @@ std::string LambdaExpr::stringify() const {
 }
 
 
-FormattedStr::FormattedStr(Token tok, std::vector<std::string> string_parts, std::vector<AstNodePtr> embedded_expr){
+FormattedStr::FormattedStr(Token tok, std::vector<Token> string_parts, std::vector<AstNodePtr> embedded_expr){
     this->tok = tok;
     this->string_parts = string_parts;
     this->embedded_expr = embedded_expr;
 }
 
-std::vector<std::string> FormattedStr::get_string_parts() const{
+std::vector<Token> FormattedStr::get_string_parts() const{
     return this->string_parts;
 }
 std::vector<AstNodePtr> FormattedStr::get_embedded_expr() const{
@@ -391,10 +391,10 @@ std::string FormattedStr::stringify() const{
     std::string res = "f\"";
     std::size_t min_size = std::min(this->string_parts.size(), this->embedded_expr.size());
     for(size_t i = 0; i < min_size; i++){
-        res += this->string_parts[i] + "{" + this->embedded_expr[i]->stringify() + "}";
+        res += this->string_parts[i].value + "{" + this->embedded_expr[i]->stringify() + "}";
     }
     if(this->string_parts.size() > min_size){
-        res += this->string_parts.back();
+        res += this->string_parts.back().value;
     }
     else if(this->embedded_expr.size() > min_size){
         res += "{" + this->embedded_expr.back()->stringify() + "}";

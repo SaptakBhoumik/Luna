@@ -26,7 +26,7 @@ AstNodePtr Parser::parse_none(){
 }
 AstNodePtr Parser::parse_identifier(){
     const Token tok = this->curr_tok;
-    std::vector<std::string> path = {this->curr_tok.value};
+    std::vector<Token> path = {this->curr_tok};
     std::vector<AstNodePtr> generic_args = {};
     if(peek().type == TokenType::double_colon){
         // parse path like A::B::C
@@ -34,7 +34,7 @@ AstNodePtr Parser::parse_identifier(){
             advance(); // consume current identifier
             advance(); // consume double colon
             expect(TokenType::identifier,"expected identifier after '::' in path");
-            path.push_back(this->curr_tok.value);
+            path.push_back(this->curr_tok);
         }
     }
     if(peek().type == TokenType::lbrace){

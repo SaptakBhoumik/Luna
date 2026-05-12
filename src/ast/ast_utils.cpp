@@ -4,7 +4,7 @@
 namespace Luna{
 // ---- Attribute: @[name] or @[name(args...)] stored directly on owning nodes ----
 std::string to_string(const Attribute& attr){
-    std::string res = "@["+attr.name;
+    std::string res = "@["+attr.name.value;
     if(attr.args.empty() && attr.named_args.empty()){
         return res+"]";
     }
@@ -17,7 +17,7 @@ std::string to_string(const Attribute& attr){
     }
     if(!attr.named_args.empty()){
         for(const auto& [name, arg] : attr.named_args){
-            res += name + "=" + arg->stringify() + ", ";
+            res += name.value + "=" + arg->stringify() + ", ";
         }
         res.pop_back(); // remove last space
         res.pop_back(); // remove last comma
@@ -40,7 +40,7 @@ std::string to_string(const Decorator& decorator){
     }
     if(!decorator.named_args.empty()){
         for(const auto& [name, arg] : decorator.named_args){
-            res += name + "=" + arg->stringify() + ", ";
+            res += name.value + "=" + arg->stringify() + ", ";
         }
         res.pop_back(); // remove last space
         res.pop_back(); // remove last comma
@@ -64,7 +64,7 @@ std::string to_string(const Parameter& param){
         return "...";
     } 
     std::string res;
-    res += param.name + ":" + param.type->stringify();
+    res += param.name.value + ":" + param.type->stringify();
     if(param.kind == ParamKind::VarArg){
         res = "*" + res;
     } 
@@ -122,7 +122,7 @@ std::string to_string(const StructField& field){
     if(field.is_mut){
         res += "mut ";
     }
-    res += field.name->stringify() + ":" + field.type->stringify();
+    res += field.name.value + ":" + field.type->stringify();
     if(field.default_value->kind() != AstKind::NoLiteral){
         res += " = " + field.default_value->stringify();
     }

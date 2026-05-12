@@ -186,15 +186,15 @@ AstNodePtr Parser::parse_enum_type_expr(){
         base_type = parse_type_expr();
     }
     expect(TokenType::lbrace, "Expected '{' at the beginning of enum type expression");
-    std::vector<std::pair<std::string, AstNodePtr>> variants; // (name, value)
+    std::vector<std::pair<Token, AstNodePtr>> variants; // (name, value)
     while(peek().type != TokenType::rbrace){
         advance_on_newline();//On '{' or on newline after '{' or on , between variants
         if(peek().type == TokenType::rbrace){
             break;
         }
         expect(TokenType::identifier, "Expected identifier for enum variant name in enum type expression");
-        std::string name = this->curr_tok.value;
-        advance_on_newline();//On the identifier
+        Token name = this->curr_tok;
+        advance_on_newline();//On the identifier or newline after the identifier
         AstNodePtr value = std::make_shared<NoLiteral>();
         if(peek().type == TokenType::assign){
             advance();//On =
@@ -219,7 +219,21 @@ AstNodePtr Parser::parse_struct_type_expr(){
     std::vector<StructField> fields;
     const Token struct_tok = this->curr_tok;
     while(peek().type != TokenType::rbrace){
-        //TODO:Use parse_sturct_field method and finish it
+        advance_on_newline();//On '{' or on newline after '{' or on , between fields
+        if(peek().type == TokenType::rbrace){
+            break;
+        }
+        advance(); 
+        fields.push_back(parse_struct_field());
+        advance_on_newline();
+        if(peek().type == TokenType::comma){
+            advance();//On ,
+        }
+        else if(peek().type != TokenType::rbrace){
+            error(peek(), "Expected ',' or '}' after struct field in struct type expression");
+        }
     }
+    expect(TokenType::rbrace, "Expected '}' at the end of struct type expression");
+    return std::make_shared<StructTypeExpr>(struct_tok, fields);
 }
 }

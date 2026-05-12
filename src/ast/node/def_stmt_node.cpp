@@ -2,7 +2,7 @@
 #include <cstddef>
 
 namespace Luna{
-TypeDefStmt::TypeDefStmt(Token tok, std::vector<Attribute> attributes, bool pub, std::string name, std::vector<std::string> generics, AstNodePtr base_type){
+TypeDefStmt::TypeDefStmt(Token tok, std::vector<Attribute> attributes, bool pub, Token name, std::vector<Token> generics, AstNodePtr base_type){
     this->tok = tok;
     this->attributes = attributes;
     this->pub = pub;
@@ -19,11 +19,11 @@ bool TypeDefStmt::is_pub() const {
     return this->pub;
 }
 
-std::string TypeDefStmt::get_name() const {
+Token TypeDefStmt::get_name() const {
     return this->name;
 }
 
-std::vector<std::string> TypeDefStmt::get_generics() const {
+std::vector<Token> TypeDefStmt::get_generics() const {
     return this->generics;
 }
 
@@ -45,10 +45,10 @@ std::string TypeDefStmt::stringify() const {
     if (pub) {
         result += "pub ";
     }
-    result += "type " + name;
+    result += "type " + name.value;
     if (!generics.empty()) {
         for(size_t i = 0; i < generics.size(); i++) {
-            result += generics[i];
+            result += generics[i].value;
             if (i != generics.size() - 1) {
                 result += ", ";
             }
@@ -165,7 +165,7 @@ std::string AugAssignStmt::stringify() const {
     return target->stringify() + " " + op.value + " " + value->stringify();
 }
 
-FuncDefStmt::FuncDefStmt(Token tok, bool pub, std::string name, std::vector<std::string> generics,std::vector<Parameter> parameters,AstNodePtr return_type, 
+FuncDefStmt::FuncDefStmt(Token tok, bool pub, Token name, std::vector<Token> generics,std::vector<Parameter> parameters,AstNodePtr return_type, 
                          AstNodePtr body, std::vector<Annotation> annotation){
     this->tok = tok;
     this->pub = pub;
@@ -180,10 +180,10 @@ FuncDefStmt::FuncDefStmt(Token tok, bool pub, std::string name, std::vector<std:
 bool FuncDefStmt::is_pub() const {
     return this->pub;
 }
-std::string FuncDefStmt::get_name() const {
+Token FuncDefStmt::get_name() const {
     return this->name;
 }
-std::vector<std::string> FuncDefStmt::get_generics() const {
+std::vector<Token> FuncDefStmt::get_generics() const {
     return this->generics;
 }
 std::vector<Parameter> FuncDefStmt::get_parameters() const {
@@ -213,11 +213,11 @@ std::string FuncDefStmt::stringify() const{
     if (is_pub()) {
         result += "pub ";
     }
-    result += "fn " + name;
+    result += "fn " + name.value;
     if (!generics.empty()) {
         result += "{";
         for(size_t i = 0; i < generics.size(); i++) {
-            result += generics[i];
+            result += generics[i].value;
             if (i != generics.size() - 1) {
                 result += ", ";
             }
@@ -242,7 +242,7 @@ std::string FuncDefStmt::stringify() const{
 }
 
 
-MethodDefStmt::MethodDefStmt(Token tok, bool pub, Parameter receiver, std::string name, std::vector<std::string> generics, std::vector<Parameter> parameters, 
+MethodDefStmt::MethodDefStmt(Token tok, bool pub, Parameter receiver, Token name, std::vector<Token> generics, std::vector<Parameter> parameters, 
                              AstNodePtr return_type, AstNodePtr body, std::vector<Attribute> attributes){
 
     this->tok = tok;
@@ -262,10 +262,10 @@ bool MethodDefStmt::is_pub() const {
 Parameter MethodDefStmt::get_receiver() const {
     return this->receiver;
 }
-std::string MethodDefStmt::get_name() const {
+Token MethodDefStmt::get_name() const {
     return this->name;
 }
-std::vector<std::string> MethodDefStmt::get_generics() const {
+std::vector<Token> MethodDefStmt::get_generics() const {
     return this->generics;
 }
 std::vector<Parameter> MethodDefStmt::get_parameters() const {
@@ -295,11 +295,11 @@ std::string MethodDefStmt::stringify() const {
     if (is_pub()) {
         result += "pub ";
     }
-    result += "fn (" + to_string(receiver) + ") " + name;
+    result += "fn (" + to_string(receiver) + ") " + name.value;
     if (!generics.empty()) {
         result += "{";
         for(size_t i = 0; i < generics.size(); i++) {
-            result += generics[i];
+            result += generics[i].value;
             if (i != generics.size() - 1) {
                 result += ", ";
             }

@@ -1,4 +1,5 @@
 #include "ast/ast.hpp"
+#include "lexer/token.hpp"
 
 namespace Luna{
 IntegerLiteral::IntegerLiteral(Token tok){
@@ -101,13 +102,13 @@ std::string NoneLiteral::stringify() const{
     return "None";
 }
 
-IdentifierLiteral::IdentifierLiteral(Token tok, std::vector<std::string> path, std::vector<AstNodePtr> generic_args){
+IdentifierLiteral::IdentifierLiteral(Token tok, std::vector<Token> path, std::vector<AstNodePtr> generic_args){
     this->tok = tok;
     this->path = path;
     this->generic_args = generic_args;
 }
 
-std::vector<std::string> IdentifierLiteral::get_path() const{
+std::vector<Token> IdentifierLiteral::get_path() const{
     return this->path;
 }
 std::vector<AstNodePtr> IdentifierLiteral::get_generic_args() const{
@@ -123,7 +124,7 @@ AstKind IdentifierLiteral::kind() const{
 std::string IdentifierLiteral::stringify() const{
     std::string res;
     for(size_t i = 0; i < this->path.size(); i++){
-        res += this->path[i];
+        res += this->path[i].value;
         if(i != this->path.size() - 1){
             res += "::";
         }

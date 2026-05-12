@@ -218,13 +218,13 @@ public:
 
 class IdentifierLiteral : public AstNode {
     Token tok;
-    std::vector<std::string> path;//The path. Like A::B::C will be ["A", "B", "C"]
+    std::vector<Token> path;//The path. Like A::B::C will be ["A", "B", "C"]
     std::vector<AstNodePtr> generic_args; // populated if this identifier is something like func{generic_arg1, generic_arg2} but we dont call the funciton yet. 
     // This is just the identifier with generic args, the actual function call will be a separate FunctionCall node with this as the callee.
 public:
-    IdentifierLiteral(Token tok, std::vector<std::string> path, std::vector<AstNodePtr> generic_args);
+    IdentifierLiteral(Token tok, std::vector<Token> path, std::vector<AstNodePtr> generic_args);
 
-    std::vector<std::string> get_path() const;
+    std::vector<Token> get_path() const;
     std::vector<AstNodePtr> get_generic_args() const;
 
     Token token() const;
@@ -461,12 +461,12 @@ public:
 class EnumTypeExpr : public AstNode {
     Token tok;
     AstNodePtr base_type; // NoLiteral -> default underlying type
-    std::vector<std::pair<std::string, AstNodePtr>> variants; // (name, value)
+    std::vector<std::pair<Token, AstNodePtr>> variants; // (name, value)
 public:
-    EnumTypeExpr(Token tok, AstNodePtr base_type, std::vector<std::pair<std::string, AstNodePtr>> variants);
+    EnumTypeExpr(Token tok, AstNodePtr base_type, std::vector<std::pair<Token, AstNodePtr>> variants);
 
     AstNodePtr get_base_type() const;
-    std::vector<std::pair<std::string, AstNodePtr>> get_variants() const;
+    std::vector<std::pair<Token, AstNodePtr>> get_variants() const;
 
     Token token() const;
     AstKind kind() const;
@@ -551,14 +551,14 @@ class CoalescingOP : public AstNode {
     AstNodePtr left;
     AstNodePtr right;
     bool null_coalescing; // true for ??, false for !!
-    std::optional<std::pair<std::string,bool>> error_var_name; // populated for !! (err){...} form, empty otherwise. The pair is (variable name, is_mutable)
+    std::optional<std::pair<Token,bool>> error_var_name; // populated for !! (err){...} form, empty otherwise. The pair is (variable name, is_mutable)
 public:
-    CoalescingOP(Token tok, AstNodePtr left, AstNodePtr right, bool null_coalescing, std::optional<std::pair<std::string,bool>> error_var_name);
+    CoalescingOP(Token tok, AstNodePtr left, AstNodePtr right, bool null_coalescing, std::optional<std::pair<Token,bool>> error_var_name);
 
     AstNodePtr get_left() const;
     AstNodePtr get_right() const;
     bool is_null_coalescing() const;
-    std::optional<std::pair<std::string,bool>> get_error_var_name() const;
+    std::optional<std::pair<Token,bool>> get_error_var_name() const;
 
     Token token() const;
     AstKind kind() const;
@@ -639,13 +639,13 @@ class FuncCall : public AstNode {
     Token tok;
     AstNodePtr callee;
     std::vector<AstNodePtr> args;
-    std::vector<std::pair<std::string, AstNodePtr>> named_args; // for calls with named arguments
+    std::vector<std::pair<Token, AstNodePtr>> named_args; // for calls with named arguments
 public:
-    FuncCall(Token tok, AstNodePtr callee,std::vector<AstNodePtr> args, std::vector<std::pair<std::string, AstNodePtr>> named_args);
+    FuncCall(Token tok, AstNodePtr callee,std::vector<AstNodePtr> args, std::vector<std::pair<Token, AstNodePtr>> named_args);
 
     AstNodePtr get_callee() const;
     std::vector<AstNodePtr> get_arguments() const;
-    std::vector<std::pair<std::string, AstNodePtr>> get_named_arguments() const;
+    std::vector<std::pair<Token, AstNodePtr>> get_named_arguments() const;
 
     Token token() const;
     AstKind kind() const;
@@ -715,14 +715,14 @@ public:
 // parts alternates: StringLiteral segments and interpolated expression nodes
 class FormattedStr : public AstNode {
     Token tok;
-    std::vector<std::string> string_parts; // The literal string segments, in order. Will have one more element than embedded_expr
+    std::vector<Token> string_parts; // The literal string segments, in order. Will have one more element than embedded_expr
     std::vector<AstNodePtr> embedded_expr;
     //The above 2 just alternates. Like for f"Hello {name}, you are {age} years old!" string_parts will be ["Hello ", ", you are ", " years old!"] and 
     //embedded_expr will be [IdentifierLiteral(name), IdentifierLiteral(age)]
 public:
-    FormattedStr(Token tok, std::vector<std::string> string_parts, std::vector<AstNodePtr> embedded_expr);
+    FormattedStr(Token tok, std::vector<Token> string_parts, std::vector<AstNodePtr> embedded_expr);
 
-    std::vector<std::string> get_string_parts() const;
+    std::vector<Token> get_string_parts() const;
     std::vector<AstNodePtr> get_embedded_expr() const;
 
     Token token() const;
@@ -917,8 +917,8 @@ public:
 // import path::sym  or  import path::{s1, s2}  
 class ImportStmt : public AstNode {
     Token tok;
-    std::vector<std::string> module_path;
-    std::vector<std::vector<std::string>> imported_symbols;
+    std::vector<Token> module_path;
+    std::vector<std::vector<Token>> imported_symbols;
     /*
     import std::io::{println, print}
     For the above imported_symbols = {{println}, {print}} and module_path = {std, io}
@@ -929,10 +929,10 @@ class ImportStmt : public AstNode {
     Basically each element of imported symbols is the path of the imported symbol
     */
 public:
-    ImportStmt(Token tok, std::vector<std::string> module_path, std::vector<std::vector<std::string>> imported_symbols);
+    ImportStmt(Token tok, std::vector<Token> module_path, std::vector<std::vector<Token>> imported_symbols);
 
-    std::vector<std::string> get_module_path() const;
-    std::vector<std::vector<std::string>> get_imported_symbols() const;
+    std::vector<Token> get_module_path() const;
+    std::vector<std::vector<Token>> get_imported_symbols() const;
 
     Token token() const;
     AstKind kind() const;
@@ -944,13 +944,13 @@ public:
 // using alias = path  or  using path  (alias is NoLiteral for the second form)
 class UsingStmt : public AstNode {
     Token tok;
-    std::vector<std::string> path;
-    std::optional<std::string> alias;
+    std::vector<Token> path;
+    std::optional<Token> alias;
 public:
-    UsingStmt(Token tok, std::vector<std::string> path, std::optional<std::string> alias);
+    UsingStmt(Token tok, std::vector<Token> path, std::optional<Token> alias);
 
-    std::vector<std::string> get_path() const;
-    std::optional<std::string> get_alias() const;
+    std::vector<Token> get_path() const;
+    std::optional<Token> get_alias() const;
 
     Token token() const;
     AstKind kind() const;
@@ -1106,16 +1106,16 @@ class TypeDefStmt : public AstNode {
     Token tok;
     std::vector<Attribute> attributes; // e.g. @[align(16)]
     bool pub = false;
-    std::string name;
-    std::vector<std::string> generics;
+    Token name;
+    std::vector<Token> generics;
     AstNodePtr base_type; //No literal for opaque type defination like `type Name{generics}`
 public:
-    TypeDefStmt(Token tok, std::vector<Attribute> attributes, bool pub, std::string name, std::vector<std::string> generics, AstNodePtr base_type);
+    TypeDefStmt(Token tok, std::vector<Attribute> attributes, bool pub, Token name, std::vector<Token> generics, AstNodePtr base_type);
     
     std::vector<Attribute> get_attributes() const;
     bool is_pub() const;
-    std::string get_name() const;
-    std::vector<std::string> get_generics() const;
+    Token get_name() const;
+    std::vector<Token> get_generics() const;
     AstNodePtr get_base_type() const;
 
     Token token() const;
@@ -1189,19 +1189,19 @@ public:
 class FuncDefStmt : public AstNode {
     Token tok;
     bool pub;
-    std::string name;
-    std::vector<std::string> generics;
+    Token name;
+    std::vector<Token> generics;
     std::vector<Parameter> parameters;
     AstNodePtr return_type; // NoLiteral for void / inferred
     AstNodePtr body;// NoLiteral for forward declaration
     std::vector<Annotation> annotation;
 public:
-    FuncDefStmt(Token tok, bool pub, std::string name, std::vector<std::string> generics,std::vector<Parameter> parameters,AstNodePtr return_type, 
+    FuncDefStmt(Token tok, bool pub, Token name, std::vector<Token> generics,std::vector<Parameter> parameters,AstNodePtr return_type, 
                 AstNodePtr body, std::vector<Annotation> annotation);
     
     bool is_pub() const;
-    std::string get_name() const;
-    std::vector<std::string> get_generics() const;
+    Token get_name() const;
+    std::vector<Token> get_generics() const;
     std::vector<Parameter> get_parameters() const;
     AstNodePtr get_return_type() const;
     AstNodePtr get_body() const;
@@ -1219,20 +1219,20 @@ class MethodDefStmt : public AstNode {
     Token tok;
     bool pub;
     Parameter receiver;//Only normal type with no default value
-    std::string name;
-    std::vector<std::string> generics;
+    Token name;
+    std::vector<Token> generics;
     std::vector<Parameter> parameters;
     AstNodePtr return_type;
     AstNodePtr body;
     std::vector<Attribute> attributes;//A method cant have decorator
 public:
-    MethodDefStmt(Token tok, bool pub, Parameter receiver, std::string name, std::vector<std::string> generics, std::vector<Parameter> parameters, 
+    MethodDefStmt(Token tok, bool pub, Parameter receiver, Token name, std::vector<Token> generics, std::vector<Parameter> parameters, 
                   AstNodePtr return_type, AstNodePtr body, std::vector<Attribute> attributes);
 
     bool is_pub() const;
     Parameter get_receiver() const;
-    std::string get_name() const;
-    std::vector<std::string> get_generics() const;
+    Token get_name() const;
+    std::vector<Token> get_generics() const;
     std::vector<Parameter> get_parameters() const;
     AstNodePtr get_return_type() const;
     AstNodePtr get_body() const;
