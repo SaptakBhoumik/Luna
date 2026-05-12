@@ -185,6 +185,10 @@ AstNodePtr Parser::parse_enum_type_expr(){
         advance();//On the first token of the base type
         base_type = parse_type_expr();
     }
+    if(peek().type == TokenType::newline){
+        error(peek(), "Unexpected newline before '{' in enum type expression", 
+        "In Luna, you cant enter new line before the '{' token in any kind of statement. This is the make the code more readable and uniform");
+    }
     expect(TokenType::lbrace, "Expected '{' at the beginning of enum type expression");
     std::vector<std::pair<Token, AstNodePtr>> variants; // (name, value)
     while(peek().type != TokenType::rbrace){

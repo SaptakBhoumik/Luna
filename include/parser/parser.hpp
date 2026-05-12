@@ -47,6 +47,7 @@ class Parser{
     //Parse utils
     Attribute parse_attribute();
     StructField parse_struct_field();
+    std::vector<Token> parse_path();
 
     // Parse literal nodes
     AstNodePtr parse_int();
@@ -72,6 +73,22 @@ class Parser{
     // Parse expression nodes
     AstNodePtr parse_expression(PrecedenceType precedence = PrecedenceType::pr_lowest);
 
+    // Parse statement nodes and blocks
+    AstNodePtr parse_stmt();
+    AstNodePtr parse_block();//Expects the current token to be lbrace('{'), and parses until the matching rbrace('}')
+
+    // Parse simple statement nodes
+    AstNodePtr parse_defer_stmt();
+    AstNodePtr parse_scope_stmt();
+    AstNodePtr parse_break_stmt();
+    AstNodePtr parse_continue_stmt();
+    AstNodePtr parse_return_stmt();
+    AstNodePtr parse_give_stmt();
+    AstNodePtr parse_lock_stmt();
+
+    //Parse module statement nodes
+    AstNodePtr parse_import_stmt();
+    AstNodePtr parse_using_stmt();
     public:
     Parser(const std::vector<Token>& toks, const std::string& filename);
 

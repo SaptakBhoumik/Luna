@@ -93,4 +93,16 @@ StructField Parser::parse_struct_field(){
     }
     return StructField(name, type, default_value, is_pub, is_mut, attributes);
 }
+std::vector<Token> Parser::parse_path(){
+    std::vector<Token> path = {this->curr_tok};
+    // if(peek().type == TokenType::double_colon){
+        // parse path like A::B::C
+    while(peek().type == TokenType::double_colon && peek(2).type == TokenType::identifier){
+        advance(); // On double colon
+        expect(TokenType::identifier,"expected identifier after '::' in path");
+        path.push_back(this->curr_tok);
+    }
+    // }
+    return path;
+}
 }

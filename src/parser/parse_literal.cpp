@@ -26,34 +26,23 @@ AstNodePtr Parser::parse_none(){
 }
 AstNodePtr Parser::parse_identifier(){
     const Token tok = this->curr_tok;
-    std::vector<Token> path = {this->curr_tok};
+    std::vector<Token> path = parse_path();
     std::vector<AstNodePtr> generic_args = {};
-    if(peek().type == TokenType::double_colon){
-        // parse path like A::B::C
-        while(peek().type == TokenType::double_colon){
-            advance(); // consume current identifier
-            advance(); // consume double colon
-            expect(TokenType::identifier,"expected identifier after '::' in path");
-            path.push_back(this->curr_tok);
-        }
-    }
+    
     if(peek().type == TokenType::lbrace){
         // parse generic args like Type{T, U}
-        advance(); // consume identifier
-        advance(); // consume '{'
+        advance(); // On '{'
+        // advance(); // consume '{'
         while(peek().type != TokenType::rbrace){
             advance_on_newline();
             if(peek().type == TokenType::rbrace){
                 break;
             }
-            if(this->curr_tok.type == TokenType::newline){
-                advance();
-                continue;
-            }
+            advance();
             generic_args.push_back(parse_type_expr());
             advance_on_newline();
             if(peek().type == TokenType::comma){
-                advance(); // consume comma and continue parsing generic args
+                advance(); // On comma and continue parsing generic args
             }
             else if(peek().type != TokenType::rbrace){
                 error(peek(),"expected ',' or '}' in generic argument list");
@@ -137,5 +126,4 @@ AstNodePtr Parser::parse_tuple_or_paren_expr(){
         return elements[0];
     }
 }
-
 }

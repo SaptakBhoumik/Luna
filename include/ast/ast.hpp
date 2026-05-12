@@ -892,10 +892,10 @@ public:
     void accept(AstVisitor& visitor) const;
 };
 
-// lock var { body }  or  lock (var1, var2) { body }
+// lock var { body }  or  lock (var1, var2) { body } or lock {body}
 class LockStmt : public AstNode {
     Token tok;
-    AstNodePtr target;//Either a tuple of identifiers or an identifier
+    AstNodePtr target;//Either a tuple of identifiers or an identifier. It can also be no literal
     AstNodePtr body;
 public:
     LockStmt(Token tok, AstNodePtr target, AstNodePtr body);
@@ -943,6 +943,10 @@ public:
 
 // using alias = path  or  using path  (alias is NoLiteral for the second form)
 class UsingStmt : public AstNode {
+    /*
+    For something like ``fmt::println``, u can only do ``using fmt`` or ``using f = fmt`` 
+    U cant do ``using fmt::println``. Because using is meant for bringing modules into scope and fmt::println is not a module but a function.
+    */
     Token tok;
     std::vector<Token> path;
     std::optional<Token> alias;

@@ -235,6 +235,9 @@ fn lock_demo() -> !void {
             old_bal = bal
             bal = bal + 20 
         } 
+        lock {
+            //This is also valid syntax. Locks every variable used in this block
+        }
     }
     t1.join()!
     t2.join()!
