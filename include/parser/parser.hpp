@@ -13,6 +13,7 @@ enum class PrecedenceType {
     pr_lowest,      // lowest possible precedence
     pr_range,       // ..
     pr_or,      // or
+    pr_coalescing, // ?? and !!
     pr_and,      // and
     pr_not,         // not
     pr_compare,     // ==, !=, <, >, <=, >=
@@ -72,6 +73,14 @@ class Parser{
 
     // Parse expression nodes
     AstNodePtr parse_expression(PrecedenceType precedence = PrecedenceType::pr_lowest);
+    AstNodePtr parse_bin_op(AstNodePtr left);
+    AstNodePtr parse_prefix_op();
+    AstNodePtr parse_postfix_op(AstNodePtr left);
+    AstNodePtr parse_coalescing_op(AstNodePtr left);
+    AstNodePtr parse_range_expr(AstNodePtr left);
+    AstNodePtr parse_index_expr(AstNodePtr container);
+    AstNodePtr parse_dot_or_arrow_expr(AstNodePtr left);
+    //TODO:
 
     // Parse statement nodes and blocks
     AstNodePtr parse_stmt();

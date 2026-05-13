@@ -606,11 +606,11 @@ public:
 class DotExpr : public AstNode {
     Token tok;
     AstNodePtr owner;
-    AstNodePtr member;
+    Token member;
 public:
-    DotExpr(Token tok, AstNodePtr owner, AstNodePtr member);
+    DotExpr(Token tok, AstNodePtr owner, Token member);
     AstNodePtr get_owner() const;
-    AstNodePtr get_member() const;
+    Token get_member() const;
 
     Token token() const;
     AstKind kind() const;
@@ -622,11 +622,11 @@ public:
 class ArrowExpr : public AstNode {
     Token tok;
     AstNodePtr owner;
-    AstNodePtr member;
+    Token member;
 public:
-    ArrowExpr(Token tok, AstNodePtr owner, AstNodePtr member);
+    ArrowExpr(Token tok, AstNodePtr owner, Token member);
     AstNodePtr get_owner() const;
-    AstNodePtr get_member() const;
+    Token get_member() const;
 
     Token token() const;
     AstKind kind() const;

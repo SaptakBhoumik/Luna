@@ -185,7 +185,7 @@ std::string IndexExpr::stringify() const {
 }
 
 
-DotExpr::DotExpr(Token tok, AstNodePtr owner, AstNodePtr member){
+DotExpr::DotExpr(Token tok, AstNodePtr owner, Token member){
     this->tok = tok;
     this->owner = owner;
     this->member = member;
@@ -194,7 +194,7 @@ DotExpr::DotExpr(Token tok, AstNodePtr owner, AstNodePtr member){
 AstNodePtr DotExpr::get_owner() const {
     return this->owner;
 }
-AstNodePtr DotExpr::get_member() const {
+Token DotExpr::get_member() const {
     return this->member;
 }
 
@@ -205,10 +205,10 @@ AstKind DotExpr::kind() const {
     return AstKind::DotExpr;
 }
 std::string DotExpr::stringify() const {
-    return this->owner->stringify() + "." + this->member->stringify();
+    return "(" + this->owner->stringify() + "." + this->member.value + ")";
 }
 
-ArrowExpr::ArrowExpr(Token tok, AstNodePtr owner, AstNodePtr member){
+ArrowExpr::ArrowExpr(Token tok, AstNodePtr owner, Token member){
     this->tok = tok;
     this->owner = owner;
     this->member = member;
@@ -217,7 +217,7 @@ ArrowExpr::ArrowExpr(Token tok, AstNodePtr owner, AstNodePtr member){
 AstNodePtr ArrowExpr::get_owner() const {
     return this->owner;
 }
-AstNodePtr ArrowExpr::get_member() const {
+Token ArrowExpr::get_member() const {
     return this->member;
 }
 
@@ -228,7 +228,7 @@ AstKind ArrowExpr::kind() const {
     return AstKind::ArrowExpr;
 }
 std::string ArrowExpr::stringify() const {
-    return this->owner->stringify() + "->" + this->member->stringify();
+    return "(" + this->owner->stringify() + "->" + this->member.value + ")";
 }
 
 
