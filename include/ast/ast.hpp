@@ -676,11 +676,11 @@ public:
 
 // $expr - any compile-time expression ($typesize, $typeid, $has_method, etc. Even for compile time functions,loop,when and stuff)
 class CompTimeExpr : public AstNode {
-    Token m_token;
-    AstNodePtr m_expression;
+    Token tok;
+    AstNodePtr expr_or_stmt;
 public:
-    CompTimeExpr(Token tok, AstNodePtr expression);
-    AstNodePtr expression() const;
+    CompTimeExpr(Token tok, AstNodePtr expr_or_stmt);
+    AstNodePtr get_expr_or_stmt() const;
 
     Token token() const;
     AstKind kind() const;

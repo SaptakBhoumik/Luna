@@ -303,23 +303,23 @@ std::string TernaryIf::stringify() const {
     return this->condition->stringify() + " ? " + this->then_value->stringify() + " : " + this->else_value->stringify();
 }
 
-CompTimeExpr::CompTimeExpr(Token tok, AstNodePtr expression){
-    this->m_token = tok;
-    this->m_expression = expression;
+CompTimeExpr::CompTimeExpr(Token tok, AstNodePtr expr_or_stmt){
+    this->tok = tok;
+    this->expr_or_stmt = expr_or_stmt;
 }
 
-AstNodePtr CompTimeExpr::expression() const {
-    return this->m_expression;
+AstNodePtr CompTimeExpr::get_expr_or_stmt() const {
+    return this->expr_or_stmt;
 }
 
 Token CompTimeExpr::token() const {
-    return this->m_token;
+    return this->tok;
 }
 AstKind CompTimeExpr::kind() const {
     return AstKind::CompTimeExpr;
 }
 std::string CompTimeExpr::stringify() const {
-    return "$" + this->m_expression->stringify() + "";
+    return "$" + this->expr_or_stmt->stringify() + "";
 }
 
 

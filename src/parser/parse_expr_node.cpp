@@ -110,4 +110,50 @@ AstNodePtr Parser::parse_dot_or_arrow_expr(AstNodePtr left){
         return std::make_shared<ArrowExpr>(op, left, member_name);
     }
 }
+AstNodePtr Parser::parse_func_call(AstNodePtr left){
+    Token tok = this->curr_tok;
+    std::vector<AstNodePtr> args;
+    std::vector<std::pair<Token, AstNodePtr>> named_args;
+    while(peek().type != TokenType::rparen){
+        if(peek().type == TokenType::identifier && peek(2).type == TokenType::assign){
+            // named argument
+            advance(); // on identifier
+            Token name = this->curr_tok;
+            advance(); // on '='
+            advance(); // on start of expression
+            AstNodePtr arg = parse_expression();
+            named_args.push_back(std::make_pair(name, arg));
+        }
+        else{
+            // positional argument
+            advance(); // on start of expression
+            AstNodePtr arg = parse_expression();
+            args.push_back(arg);
+        }
+        if(peek().type == TokenType::comma){
+            advance(); // on comma
+        }
+        else{
+            break;
+        }
+    }
+    expect(TokenType::rparen, "Expected ')' after function call arguments");
+    return std::make_shared<FuncCall>(tok, left, args, named_args);
+}
+
+AstNodePtr Parser::parse_ternary_expr(AstNodePtr condition){
+    Token tok = this->curr_tok;
+    advance();
+    AstNodePtr then_value = parse_expression(PrecedenceType::pr_ternary);
+    expect(TokenType::colon, "Expected ':' in ternary expression");
+    advance();
+    AstNodePtr else_value = parse_expression(PrecedenceType::pr_ternary);
+    return std::make_shared<TernaryIf>(tok, condition, then_value, else_value);
+}
+AstNodePtr Parser::parse_compile_time_expr(){
+    Token tok = this->curr_tok;
+    advance(); 
+    AstNodePtr expr_or_stmt = parse_expression(PrecedenceType::pr_prefix);
+    return std::make_shared<CompTimeExpr>(tok, expr_or_stmt);
+}
 }

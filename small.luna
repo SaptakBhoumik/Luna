@@ -160,6 +160,25 @@ fn area(r:Rect) -> f64 {
     ret (r.br.x - r.tl.x) * (r.br.y - r.tl.y)
 }
 
+fn function123(a,b:=10){//Yes u have to use := for default value
+    //Yes u need not specify the type of 'a' or the return type. It will be infered. It is equivalent to the following:-
+    /*
+    fn function123{T1,T2}(a:T1)->T2{
+        ret a+2
+    }
+    */
+    ret a+2
+}
+fn func1234(*$args := 10, **$kwargs := "hello"){
+    Default value for variadic parameters means when u do out of bounds access, u get the default value instead of error. 
+}
+fn func12w34(*$args:i8, **$kwargs:str = 9){//Yes does what u think it does
+
+}
+
+fn func12w34(*args:i8=9, **$kwargs:str){//Yes does what u think it does
+
+}
 // ---- Error handling ----
 fn divide(a:f64, b:f64) -> !f64 {
     //THe : signifies if block without any else if and stuff i.e npt a match statement

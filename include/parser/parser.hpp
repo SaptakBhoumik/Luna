@@ -13,6 +13,7 @@ enum class PrecedenceType {
     pr_lowest,      // lowest possible precedence
     pr_range,       // ..
     pr_or,      // or
+    pr_ternary,     // ? :
     pr_coalescing, // ?? and !!
     pr_and,      // and
     pr_not,         // not
@@ -49,6 +50,8 @@ class Parser{
     Attribute parse_attribute();
     StructField parse_struct_field();
     std::vector<Token> parse_path();
+    Parameter parse_parameter();
+    CaptureClause parse_capture_clause();
 
     // Parse literal nodes
     AstNodePtr parse_int();
@@ -80,7 +83,9 @@ class Parser{
     AstNodePtr parse_range_expr(AstNodePtr left);
     AstNodePtr parse_index_expr(AstNodePtr container);
     AstNodePtr parse_dot_or_arrow_expr(AstNodePtr left);
-    //TODO:
+    AstNodePtr parse_func_call(AstNodePtr left);
+    AstNodePtr parse_ternary_expr(AstNodePtr condition);
+    AstNodePtr parse_compile_time_expr();
 
     // Parse statement nodes and blocks
     AstNodePtr parse_stmt();
@@ -98,6 +103,10 @@ class Parser{
     //Parse module statement nodes
     AstNodePtr parse_import_stmt();
     AstNodePtr parse_using_stmt();
+
+    //Parse branch statement nodes
+    AstNodePtr parse_when_stmt();
+    AstNodePtr parse_loop_stmt();
     public:
     Parser(const std::vector<Token>& toks, const std::string& filename);
 

@@ -63,8 +63,10 @@ std::string to_string(const Parameter& param){
     if(param.kind == ParamKind::CVariadic){
         return "...";
     } 
-    std::string res;
-    res += param.name.value + ":" + param.type->stringify();
+    std::string res = param.name.value;
+    if(param.type->kind() != AstKind::NoLiteral){
+        res += ":" + param.type->stringify();
+    }
     if(param.kind == ParamKind::VarArg){
         res = "*" + res;
     } 

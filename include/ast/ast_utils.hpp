@@ -55,7 +55,7 @@ enum class ParamKind {
 };
 
 struct Parameter {
-    AstNodePtr type;
+    AstNodePtr type;//No literal if type is inferred. 
     Token name;//"" for CVariadic
     AstNodePtr default_value; // NoLiteral if absent
     bool is_mut = false;
