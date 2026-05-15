@@ -25,12 +25,13 @@
 - Selective import: `import std::io::{println, print}`.
 - Module alias: `using io = std::io`.
 - Namespace import: `using math` (similar to `using namespace` in C++).
-- `import io{print}` still requires `io::print`; the braces restrict what you can access.
+- `import io{print}` restricts access to `print` only; you still call it as `io::print` unless you also `using io`.
 
 ## Types, values, and declarations
 - Primitive scalars: `i8/i16/i32/i64`, `u8/u16/u32/u64`, `f32/f64`, `bool`, `str`.
 - `None` is the null/empty value for optionals and pointers.
 - Constants use `name:Type = value` (e.g., `PI:f64 = 3.14159`).
+- Boolean literals appear as `True` and `False` in the examples.
 
 ### Enums
 **Current syntax (small.luna):**
@@ -77,7 +78,8 @@
   - `msg := "test"`, `mut flag := True`.
 - Overloading: multiple functions/methods with the same name are allowed when parameter (or receiver) types differ.
 - Methods use a receiver: `fn (p:Point)len() -> f64 { ... }`.
-- A function and a method may share a name, but methods cannot be passed as first-class values.
+- A function and a method may share a name.
+- Functions are first-class values; methods are not (you cannot pass a method as a value).
 
 ### Default arguments (disagreement)
 - **Current (small.luna):** `fn f(a, b := 10)` uses `:=` for defaults.
@@ -168,7 +170,7 @@
 ## Pointers
 - Raw pointers use `*T`, `&val` takes address, `*ptr` dereferences, `ptr->field` accesses a field.
 - Pointers are nullable via `None`.
-- **Legacy note:** `?*T` is disallowed; `*?T` (pointer to optional) is allowed.
+- **Legacy note:** `?*T` is disallowed because pointers are already nullable via `None`; `*?T` (pointer to optional) is allowed when the pointed value itself can be `None`.
 - There is no `&Type`; use `*Type` when a pointer type is needed.
 
 ## Collections
@@ -209,7 +211,7 @@
 - `Chan{T}` and `TaskChan{T}` are typed channels.
 - `send` and `recv`; `recv()` yields `?T` (None when closed).
 - `select { v <-- ch1:{...} 42 --> ch2:{...} ?:{...} }` handles multiple channel ops.
-- Case ordering matters; there is no random selection when multiple cases are ready.
+- Case ordering is deterministic: if multiple cases are ready, the first ready case in source order executes; other ready cases wait for the next `select`.
 
 ## SIMD
 ### Type syntax (disagreement)
