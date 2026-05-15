@@ -155,7 +155,7 @@
   - `expr!` propagates an error.
   - `expr !! fallback` handles error coalescing.
   - `expr ?? fallback` handles optional coalescing.
-  - Blocks may use `give value` to supply a fallback. If a block does not yield a value, it must terminate control flow (e.g., `ret`, `break`, or `continue`). The required termination depends on where the coalescing expression appears. Failure to do so is a compile-time error.
+  - Blocks may use `give value` to supply a fallback. If a block does not yield a value, it must terminate control flow so the assignment is never required (e.g., `ret` to exit a function or `break`/`continue` to exit a loop when the coalescing expression is inside that loop). Failure to do so is a compile-time error.
   - Coalescing blocks capture variables in scope by reference.
 - **Legacy (detailed.luna):**
   - `expr or fallback` and `expr or { ... }` handle both errors and optionals.
@@ -215,7 +215,10 @@
 - `Chan{T}` and `TaskChan{T}` are typed channels.
 - `send` and `recv`; `recv()` yields `?T` (None when closed).
 - `select { v <-- ch1:{...} 42 --> ch2:{...} ?:{...} }` handles multiple channel ops.
-- Case ordering is deterministic. If multiple cases are ready simultaneously, the first ready case in source order executes. Messages in other ready channels remain buffered and can be handled in subsequent `select` operations. This is an intentional deviation from random selection in some other languages.
+- Case ordering is deterministic.
+- If multiple cases are ready simultaneously, the first ready case in source order executes.
+- Messages in other ready channels remain buffered and can be handled in subsequent `select` operations.
+- This is an intentional deviation from random selection in some other languages.
 
 ## SIMD
 ### Type syntax (disagreement)
