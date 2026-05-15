@@ -74,6 +74,9 @@ void EnumTypeExpr::accept(AstVisitor& visitor) const {
 void StructTypeExpr::accept(AstVisitor& visitor) const {
     visitor.visit(*this);
 }
+void InterfaceTypeExpr::accept(AstVisitor& visitor) const {
+    visitor.visit(*this);
+}
 //Expression/Operator nodes
 void BinOp::accept(AstVisitor& visitor) const {
     visitor.visit(*this);

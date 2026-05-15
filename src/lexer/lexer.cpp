@@ -105,6 +105,7 @@ void Lexer::flush_keyword() {
         { "task", TokenType::kw_task },
         { "lock", TokenType::kw_lock },
         { "select", TokenType::kw_select},
+        { "interface", TokenType::kw_interface },
 
         // { "typesize", TokenType::kw_typesize },
         // { "decltype", TokenType::kw_decltype },
@@ -457,7 +458,6 @@ void Lexer::lex_fstring() {
     }
 
     while (this->curr_char != quote) {
-
         // ---- escape sequences ----
         if (this->curr_char == '\\') {
             str += this->curr_char;

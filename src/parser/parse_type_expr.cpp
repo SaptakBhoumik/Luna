@@ -44,6 +44,10 @@ AstNodePtr Parser::parse_type_expr(bool can_be_sumtype){
             type_expr = parse_struct_type_expr();
             break;
         }
+        case TokenType::kw_interface:{
+            type_expr = parse_interface_type_expr();
+            break;
+        }
         default:{
             error(this->curr_tok, "Unexpected token in type expression");
         }
@@ -190,28 +194,28 @@ AstNodePtr Parser::parse_enum_type_expr(){
         "In Luna, you cant enter new line before the '{' token in any kind of statement. This is the make the code more readable and uniform");
     }
     expect(TokenType::lbrace, "Expected '{' at the beginning of enum type expression");
+    advance_on_newline();//On '{' or on newline after '{' between variants
     std::vector<std::pair<Token, AstNodePtr>> variants; // (name, value)
     while(peek().type != TokenType::rbrace){
-        advance_on_newline();//On '{' or on newline after '{' or on , between variants
-        if(peek().type == TokenType::rbrace){
-            break;
-        }
+        // if(peek().type == TokenType::rbrace){
+        //     break;
+        // }
         expect(TokenType::identifier, "Expected identifier for enum variant name in enum type expression");
         Token name = this->curr_tok;
-        advance_on_newline();//On the identifier or newline after the identifier
+        // advance_on_newline();//On the identifier or newline after the identifier
         AstNodePtr value = std::make_shared<NoLiteral>();
         if(peek().type == TokenType::assign){
             advance();//On =
-            advance_on_newline();
+            // advance_on_newline();
             advance();
             value = parse_expression();
         }
-        advance_on_newline();
-        if(peek().type == TokenType::comma){
-            advance();//On ,
+        // advance_on_newline();
+        if(peek().type == TokenType::newline){
+            advance();//On \n
         }
         else if(peek().type != TokenType::rbrace){
-            error(peek(), "Expected ',' or '}' after enum variant in enum type expression");
+            error(peek(), "Expected '<new line>' or '}' after enum variant in enum type expression");
         }
         variants.push_back(std::make_pair(name, value));
     }
@@ -222,22 +226,49 @@ AstNodePtr Parser::parse_enum_type_expr(){
 AstNodePtr Parser::parse_struct_type_expr(){
     std::vector<StructField> fields;
     const Token struct_tok = this->curr_tok;
+    advance_on_newline();//On '{' or on newline after '{' between fields
     while(peek().type != TokenType::rbrace){
-        advance_on_newline();//On '{' or on newline after '{' or on , between fields
-        if(peek().type == TokenType::rbrace){
-            break;
-        }
+        // if(peek().type == TokenType::rbrace){
+        //     break;
+        // }
         advance(); 
         fields.push_back(parse_struct_field());
-        advance_on_newline();
-        if(peek().type == TokenType::comma){
-            advance();//On ,
+        // advance_on_newline();
+        if(peek().type == TokenType::newline){
+            advance();//On \n
         }
         else if(peek().type != TokenType::rbrace){
-            error(peek(), "Expected ',' or '}' after struct field in struct type expression");
+            error(peek(), "Expected '<new line>' or '}' after struct field in struct type expression");
         }
     }
     expect(TokenType::rbrace, "Expected '}' at the end of struct type expression");
     return std::make_shared<StructTypeExpr>(struct_tok, fields);
+}
+
+AstNodePtr Parser::parse_interface_type_expr(){
+    const Token interface_tok = this->curr_tok;
+    expect(TokenType::lbrace, "Expected '{' at the beginning of interface type expression");
+    advance_on_newline();//On '{' or on newline after '{' between methods
+    std::vector<AstNodePtr> methods;//Forward declaration of method def. No pub or attributes. To keep things simple, reusing the parsing logic of method definitions 
+    // We will check for the validity of the method definitions later in the syntax semantic analysis phase like to make sure it is an actual forward declaration
+    while(peek().type != TokenType::rbrace){
+        // if(peek().type == TokenType::rbrace){
+        //     break;
+        // }
+        advance(); 
+        if(this->curr_tok.type != TokenType::kw_fn){
+            error(this->curr_tok, "Expected 'fn' at the beginning of method definition in interface type expression");
+        }
+        methods.push_back(parse_method_def(false, {}));// is_pub = false, annotations = {}
+        // advance_on_newline();
+        if(peek().type == TokenType::newline){
+            advance();//On \n
+        }
+        else if(peek().type != TokenType::rbrace){
+            error(peek(), "Expected '<new line>' or '}' after interface method in interface type expression");
+        }
+    }
+    expect(TokenType::rbrace, "Expected '}' at the end of interface type expression");
+    return std::make_shared<InterfaceTypeExpr>(interface_tok, methods);
 }
 }

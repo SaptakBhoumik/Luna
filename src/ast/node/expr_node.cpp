@@ -475,18 +475,22 @@ std::string ThreadOrTaskExpr::stringify() const{
 }
 
 
-ArrowBlockCallExpr::ArrowBlockCallExpr(Token tok, AstNodePtr callee, std::vector<Parameter> args, AstNodePtr body){
+ArrowBlockCallExpr::ArrowBlockCallExpr(Token tok, AstNodePtr callee, std::vector<AstNodePtr> args, std::vector<std::pair<Token, AstNodePtr>> named_args, AstNodePtr body){
     this->tok = tok;
     this->callee = callee;
     this->args = args;
+    this->named_args = named_args;
     this->body = body;
 }
 
 AstNodePtr ArrowBlockCallExpr::get_callee() const{
     return this->callee;
 }
-std::vector<Parameter> ArrowBlockCallExpr::get_arguments() const{
+std::vector<AstNodePtr> ArrowBlockCallExpr::get_arguments() const{
     return this->args;
+}
+std::vector<std::pair<Token, AstNodePtr>> ArrowBlockCallExpr::get_named_arguments() const{
+    return this->named_args;
 }
 AstNodePtr ArrowBlockCallExpr::get_body() const{
     return this->body;
@@ -500,16 +504,29 @@ AstKind ArrowBlockCallExpr::kind() const{
 }
 std::string ArrowBlockCallExpr::stringify() const{
     std::string res = this->callee->stringify();
+    res += "(";
     if(!this->args.empty()){
-        res += "(";
         for(size_t i = 0; i < this->args.size(); i++){
-            res += to_string(this->args[i]);
+            res += this->args[i]->stringify();
             if(i != this->args.size() - 1){
                 res += ", ";
             }
         }
-        res += ")";
     }
+    if(!this->named_args.empty()){
+        if(!this->args.empty()){
+            res += ", ";
+        }
+        size_t count = 0;
+        for(const auto& [name, arg] : this->named_args){
+            res += name.value + "=" + arg->stringify();
+            if(count != this->named_args.size() - 1){
+                res += ", ";
+            }
+            count++;
+        }
+    }
+    res += ")";
     res += " => " + this->body->stringify();
     return res;
 }

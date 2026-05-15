@@ -269,15 +269,13 @@ std::string EnumTypeExpr::stringify() const{
     if (this->base_type->kind() != AstKind::NoLiteral){
         res += ":" + this->base_type->stringify();
     }
-    res += " {";
+    res += " {\n";
     for (size_t i = 0; i < this->variants.size(); i++){
-        res += this->variants[i].first.value;
+        res += "\t" + this->variants[i].first.value;
         if (this->variants[i].second->kind() != AstKind::NoLiteral){
             res += " = " + this->variants[i].second->stringify();
         }
-        if (i != this->variants.size() - 1){
-            res += ", ";
-        }
+        res += "\n";
     }
     res += "}";
     return res;
@@ -300,12 +298,34 @@ AstKind StructTypeExpr::kind() const{
     return AstKind::StructTypeExpr;
 }
 std::string StructTypeExpr::stringify() const{
-    std::string res = "{";
+    std::string res = "{\n";
     for (size_t i = 0; i < this->fields.size(); i++){
-        res += to_string(this->fields[i]);
-        if (i != this->fields.size() - 1){
-            res += ", ";
-        }
+        res += "\t" + to_string(this->fields[i]) + "\n";
+    }
+    res += "}";
+    return res;
+}
+
+
+InterfaceTypeExpr::InterfaceTypeExpr(Token tok, std::vector<AstNodePtr> methods){
+    this->tok = tok;
+    this->methods = methods;
+}
+
+std::vector<AstNodePtr> InterfaceTypeExpr::get_methods() const{
+    return this->methods;
+}
+
+Token InterfaceTypeExpr::token() const{
+    return this->tok;
+}
+AstKind InterfaceTypeExpr::kind() const{
+    return AstKind::InterfaceTypeExpr;
+}
+std::string InterfaceTypeExpr::stringify() const{
+    std::string res = "interface {";
+    for (size_t i = 0; i < this->methods.size(); i++){
+        res += "\t" + this->methods[i]->stringify() + "\n";
     }
     res += "}";
     return res;

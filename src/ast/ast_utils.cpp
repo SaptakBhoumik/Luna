@@ -73,7 +73,10 @@ std::string to_string(const Parameter& param){
     else if(param.kind == ParamKind::CompileTimeVarArg){
         res = "*$" + res;
     } 
-    else if(param.kind == ParamKind::CompileTimeKwarg){
+    else if(param.kind == ParamKind::KwVararg){
+        res = "**" + res;
+    }
+    else if(param.kind == ParamKind::CompileTimeKwVararg){
         res = "**$" + res;
     }
     else if(param.kind == ParamKind::CompileTime){

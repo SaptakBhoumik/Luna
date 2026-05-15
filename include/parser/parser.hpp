@@ -52,6 +52,7 @@ class Parser{
     std::vector<Token> parse_path();
     Parameter parse_parameter();
     CaptureClause parse_capture_clause();
+    LambdaFuncSignature parse_lambda_signature();
 
     // Parse literal nodes
     AstNodePtr parse_int();
@@ -64,7 +65,7 @@ class Parser{
     AstNodePtr parse_tuple_or_paren_expr();
 
     // Parse type expression nodes
-    AstNodePtr parse_type_expr(bool can_be_sumtype = false);
+    AstNodePtr parse_type_expr(bool can_be_sumtype = true);
     AstNodePtr parse_identifier_type_expr();
     AstNodePtr parse_list_type_expr();
     AstNodePtr parse_ptr_optional_error_type_expr();
@@ -73,9 +74,10 @@ class Parser{
     AstNodePtr parse_simd_type_expr();
     AstNodePtr parse_enum_type_expr();
     AstNodePtr parse_struct_type_expr();
+    AstNodePtr parse_interface_type_expr();
 
     // Parse expression nodes
-    AstNodePtr parse_expression(PrecedenceType precedence = PrecedenceType::pr_lowest);
+    AstNodePtr parse_expression(PrecedenceType precedence = PrecedenceType::pr_lowest);//TODO:
     AstNodePtr parse_bin_op(AstNodePtr left);
     AstNodePtr parse_prefix_op();
     AstNodePtr parse_postfix_op(AstNodePtr left);
@@ -86,9 +88,13 @@ class Parser{
     AstNodePtr parse_func_call(AstNodePtr left);
     AstNodePtr parse_ternary_expr(AstNodePtr condition);
     AstNodePtr parse_compile_time_expr();
+    AstNodePtr parse_lambda_expr();
+    AstNodePtr parse_formatted_string();
+    AstNodePtr parse_thread_or_task_expr();
+    AstNodePtr parse_arrow_block_call(AstNodePtr left);
 
     // Parse statement nodes and blocks
-    AstNodePtr parse_stmt();
+    AstNodePtr parse_stmt();//TODO:
     AstNodePtr parse_block();//Expects the current token to be lbrace('{'), and parses until the matching rbrace('}')
 
     // Parse simple statement nodes
@@ -105,8 +111,12 @@ class Parser{
     AstNodePtr parse_using_stmt();
 
     //Parse branch statement nodes
-    AstNodePtr parse_when_stmt();
-    AstNodePtr parse_loop_stmt();
+    AstNodePtr parse_when_stmt();//TODO:
+    AstNodePtr parse_loop_stmt();//TODO:
+    AstNodePtr parse_select_stmt();//TODO:
+
+    //Parse definition statement nodes
+    AstNodePtr parse_method_def(bool is_pub, std::vector<Annotation> annotations);//TODO:
     public:
     Parser(const std::vector<Token>& toks, const std::string& filename);
 

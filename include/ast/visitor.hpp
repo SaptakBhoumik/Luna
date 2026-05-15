@@ -31,6 +31,7 @@ class AstVisitor {
     virtual bool visit(const SumTypeExpr& node) { return false; };
     virtual bool visit(const EnumTypeExpr& node) { return false; };
     virtual bool visit(const StructTypeExpr& node) { return false; };
+    virtual bool visit(const InterfaceTypeExpr& node) { return false; };
     //Expression/Operator nodes
     virtual bool visit(const BinOp& node) { return false; };
     virtual bool visit(const PrefixOp& node) { return false; };

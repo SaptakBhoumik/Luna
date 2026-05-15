@@ -39,6 +39,7 @@ enum class AstKind {
     SumTypeExpr,
     EnumTypeExpr,
     StructTypeExpr,
+    InterfaceTypeExpr,
 
     // Expression nodes
     BinOp,
@@ -490,6 +491,21 @@ public:
 
     void accept(AstVisitor& visitor) const;
 };
+
+class InterfaceTypeExpr : public AstNode {
+    Token tok;
+    std::vector<AstNodePtr> methods;//Forward declaration of method def. No pub or attributes. To keep things simple, reusing MethodDefStmt
+public:
+    InterfaceTypeExpr(Token tok, std::vector<AstNodePtr> methods);
+
+    std::vector<AstNodePtr> get_methods() const;
+
+    Token token() const;
+    AstKind kind() const;
+    std::string stringify() const;
+
+    void accept(AstVisitor& visitor) const;
+};
 // ============================
 //  Expression/Operator nodes
 // ============================
@@ -766,7 +782,8 @@ public:
 class ArrowBlockCallExpr:public AstNode{
     Token tok;
     AstNodePtr callee; // For func(args) => {...} case we need it callee to store ``func`` and not the whole func(args) as callee because dont make sense
-    std::vector<Parameter> args; // empty for func => {...}
+    std::vector<AstNodePtr> args; // empty for func => {...}
+    std::vector<std::pair<Token, AstNodePtr>> named_args; // empty for func => {...}
     AstNodePtr body;//THis is a lamda defination. 
     /*
     For something like the following:-
@@ -784,10 +801,11 @@ class ArrowBlockCallExpr:public AstNode{
     We still store it in LambdaExpr where capture is [] and no parameter and void return type
     */
 public:
-    ArrowBlockCallExpr(Token tok, AstNodePtr callee, std::vector<Parameter> args, AstNodePtr body);
+    ArrowBlockCallExpr(Token tok, AstNodePtr callee, std::vector<AstNodePtr> args, std::vector<std::pair<Token, AstNodePtr>> named_args, AstNodePtr body);
 
     AstNodePtr get_callee() const;
-    std::vector<Parameter> get_arguments() const;
+    std::vector<AstNodePtr> get_arguments() const;
+    std::vector<std::pair<Token, AstNodePtr>> get_named_arguments() const;
     AstNodePtr get_body() const;
 
     Token token() const;
@@ -1189,7 +1207,6 @@ public:
 };
 
 // fn name{generics}(params) -> return_type { body }
-// body is NoLiteral for a forward declaration.
 class FuncDefStmt : public AstNode {
     Token tok;
     bool pub;
@@ -1227,7 +1244,7 @@ class MethodDefStmt : public AstNode {
     std::vector<Token> generics;
     std::vector<Parameter> parameters;
     AstNodePtr return_type;
-    AstNodePtr body;
+    AstNodePtr body;// NoLiteral for forward declaration
     std::vector<Attribute> attributes;//A method cant have decorator
 public:
     MethodDefStmt(Token tok, bool pub, Parameter receiver, Token name, std::vector<Token> generics, std::vector<Parameter> parameters, 

@@ -3,6 +3,7 @@
 #include "lexer/token.hpp"
 #include "parser/parser.hpp"
 #include <iostream>
+#include <string>
 #include <vector>
 
 namespace Luna {
@@ -91,6 +92,9 @@ AstNodePtr Parser::parse_index_expr(AstNodePtr container){
     std::vector<AstNodePtr> indices = {parse_expression()};
     while(peek().type == TokenType::comma){
         advance(); // on comma
+        if(peek().type == TokenType::rbracket){
+            break;
+        }
         advance(); // on next index expression
         indices.push_back(parse_expression());
     }
@@ -155,5 +159,148 @@ AstNodePtr Parser::parse_compile_time_expr(){
     advance(); 
     AstNodePtr expr_or_stmt = parse_expression(PrecedenceType::pr_prefix);
     return std::make_shared<CompTimeExpr>(tok, expr_or_stmt);
+}
+AstNodePtr Parser::parse_lambda_expr(){
+    const Token tok = this->curr_tok;
+    LambdaFuncSignature signature = parse_lambda_signature();
+    expect(TokenType::lbrace, "Expected '{' at the start of lambda body");
+    AstNodePtr body = parse_block();
+    return std::make_shared<LambdaExpr>(tok, signature.capture, signature.parameters, signature.return_type, body);
+}
+
+AstNodePtr Parser::parse_formatted_string(){
+    const Token tok = this->curr_tok;
+    advance();//After the 'f' token
+    std::vector<Token> parts;
+    std::vector<AstNodePtr> expressions;
+
+    while(this->curr_tok.type != TokenType::format_str_end){
+        if(this->curr_tok.type == TokenType::format_str){
+            parts.push_back(this->curr_tok);
+            advance();
+        }
+        else{
+            // expression part
+            AstNodePtr expr = parse_expression();
+            expressions.push_back(expr);
+            advance();
+        }
+    }
+    return std::make_shared<FormattedStr>(tok, parts, expressions);
+}
+
+AstNodePtr Parser::parse_thread_or_task_expr(){
+    const Token tok = this->curr_tok;
+    bool is_thread = (tok.type == TokenType::kw_thread);
+    AstNodePtr body;
+    AstNodePtr restart_count = std::make_shared<NoLiteral>();
+    AstNodePtr timeout = std::make_shared<NoLiteral>();
+    AstNodePtr always_restart = std::make_shared<NoLiteral>();
+    AstNodePtr restart_delay = std::make_shared<NoLiteral>();
+
+    bool has_block = false;
+    {   
+        std::size_t i = 1;
+        TokenType next_type = peek(i).type;
+        while(next_type != TokenType::newline && next_type != TokenType::eof){
+            if(next_type == TokenType::lbrace){
+                has_block = true;
+                break;
+            }
+            i++;
+            next_type = peek(i).type;
+        }
+    }
+    if(peek().type == TokenType::lparen && has_block){
+        advance(); // on '('
+        advance(); // after '('
+        while(this->curr_tok.type != TokenType::rparen){
+            if(this->curr_tok.type != TokenType::identifier){
+                error(this->curr_tok, "Expected identifier in thread/task options");
+            }
+            std::string option_name = this->curr_tok.value;
+            expect(TokenType::assign, "Expected '=' after thread/task option name");
+            advance();
+            AstNodePtr option_value = parse_expression();
+            if(option_name == "restart_count"){
+                if(restart_delay->kind() != AstKind::NoLiteral){
+                    error(this->curr_tok, "Duplicate restart_count option");
+                }
+                restart_count = option_value;
+            }
+            else if(option_name == "timeout"){
+                if(timeout->kind() != AstKind::NoLiteral){
+                    error(this->curr_tok, "Duplicate timeout option");
+                }
+                timeout = option_value;
+            }
+            else if(option_name == "always_restart"){
+                if(always_restart->kind() != AstKind::NoLiteral){
+                    error(this->curr_tok, "Duplicate always_restart option");
+                }
+                always_restart = option_value;
+            }
+            else if(option_name == "restart_delay"){
+                if(restart_delay->kind() != AstKind::NoLiteral){
+                    error(this->curr_tok, "Duplicate restart_delay option");
+                }
+                restart_delay = option_value;
+            }
+            else{
+                error(this->curr_tok, "Unknown thread/task option: " + option_name);
+            }
+            if(peek().type == TokenType::comma){
+                advance();
+                if(peek().type == TokenType::rparen){
+                    advance();
+                    break;
+                }
+            }
+        }
+    }
+    advance();
+    if(this->curr_tok.type == TokenType::lbrace){
+        body = parse_block();
+    }
+    else{
+        body = parse_expression(PrecedenceType::pr_lowest);
+    }
+    return std::make_shared<ThreadOrTaskExpr>(tok, is_thread, body, restart_count, timeout, always_restart, restart_delay);   
+}
+
+AstNodePtr Parser::parse_arrow_block_call(AstNodePtr left){
+    const Token tok = this->curr_tok;
+    AstNodePtr callee;
+    std::vector<AstNodePtr> args;
+    std::vector<std::pair<Token, AstNodePtr>> named_args;
+    if(left->kind() == AstKind::FuncCall){
+        auto func_call = std::dynamic_pointer_cast<FuncCall>(left);
+        callee = func_call->get_callee();
+        args = func_call->get_arguments();
+        named_args = func_call->get_named_arguments();
+    }
+    else{
+        callee = left;
+    }
+    advance(); // after '=>'
+    AstNodePtr body;
+    if(this->curr_tok.type == TokenType::kw_fn){
+        body = parse_lambda_expr();
+    }
+    else if(this->curr_tok.type == TokenType::lbracket){
+        auto capture = parse_capture_clause();
+        expect(TokenType::lbrace, "Expected '{' after capture clause in arrow block call");
+        AstNodePtr lambda_body = parse_block();
+        body = std::make_shared<LambdaExpr>(tok, capture, std::vector<Parameter>{}, std::make_shared<NoLiteral>(), lambda_body);
+    }
+    else if(this->curr_tok.type == TokenType::lbrace){
+        AstNodePtr lambda_body = parse_block();
+        CaptureClause empty_capture = CaptureClause{CaptureKind::None, {}};
+        body = std::make_shared<LambdaExpr>(tok, empty_capture, std::vector<Parameter>{}, std::make_shared<NoLiteral>(), lambda_body);
+    }
+    else{
+        error(this->curr_tok, "Expected 'fn' , '[' or '{' after '=>'");
+    }
+    return std::make_shared<ArrowBlockCallExpr>(tok, callee, args, named_args, body);
 }
 }

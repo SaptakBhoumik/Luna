@@ -58,19 +58,19 @@ StructField Parser::parse_struct_field(){
     bool is_mut = false;
     if(this->curr_tok.type == TokenType::kw_pub){
         is_pub = true;
-        advance_on_newline();
+        // advance_on_newline();
         advance();
     }
     if(this->curr_tok.type == TokenType::kw_mut){
         is_mut = true;
-        advance_on_newline();
+        // advance_on_newline();
         advance();
     }
     if(this->curr_tok.type != TokenType::identifier){
         error(this->curr_tok, "Expected identifier for struct field name");
     }
     Token name = this->curr_tok;
-    advance_on_newline();
+    // advance_on_newline();
     advance();
     AstNodePtr type = std::make_shared<NoLiteral>();
     AstNodePtr default_value = std::make_shared<NoLiteral>();
@@ -93,6 +93,7 @@ StructField Parser::parse_struct_field(){
     }
     return StructField(name, type, default_value, is_pub, is_mut, attributes);
 }
+
 std::vector<Token> Parser::parse_path(){
     std::vector<Token> path = {this->curr_tok};
     // if(peek().type == TokenType::double_colon){
@@ -126,8 +127,11 @@ Parameter Parser::parse_parameter(){
         expect(TokenType::identifier, "Expected identifier after '*' for variadic parameter");
     }
     else if(this->curr_tok.type == TokenType::pow){
-        kind = ParamKind::CompileTimeKwarg;
-        expect(TokenType::dollar, "Expected '$' after '**' for compile-time keyword variadic parameter");
+        kind = ParamKind::KwVararg;
+        if(peek().type == TokenType::dollar){
+            advance();
+            kind = ParamKind::CompileTimeKwVararg;
+        }
         expect(TokenType::identifier, "Expected identifier after '**' for compile-time keyword variadic parameter");
     }
     else if(this->curr_tok.type == TokenType::dollar){
@@ -200,5 +204,42 @@ CaptureClause Parser::parse_capture_clause(){
         }
         return CaptureClause{CaptureKind::List, entries};
     }
+}
+
+LambdaFuncSignature Parser::parse_lambda_signature(){
+    expect(TokenType::lparen, "Expected '(' at the beginning of lambda function signature");
+    std::vector<Parameter> parameters;
+    if(peek().type != TokenType::rparen){
+        while(true){
+            advance(); // on the first token of the parameter
+            parameters.push_back(parse_parameter());
+            if(peek().type == TokenType::comma){
+                advance();
+                if(peek().type == TokenType::rparen){
+                    advance();
+                    break;
+                }
+            }
+            else if(peek().type == TokenType::rparen){
+                advance();
+                break;
+            }
+            else{
+                error(peek(), "Expected ',' or ')' in lambda function signature");
+            }
+        }
+    }
+    CaptureClause capture = CaptureClause{CaptureKind::None, {}};
+    if(peek().type == TokenType::lbracket){
+        advance(); // on '['
+        capture = parse_capture_clause();
+    }
+    AstNodePtr return_type = std::make_shared<NoLiteral>();
+    if(peek().type == TokenType::arrow){
+        advance(); // on '->'
+        advance(); // on the first token of the return type expression
+        return_type = parse_type_expr();
+    }
+    return LambdaFuncSignature{parameters, capture, return_type};
 }
 }

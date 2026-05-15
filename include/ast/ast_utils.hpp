@@ -50,7 +50,8 @@ enum class ParamKind {
     CVariadic, // ...
     VarArg, // *args
     CompileTimeVarArg, // *$args 
-    CompileTimeKwarg, // **$kwargs
+    KwVararg, // **kwargs
+    CompileTimeKwVararg, // **$kwargs
     CompileTime,// $param
 };
 
@@ -84,6 +85,11 @@ struct CaptureClause {
 
 std::string to_string(const CaptureClause& capture);
 
+struct LambdaFuncSignature {
+    std::vector<Parameter> parameters;
+    CaptureClause capture;
+    AstNodePtr return_type; // NoLiteral if no return type annotation
+};
 // ---- Struct field (for struct definitions) ----
 
 // A single field inside a struct definition

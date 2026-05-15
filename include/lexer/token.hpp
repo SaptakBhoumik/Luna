@@ -104,6 +104,7 @@ enum class TokenType {
     kw_using,//using
     kw_pub,//pub
     kw_enum,//enum
+    kw_interface,//interface
     kw_type,//type
     // kw_struct,//struct
     kw_fn,//fn
