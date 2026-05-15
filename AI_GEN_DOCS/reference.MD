@@ -78,7 +78,7 @@
 - Function definition: `fn name(params) -> ReturnType { ... }`.
 - Type inference with `:=`:
   - `msg := "test"`
-  - `mut flag := True`
+  - `mut is_enabled := True`
 - Overloading: multiple functions/methods with the same name are allowed when parameter (or receiver) types differ.
 - Methods use a receiver: `fn (p:Point)len() -> f64 { ... }`.
 - A function and a method may share a name.
@@ -108,7 +108,7 @@
 ## Expressions and operators
 - Ternary: `cond ? a : b`.
 - Pipe operator: `value |> fn1 |> fn2`.
-- Range expression: `a..b` and `a..b..step` (e.g., `a..b..c`); range values are first-class.
+- Range expression: `a..b` and `a..b..step` (e.g., `a..b..c` where `c` is the step); range values are first-class.
 
 ### Casting and type IDs (disagreement)
 - **Current (small.luna):** `$cast{T}(value)` and `$typeid{T}()` / `$typeid(value)`; sumtypes expose `.id`.
@@ -215,7 +215,7 @@
 - `Chan{T}` and `TaskChan{T}` are typed channels.
 - `send` and `recv`; `recv()` yields `?T` (None when closed).
 - `select { v <-- ch1:{...} 42 --> ch2:{...} ?:{...} }` handles multiple channel ops.
-- Case ordering is deterministic. If multiple cases are ready simultaneously, the first ready case in source order executes. Messages in other ready channels remain buffered and can be handled in subsequent `select` operations.
+- Case ordering is deterministic. If multiple cases are ready simultaneously, the first ready case in source order executes. Messages in other ready channels remain buffered and can be handled in subsequent `select` operations. This is an intentional deviation from random selection in some other languages.
 
 ## SIMD
 ### Type syntax (disagreement)
