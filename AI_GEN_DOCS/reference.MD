@@ -31,7 +31,7 @@
 - Primitive scalars: `i8/i16/i32/i64`, `u8/u16/u32/u64`, `f32/f64`, `bool`, `str`.
 - `None` is the null/empty value for optionals and pointers.
 - Constants use `name:Type = value` (e.g., `PI:f64 = 3.14159`).
-- Boolean literals appear as capitalized `True` and `False` in the examples; this document follows that casing.
+- Boolean literals are `True` and `False` (capitalized).
 
 ### Enums
 **Current syntax (small.luna):**
@@ -77,7 +77,8 @@
 ## Functions, methods, and overloading
 - Function definition: `fn name(params) -> ReturnType { ... }`.
 - Type inference with `:=`:
-  - `msg := "test"`, `mut flag := True`.
+  - `msg := "test"`
+  - `mut flag := True`
 - Overloading: multiple functions/methods with the same name are allowed when parameter (or receiver) types differ.
 - Methods use a receiver: `fn (p:Point)len() -> f64 { ... }`.
 - A function and a method may share a name.
@@ -107,7 +108,7 @@
 ## Expressions and operators
 - Ternary: `cond ? a : b`.
 - Pipe operator: `value |> fn1 |> fn2`.
-- Range expression: `a..b` and `a..b..step`; `a..b..c` is also a first-class range value.
+- Range expression: `a..b` and `a..b..step` (e.g., `a..b..c`); range values are first-class.
 
 ### Casting and type IDs (disagreement)
 - **Current (small.luna):** `$cast{T}(value)` and `$typeid{T}()` / `$typeid(value)`; sumtypes expose `.id`.
@@ -154,7 +155,7 @@
   - `expr!` propagates an error.
   - `expr !! fallback` handles error coalescing.
   - `expr ?? fallback` handles optional coalescing.
-  - Blocks may use `give value` to supply a fallback; if they do not yield a value they must terminate control flow (e.g., `ret`, `break`, or `continue` depending on where the coalescing expression appears), otherwise it is a compile-time error.
+  - Blocks may use `give value` to supply a fallback. If a block does not yield a value, it must terminate control flow (e.g., `ret`, `break`, or `continue` depending on where the coalescing expression appears); otherwise it is a compile-time error.
   - Coalescing blocks capture variables in scope by reference.
 - **Legacy (detailed.luna):**
   - `expr or fallback` and `expr or { ... }` handle both errors and optionals.
@@ -214,7 +215,7 @@
 - `Chan{T}` and `TaskChan{T}` are typed channels.
 - `send` and `recv`; `recv()` yields `?T` (None when closed).
 - `select { v <-- ch1:{...} 42 --> ch2:{...} ?:{...} }` handles multiple channel ops.
-- Case ordering is deterministic: if multiple cases are ready, the first ready case in source order executes; buffered messages simply remain in their channel buffers and are handled on the next `select`.
+- Case ordering is deterministic: if multiple cases are ready simultaneously, the first ready case in source order executes; messages in other ready channels remain buffered and can be handled in subsequent `select` operations.
 
 ## SIMD
 ### Type syntax (disagreement)
