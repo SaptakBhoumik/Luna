@@ -23,18 +23,16 @@ AstKind WhenStmt::kind() const {
 }
 
 std::string WhenStmt::stringify() const {
-    std::string res = "when";
+    std::string res = "when ";
     if(!subjects.empty()){
-        res += " (";
         for(size_t i = 0; i < subjects.size(); i++){
             res += subjects[i]->stringify();
             if(i != subjects.size() - 1){
                 res += ", ";
             }
         }
-        res += ")";
     }
-    res += " {\n";
+    res += "{\n";
     for(const auto& branch : branches){
         const auto& conditions = branch.first;
         const auto& body = branch.second;
@@ -61,11 +59,12 @@ std::string WhenStmt::stringify() const {
 }
 
 
-LoopStmt::LoopStmt(Token tok, LoopKind loop_kind,std::pair<AstNodePtr,bool> variable,AstNodePtr value,AstNodePtr body,std::vector<Attribute> attributes){
+LoopStmt::LoopStmt(Token tok, LoopKind loop_kind,std::vector<std::pair<AstNodePtr,bool>> variables,std::vector<AstNodePtr> values,
+                   AstNodePtr body,std::vector<Attribute> attributes){
     this->tok = tok;
     this->loop_kind = loop_kind;
-    this->variable = variable;
-    this->value = value;
+    this->variables = variables;
+    this->values = values;
     this->body = body;
     this->attributes = attributes;
 }
@@ -74,12 +73,12 @@ LoopKind LoopStmt::get_loop_kind() const {
     return this->loop_kind;
 }
 
-std::pair<AstNodePtr,bool> LoopStmt::get_variable() const {
-    return this->variable;
+std::vector<std::pair<AstNodePtr,bool>> LoopStmt::get_variables() const {
+    return this->variables;
 }
 
-AstNodePtr LoopStmt::get_value() const {
-    return this->value;
+std::vector<AstNodePtr> LoopStmt::get_values() const {
+    return this->values;
 }
 
 AstNodePtr LoopStmt::get_body() const {
@@ -101,15 +100,26 @@ std::string LoopStmt::stringify() const {
     for(const auto& attr : attributes){
         res += to_string(attr) + "\n";
     }
-    res += "loop";
-    if(this->variable.first->kind() != AstKind::NoLiteral){
-        if(this->variable.second){
-            res += " mut";
+    res += "loop ";
+    if(!this->variables.empty()){
+        for(size_t i = 0; i < this->variables.size(); i++){
+            if(this->variables[i].second){
+                res += "mut ";
+            }
+            res += this->variables[i].first->stringify();
+            if(i != this->variables.size() - 1){
+                res += ", ";
+            }
         }
-        res += " " + this->variable.first->stringify()+" :";
+        res += " : ";
     }
-    if(this->value->kind() != AstKind::NoLiteral){
-        res+= " " + this->value->stringify();
+    if(!this->values.empty()){
+        for(size_t i = 0; i < this->values.size(); i++){
+            res += this->values[i]->stringify();
+            if(i != this->values.size() - 1){
+                res += ", ";
+            }
+        }
     }
     res += " {\n" + this->body->stringify() + "\n}";
     return res;

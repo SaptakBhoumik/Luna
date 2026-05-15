@@ -61,11 +61,12 @@ std::string TypeDefStmt::stringify() const {
 }
 
 
-VarStmt::VarStmt(Token tok, AstNodePtr name, AstNodePtr type, AstNodePtr value, bool is_mut, bool is_def, bool pub, VarKind varkind, std::vector<Attribute> attributes){
+VarStmt::VarStmt(Token tok, std::vector<std::pair<AstNodePtr, std::pair<bool, bool>>> names, AstNodePtr type, std::vector<AstNodePtr> values,
+                 bool is_mut, bool is_def, bool pub, VarKind varkind, std::vector<Attribute> attributes){
     this->tok = tok;
-    this->name = name;
+    this->names = names;
     this->type = type;
-    this->value = value;
+    this->values = values;
     this->mut = is_mut;
     this->def = is_def;
     this->pub = pub;
@@ -73,14 +74,14 @@ VarStmt::VarStmt(Token tok, AstNodePtr name, AstNodePtr type, AstNodePtr value, 
     this->attributes = attributes;
 }
 
-AstNodePtr VarStmt::get_name() const {
-    return this->name;
+std::vector<std::pair<AstNodePtr, std::pair<bool, bool>>> VarStmt::get_names() const {
+    return this->names;
 }
 AstNodePtr VarStmt::get_var_type() const {
     return this->type;
 }
-AstNodePtr VarStmt::get_value() const {
-    return this->value;
+std::vector<AstNodePtr> VarStmt::get_values() const {
+    return this->values;
 }
 bool VarStmt::is_pub() const {
     return this->pub;
@@ -121,38 +122,58 @@ std::string VarStmt::stringify() const {
     if(mut) {
         result += "mut ";
     }
-    result += name->stringify();
+    for (size_t i = 0; i < names.size(); ++i) {
+        const auto& name_pair = names[i];
+        if(name_pair.second.first) { // is_pub
+            result += "pub ";
+        }        
+        if(name_pair.second.second) { // is_mut
+            result += "mut ";
+        }
+        result += name_pair.first->stringify();
+        if (i != names.size() - 1) {
+            result += ", ";
+        }
+    }
     if (type->kind() != AstKind::NoLiteral) {
         result += " : " + type->stringify();
     }
-    if(value->kind() != AstKind::NoLiteral) {
+    if(values.empty()) {
+        // Do nothing
+    } 
+    else {
         if(def){
             result += " := ";
         }
         else{
             result += " = ";
         }
-        result += value->stringify();
+        for(size_t i = 0; i < values.size(); ++i) {
+            result += values[i]->stringify();
+            if (i != values.size() - 1) {
+                result += ", ";
+            }
+        }
     }
     return result;
 }
 
 
-AugAssignStmt::AugAssignStmt(Token tok, Token op, AstNodePtr target, AstNodePtr value){
+AugAssignStmt::AugAssignStmt(Token tok, Token op, std::vector<AstNodePtr> targets, std::vector<AstNodePtr> values){
     this->tok = tok;
     this->op = op;
-    this->target = target;
-    this->value = value;
+    this->targets = targets;
+    this->values = values;
 }
 
-AstNodePtr AugAssignStmt::get_target() const {
-    return this->target;
+std::vector<AstNodePtr> AugAssignStmt::get_targets() const {
+    return this->targets;
 }
 Token AugAssignStmt::get_op() const {
     return this->op;
 }
-AstNodePtr AugAssignStmt::get_value() const {
-    return this->value;
+std::vector<AstNodePtr> AugAssignStmt::get_values() const {
+    return this->values;
 }
 
 Token AugAssignStmt::token() const {
@@ -162,7 +183,21 @@ AstKind AugAssignStmt::kind() const {
     return AstKind::AugAssignStmt;
 }
 std::string AugAssignStmt::stringify() const {
-    return target->stringify() + " " + op.value + " " + value->stringify();
+    std::string result;
+    for(size_t i = 0; i < targets.size(); ++i) {
+        result += targets[i]->stringify();
+        if (i != targets.size() - 1) {
+            result += ", ";
+        }
+    }
+    result += " " + op.value + " ";
+    for(size_t i = 0; i < values.size(); ++i) {
+        result += values[i]->stringify();
+        if (i != values.size() - 1) {
+            result += ", ";
+        }
+    }
+    return result;
 }
 
 FuncDefStmt::FuncDefStmt(Token tok, bool pub, Token name, std::vector<Token> generics,std::vector<Parameter> parameters,AstNodePtr return_type, 

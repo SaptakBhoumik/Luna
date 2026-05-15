@@ -106,18 +106,60 @@ AstNodePtr Parser::parse_tuple_or_paren_expr(){
     const Token tok = this->curr_tok;
     advance(); // consume '('
     std::vector<AstNodePtr> elements;
-    elements.push_back(parse_expression());
+    std::vector<std::pair<bool,bool>> is_pub_mut; // only used for assign tuple literal, ignored for regular tuple literal and parenthesized expression.
+    bool is_assign_tuple_literal = false;
+    if(this->curr_tok.type == TokenType::kw_mut || this->curr_tok.type == TokenType::kw_pub){
+        bool is_pub = false;
+        bool is_mut = false;
+        if(this->curr_tok.type == TokenType::kw_pub){
+            is_pub = true;
+            advance();
+        }
+        if(this->curr_tok.type == TokenType::kw_mut){
+            is_mut = true;
+            advance();
+        }
+        elements.push_back(parse_expression());
+        is_pub_mut.push_back({is_pub,is_mut});
+        is_assign_tuple_literal = true;
+    }
+    else{
+        elements.push_back(parse_expression());
+        is_pub_mut.push_back({false,false});// dummy value, not used for regular tuple literal and parenthesized expression
+    }
     if(peek().type == TokenType::comma){
         // tuple literal
+        bool is_pub = false;
+        bool is_mut = false;
         while(peek().type == TokenType::comma){
             advance(); // on ,
             if(peek().type == TokenType::rparen){
                 break;
             }
             advance(); // On the element after ,
+            if(this->curr_tok.type == TokenType::kw_pub){
+                is_pub = true;
+                advance();
+                is_assign_tuple_literal = true;
+            }
+            else{
+                is_pub = false;
+            }
+            if(this->curr_tok.type == TokenType::kw_mut){
+                is_mut = true;
+                advance();
+                is_assign_tuple_literal = true;
+            }
+            else{
+                is_mut = false;
+            }
             elements.push_back(parse_expression());
+            is_pub_mut.push_back({is_pub,is_mut});
         }
         advance(); // consume ')'
+        if(is_assign_tuple_literal){
+            return std::make_shared<AssignTupleLiteral>(tok,elements,is_pub_mut);
+        }
         return std::make_shared<TupleLiteral>(tok,elements);
     }
     else{

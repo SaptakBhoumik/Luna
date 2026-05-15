@@ -40,6 +40,9 @@ void EmptyDictOrListLiteral::accept(AstVisitor& visitor) const {
 void TupleLiteral::accept(AstVisitor& visitor) const {
     visitor.visit(*this);
 }
+void AssignTupleLiteral::accept(AstVisitor& visitor) const {
+    visitor.visit(*this);
+}
 //Type expression nodes
 void TypeExpr::accept(AstVisitor& visitor) const {
     visitor.visit(*this);

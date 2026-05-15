@@ -10,15 +10,18 @@
 // This is not special-cased for variadics. $loop generalizes to anything whose shape is
 // known at compile time but whose values may not be:
 //   - Tuples      : $loop $v : my_tuple   -> iterates over each element by position
-//   - Structs     : $loop $v : my_struct  -> iterates over each field by declaration order
+//   - Structs     : $loop $v : my_struct  -> iterates over each field by declaration order. $v is (str,field_type) tuple where str is the name of field
 //   - *args/**kwargs : same idea, pack structure is CT, values are RT
 //
 // The distinction between CT-value and RT-value variadics:
 //   $loop $v : $args  ->  CT pack, CT values  (*$args or **$kwargs, values must be constexpr)
 //   $loop $v : args   ->  CT pack, RT values  (*args or **kwargs,   values evaluated at runtime)
 //
+// We use $v and not v because we unpack at compile time even if the values are known at run time. The structure is known at compile time and we unpack based on that
+//
 // In both cases the loop is fully unrolled at compile time. The difference is only
 // whether the compiler can use the values for CT decisions (e.g. inside $when).
+//
 
 // There is a concept of sumtype and interface but no seperate concept of union. Sure we need it for c interop but Luna itself doesnt need it other than that
 // So in C if a function takes in union or returns a union then we can  just convert it to a struct. Yes the user has to write  a bit of extra code on C side
@@ -284,7 +287,7 @@ fn fetch(url:str) -> !str {
 
 mut hit_count:atomic{i32} = 0
 thread_local mut tid:i32 = 0
-thread_local mut (T1,T2) := (0,0)//yes u can do with tuple also
+thread_local mut (T1,T2) := (0,0)//yes the entire thing is mut now
 fn counter_demo() -> i32 {
     mut count:atomic{i32} = 0
     mut handles:[Thread{void},4] = []//The generic parameter of Thread is the return type of the thread function
@@ -304,6 +307,7 @@ fn complex_tuple_type(val:((i32,i32),i32)) -> ((i32,i32),i32){
     ret ((a,b),c)
 }
 ((a,pub mut b),pub c) := complex_tuple_type(((1,2),3)) 
+(pub (a1,mut b1),pub c1) := complex_tuple_type(((1,2),3)) 
 pub mut A,B := a,b
 
 fn lock_demo() -> !void {
@@ -693,14 +697,16 @@ pub fn main() {
                          //We just want to save it. If we did divide(...)! then we would throw an error and exit if divide throws an Error
     //You cant use r5 as a normal f64 variable because it can also hold an error value. So you can use it only after applying !! operator to handle it
     r6:!f64 = r5 
-    err:!Error = r5.err//This is how you can get the error value from a !T variable. Note if no error then it will be None. err is implicit field of !T
+    err:?Error = r5.err//This is how you can get the error value from a !T variable. Note if no error then it will be None. err is implicit field of !T
     // loops
     loop i :0..5 { io::print(f"{i} ") }
     loop i :0..10..2 { io::print(f"{i} ") }         // step
     loop v :arr { io::print(f"{v} ") }               // array iter
-    loop mut k, v :scores { io::println(f"{k}={v}") }    // map iter.
-    loop (k, mut v) :scores { io::println(f"{k}={v}") }    // this also works
+    loop mut k, v :scores { io::println(f"{k}={v}") }    // map iter. k mutable
+    loop (k, mut v) :scores { io::println(f"{k}={v}") }    // this also works. v mutable
+    loop mut (k, v) :scores { io::println(f"{k}={v}") }    // both mutable. 
     loop kv :scores { io::println(f"{kv[0]}={kv[1]}") }    // map iter
+    loop v1,v2:arr,arr { io::println(f"{v1} {v2}") } // multiple iter. Note:Both arrays must have the same length. No zip needed
     mut m := 3
     loop m>0 { m-- }                                  // while-style
     loop {                                            // infinite+break

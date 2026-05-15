@@ -26,6 +26,7 @@ enum class AstKind {
     DictLiteral,
     EmptyDictOrListLiteral,
     TupleLiteral,
+    AssignTupleLiteral,//Stuff like (mut A,pub B.....)
 
     // Type nodes
     TypeExpr,
@@ -282,7 +283,27 @@ class TupleLiteral : public AstNode {
     std::vector<AstNodePtr> elements;
 public:
     TupleLiteral(Token tok, std::vector<AstNodePtr> elements);
+
     std::vector<AstNodePtr> get_elements() const;
+
+    Token token() const;
+    AstKind kind() const;
+    std::string stringify() const;
+
+    void accept(AstVisitor& visitor) const;
+};
+
+
+// (pub a, mut b, c) - expression tuple / multiple-return value
+class AssignTupleLiteral : public AstNode {
+    Token tok;
+    std::vector<AstNodePtr> elements;
+    std::vector<std::pair<bool,bool>> is_pub_mut; // parallel to elements vector, first bool is true if pub, second bool is true if mut
+public:
+    AssignTupleLiteral(Token tok, std::vector<AstNodePtr> elements, std::vector<std::pair<bool,bool>> is_pub_mut);
+
+    std::vector<AstNodePtr> get_elements() const;
+    std::vector<std::pair<bool,bool>> get_is_pub_mut() const;
 
     Token token() const;
     AstKind kind() const;
@@ -882,11 +903,11 @@ public:
 // ret expr  (expr is NoLiteral for bare `ret`)
 class ReturnStmt : public AstNode {
     Token tok;
-    AstNodePtr value;
+    std::vector<AstNodePtr> values;
 public:
-    ReturnStmt(Token tok, AstNodePtr value);
+    ReturnStmt(Token tok, std::vector<AstNodePtr> values);
 
-    AstNodePtr get_value() const;
+    std::vector<AstNodePtr> get_values() const;
 
     Token token() const;
     AstKind kind() const;
@@ -898,11 +919,11 @@ public:
 // give expr - value-yielding exit from a ?? / !! handler block
 class GiveStmt : public AstNode {
     Token tok;
-    AstNodePtr value;
+    std::vector<AstNodePtr> values;
 public:
-    GiveStmt(Token tok, AstNodePtr value);
+    GiveStmt(Token tok, std::vector<AstNodePtr> values);
 
-    AstNodePtr get_value() const;
+    std::vector<AstNodePtr> get_values() const;
 
     Token token() const;
     AstKind kind() const;
@@ -1013,7 +1034,7 @@ class WhenStmt : public AstNode {
     */
     std::vector<std::pair<std::vector<std::vector<AstNodePtr>>, AstNodePtr>> branches;//<conditions,body> pairs. or <cases, body> 
     /*
-        when(p, q) {
+        when p, q {
             3, 5 
             1, 2:{
                 //body for both 3,5 and 1,2 cases
@@ -1070,16 +1091,16 @@ public:
 class LoopStmt : public AstNode {
     Token tok;
     LoopKind loop_kind;
-    std::pair<AstNodePtr,bool> variable; // loop variable; empty for Infinite/WhileStyle. Tuple for multiple variables. The second part is true if the variable is mutable
-    AstNodePtr value;// Iterable for `for` loop and condition for `while`, no literal for infinite loop
+    std::vector<std::pair<AstNodePtr,bool>> variables; // loop variable; empty for Infinite/WhileStyle. vector of (variable/expression,is mutable)
+    std::vector<AstNodePtr> values;// Array of iterable for `for` loop and condition for `while`, no literal for infinite loop
     AstNodePtr body;
     std::vector<Attribute> attributes; // @[parallel], @[simd], etc.
 public:
-    LoopStmt(Token tok, LoopKind loop_kind,std::pair<AstNodePtr,bool> variable,AstNodePtr value,AstNodePtr body,std::vector<Attribute> attributes);
+    LoopStmt(Token tok, LoopKind loop_kind,std::vector<std::pair<AstNodePtr,bool>> variables,std::vector<AstNodePtr> values,AstNodePtr body,std::vector<Attribute> attributes);
 
     LoopKind get_loop_kind() const;
-    std::pair<AstNodePtr,bool> get_variable() const;
-    AstNodePtr get_value() const;
+    std::vector<std::pair<AstNodePtr,bool>> get_variables() const;
+    std::vector<AstNodePtr> get_values() const;
     AstNodePtr get_body() const;
     std::vector<Attribute> get_attributes() const;
 
@@ -1154,25 +1175,35 @@ public:
 //   mut x:T = expr
 //   thread_local mut x:T = expr
 //   task_local mut x:T = expr
+//   A,mut B = expr1, expr2
 // type is NoLiteral when inferred; value is NoLiteral when uninitialized.
 class VarStmt : public AstNode {
     Token tok;
-    AstNodePtr name;//Can be tuple, list access or dot access etc etc
+    std::vector<std::pair<AstNodePtr, std::pair<bool, bool>>> names;//Can be tuple, list access or dot access etc etc. (expr,(is_pub,is_mut))
     AstNodePtr type;
-    AstNodePtr value;
-    bool pub = false;
-    bool mut   = false;
+    std::vector<AstNodePtr> values;
+    /*pub, mut if the mut,pub exists at the variable level. That is for something like the following:-
+    ``pub (x,y) = 5,6``
+    we set pub = true
+    for something like
+    ``pub x,y = 5,6`` or ``x,pub y = 5,6`` or ``(pub x,pub y) = 5,6`` or ``(x,pub y) = 5,6`` or ``(pub x,y) = 5,6``
+    we set pub = false
+    Same logic applies to mut as well
+    */
+    bool pub = false;//If pub
+    bool mut = false;//If mut
     bool def = false;//Means if it is an assignment or defination. IF false then the type and stuff is no literal but the type checker will fill that up later. 
-                          //Like for the following statement:- x = 5. It is an assignment and not a defination. So is_def will be false and type and value will be 
-                          //no literal. But the type checker will fill the type as i32 and value as 5 later when it processes this statement.
+                     //Like for the following statement:- x = 5. It is an assignment and not a defination. So is_def will be false and type and value will be 
+                     //no literal. But the type checker will fill the type as i32 and value as 5 later when it processes this statement.
     VarKind varkind = VarKind::Normal;
     std::vector<Attribute> attributes;
 public:
-    VarStmt(Token tok, AstNodePtr name, AstNodePtr type, AstNodePtr value, bool is_mut, bool is_def, bool pub, VarKind varkind, std::vector<Attribute> attributes);
+    VarStmt(Token tok, std::vector<std::pair<AstNodePtr, std::pair<bool, bool>>> names, AstNodePtr type, std::vector<AstNodePtr> values,
+            bool is_mut, bool is_def, bool pub, VarKind varkind, std::vector<Attribute> attributes);
     
-    AstNodePtr get_name() const;
+    std::vector<std::pair<AstNodePtr, std::pair<bool, bool>>> get_names() const;
     AstNodePtr get_var_type() const;
-    AstNodePtr get_value() const;
+    std::vector<AstNodePtr> get_values() const;
     bool is_pub() const;
     bool is_mut() const;
     bool is_def() const;
@@ -1190,14 +1221,14 @@ public:
 class AugAssignStmt : public AstNode {
     Token tok;
     Token op;
-    AstNodePtr target;
-    AstNodePtr value;
+    std::vector<AstNodePtr> targets;
+    std::vector<AstNodePtr> values;
 public:
-    AugAssignStmt(Token tok, Token op, AstNodePtr target, AstNodePtr value);
+    AugAssignStmt(Token tok, Token op, std::vector<AstNodePtr> targets, std::vector<AstNodePtr> values);
 
-    AstNodePtr get_target() const;
+    std::vector<AstNodePtr> get_targets() const;
     Token get_op() const;
-    AstNodePtr get_value() const;
+    std::vector<AstNodePtr> get_values() const;
 
     Token token() const;
     AstKind kind() const;

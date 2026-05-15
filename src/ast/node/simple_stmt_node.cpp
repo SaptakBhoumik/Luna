@@ -1,4 +1,5 @@
 #include "ast/ast.hpp"
+#include <cstddef>
 
 namespace Luna{
 DeferStmt::DeferStmt(Token tok, AstNodePtr body){
@@ -76,13 +77,13 @@ std::string ContinueStmt::stringify() const {
 }
 
 
-ReturnStmt::ReturnStmt(Token tok, AstNodePtr value){
+ReturnStmt::ReturnStmt(Token tok, std::vector<AstNodePtr> values){
     this->tok = tok;
-    this->value = value;
+    this->values = values;
 }
 
-AstNodePtr ReturnStmt::get_value() const {
-    return this->value;
+std::vector<AstNodePtr> ReturnStmt::get_values() const {
+    return this->values;
 }
 
 Token ReturnStmt::token() const {
@@ -92,22 +93,30 @@ AstKind ReturnStmt::kind() const {
     return AstKind::ReturnStmt;
 }
 std::string ReturnStmt::stringify() const {
-    if (this->value->kind() == AstKind::NoLiteral){
+    if (this->values.empty()){
         return "ret";
     }
     else {
-        return "ret " + this->value->stringify();
+        std::string result = "ret ";
+        for(size_t i=0; i<this->values.size(); i++){
+            result += this->values[i]->stringify();
+            if(i != this->values.size() - 1){
+                result += ", ";
+            }
+        }
+        return result;
+            
     }
 }
 
 
-GiveStmt::GiveStmt(Token tok, AstNodePtr value){
+GiveStmt::GiveStmt(Token tok, std::vector<AstNodePtr> values){
     this->tok = tok;
-    this->value = value;
+    this->values = values;
 }
 
-AstNodePtr GiveStmt::get_value() const {
-    return this->value;
+std::vector<AstNodePtr> GiveStmt::get_values() const {
+    return this->values;
 }
 
 Token GiveStmt::token() const {
@@ -117,7 +126,19 @@ AstKind GiveStmt::kind() const {
     return AstKind::GiveStmt;
 }
 std::string GiveStmt::stringify() const {
-    return "give " + this->value->stringify();
+    if(this->values.empty()){
+        return "give";
+    }
+    else{
+        std::string result = "give ";
+        for(size_t i=0; i<this->values.size(); i++){
+            result += this->values[i]->stringify();
+            if(i != this->values.size() - 1){
+                result += ", ";
+            }
+        }
+        return result;
+    }
 }
 
 

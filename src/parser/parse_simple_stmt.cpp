@@ -36,12 +36,24 @@ AstNodePtr Parser::parse_continue_stmt(){
 AstNodePtr Parser::parse_return_stmt(){
     Token tok = this->curr_tok;
     this->advance();
-    return std::make_shared<ReturnStmt>(tok, parse_expression());
+    std::vector<AstNodePtr> values = {parse_expression()};
+    while(peek().type == TokenType::comma){
+        advance();//on ','
+        advance();//After ','
+        values.push_back(parse_expression());
+    }
+    return std::make_shared<ReturnStmt>(tok, values);
 }
 AstNodePtr Parser::parse_give_stmt(){
     Token tok = this->curr_tok;
     this->advance();
-    return std::make_shared<GiveStmt>(tok, parse_expression());
+    std::vector<AstNodePtr> values = {parse_expression()};
+    while(peek().type == TokenType::comma){
+        advance();//on ','
+        advance();//After ','
+        values.push_back(parse_expression());
+    }
+    return std::make_shared<GiveStmt>(tok, values);
 }
 AstNodePtr Parser::parse_lock_stmt(){
     Token tok = this->curr_tok;
