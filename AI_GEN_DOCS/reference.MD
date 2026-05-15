@@ -31,7 +31,7 @@
 - Primitive scalars: `i8/i16/i32/i64`, `u8/u16/u32/u64`, `f32/f64`, `bool`, `str`.
 - `None` is the null/empty value for optionals and pointers.
 - Constants use `name:Type = value` (e.g., `PI:f64 = 3.14159`).
-- Boolean literals appear as `True` and `False` in the examples; this document follows that casing.
+- Boolean literals appear as capitalized `True` and `False` in the examples; this document follows that casing.
 
 ### Enums
 **Current syntax (small.luna):**
@@ -46,6 +46,7 @@
 - Sum type: `type Shape = Circle | Rect`
 - Tuple alias: `type Pair = (i32, i32)`
 - Generic alias: `type GenericPair{T1,T2} = (T1, T2,)`
+- Trailing commas appear in small.luna tuple examples (e.g., `(T1, T2,)`); they are intended to be supported even if parser work is ongoing.
 
 **Legacy syntax (detailed.luna):**
 - Same concept, but examples use `type Shape = Circle | Rect | Triangle` and `type Point3 = (f64, f64, f64)`.
@@ -153,7 +154,7 @@
   - `expr!` propagates an error.
   - `expr !! fallback` handles error coalescing.
   - `expr ?? fallback` handles optional coalescing.
-  - Blocks may use `give value` to supply a fallback; if they do not yield a value they must terminate control flow (e.g., `ret`, `break`, or `continue` depending on where the coalescing expression appears).
+  - Blocks may use `give value` to supply a fallback; if they do not yield a value they must terminate control flow (e.g., `ret`, `break`, or `continue` depending on where the coalescing expression appears), otherwise it is a compile-time error.
   - Coalescing blocks capture variables in scope by reference.
 - **Legacy (detailed.luna):**
   - `expr or fallback` and `expr or { ... }` handle both errors and optionals.
@@ -213,7 +214,7 @@
 - `Chan{T}` and `TaskChan{T}` are typed channels.
 - `send` and `recv`; `recv()` yields `?T` (None when closed).
 - `select { v <-- ch1:{...} 42 --> ch2:{...} ?:{...} }` handles multiple channel ops.
-- Case ordering is deterministic: if multiple cases are ready, the first ready case in source order executes; other ready cases remain pending (buffered messages stay available) and are handled on the next `select`.
+- Case ordering is deterministic: if multiple cases are ready, the first ready case in source order executes; buffered messages simply remain in their channel buffers and are handled on the next `select`.
 
 ## SIMD
 ### Type syntax (disagreement)
