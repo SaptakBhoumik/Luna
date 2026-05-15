@@ -31,7 +31,7 @@
 - Primitive scalars: `i8/i16/i32/i64`, `u8/u16/u32/u64`, `f32/f64`, `bool`, `str`.
 - `None` is the null/empty value for optionals and pointers.
 - Constants use `name:Type = value` (e.g., `PI:f64 = 3.14159`).
-- Boolean literals appear as `True` and `False` in the examples.
+- Boolean literals appear as `True` and `False` in the examples; this document follows that casing.
 
 ### Enums
 **Current syntax (small.luna):**
@@ -58,6 +58,7 @@
   - `Point(x = 1.0, y = 2.0)`
 - Positional init is allowed (`Point(1, 0)`); structs behave like functions returning a struct.
 - Destructor hook uses `__drop__` (example: `fn (mut b:Buf) __drop__()`)
+- Field defaults can be inferred with `:=` or explicitly typed with `:Type = value`; both can be mixed in one struct.
 
 **Legacy syntax (detailed.luna):**
 - Struct declaration uses `struct`:
@@ -96,6 +97,7 @@
 - `fn(x:i32)[x, &y] -> i32 { ... }` mixed capture
 - If capture list is omitted, capture is by value.
 - Special call sugar: `func => { ... }` is equivalent to `func({ ... })` and `func(arg) => { ... }` is `func(arg, { ... })`.
+  - Example: `doWork => { compute() }` becomes `doWork({ compute() })`.
 
 ### Decorators
 - `@decorator` is sugar for `fn = decorator(fn)`.
@@ -151,7 +153,7 @@
   - `expr!` propagates an error.
   - `expr !! fallback` handles error coalescing.
   - `expr ?? fallback` handles optional coalescing.
-  - Blocks may use `give value` to supply a fallback; if they do not yield a value they must exit the scope (e.g., `ret`, `break`).
+  - Blocks may use `give value` to supply a fallback; if they do not yield a value they must terminate control flow (e.g., `ret`, `break`, or `continue` depending on where the coalescing expression appears).
   - Coalescing blocks capture variables in scope by reference.
 - **Legacy (detailed.luna):**
   - `expr or fallback` and `expr or { ... }` handle both errors and optionals.
@@ -211,7 +213,7 @@
 - `Chan{T}` and `TaskChan{T}` are typed channels.
 - `send` and `recv`; `recv()` yields `?T` (None when closed).
 - `select { v <-- ch1:{...} 42 --> ch2:{...} ?:{...} }` handles multiple channel ops.
-- Case ordering is deterministic: if multiple cases are ready, the first ready case in source order executes; other ready cases wait for the next `select`.
+- Case ordering is deterministic: if multiple cases are ready, the first ready case in source order executes; other ready cases remain pending (buffered messages stay available) and are handled on the next `select`.
 
 ## SIMD
 ### Type syntax (disagreement)
