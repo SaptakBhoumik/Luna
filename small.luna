@@ -86,7 +86,6 @@ We dont have something like import http::* because u can just do import http and
 // So no need for break to prevent fallthrough.
 //NOTE TO SELF:Do not add the feature to use continue for fall back. No. If continue is used then the loop in which the when clause is will continue and 
 // not the when clause fallbacking
-// NOTE:-For when statement, u do ``when (cond):{.....}`` or when (VaR1, Var2, Var3....) {....}. The first bracket is compulsory just like in C/C++
 /*
 For for loop of form 
 loop var:iter{...}
@@ -240,10 +239,10 @@ fn func122w34(*args:i8, **kwargs:str = "9"){//Yes does what u think it does
 // ---- Error handling ----
 fn divide(a:f64, b:f64) -> !f64 {
     //THe : signifies if block without any else if and stuff i.e npt a match statement
-    when (b == 0.0):{ ret Error("div by zero") } //Note:-Error is just a struct with string field. Nothing fancy. Error is a builtin type and is meant specifically 
+    when b == 0.0:{ ret Error("div by zero") } //Note:-Error is just a struct with string field. Nothing fancy. Error is a builtin type and is meant specifically 
                                             //for error handling. The Error struct has an implicit field called msg which is the error message. You can access it using err.msg in the !! block. 
                                             // You can not create your own error types
-    //Note:For when statement, u can just do ``when (cond) {.....}``
+    //Note:For when statement, u can just do ``when cond {.....}``
     //But if else if is needed then u do 
     //``when {
     //    cond1:{....}
@@ -297,12 +296,16 @@ fn counter_demo() -> i32 {
 }
 
 fn complex_tuple_type{T}(val:T) -> (T[1],T[0]){
-    (A,B) := (val[1], val[0])
-    ret (A,B)
+    (A,mut B) := (val[1], val[0])
+    ret A,B
 }
-fn complex_tuple_type(val:((i32,i32),i32)){
+fn complex_tuple_type(val:((i32,i32),i32)) -> ((i32,i32),i32){
     ((a,b),c) := val
+    ret ((a,b),c)
 }
+((a,pub mut b),pub c) := complex_tuple_type(((1,2),3)) 
+pub mut A,B := a,b
+
 fn lock_demo() -> !void {
     mut bal:atomic{i32} = 100
     mut old_bal:i32 = 100
@@ -505,7 +508,7 @@ $compile_time_var:="Hello"//Only limited to simple types so string, any kind of 
                           //So no complex types like ptr
 fn $compile_time_fn($arg:i8){//Note:-U can also have a regular(Not compile time) function named compile_time_fn because both are diffrent type so no collision
     //As the name suggest
-    $when (True):{
+    $when True:{
         $print("Hello")
     }
     //Btw u have to use $ while calling/using compile time stuff. Even if u are inside a compile time function then also to reduce ambiguity it is needed
@@ -567,7 +570,7 @@ pub fn main() {
     }
     //Compile time
     $loop $i:0..10 {$print("Hello {$i}")}
-    $when (os::$platform()){//The platform compile time func is from the os library that is why
+    $when os::$platform(){//The platform compile time func is from the os library that is why
         //OS is an enum type which is basically const expr so....
         OS.Windows:{
 
@@ -695,7 +698,8 @@ pub fn main() {
     loop i :0..5 { io::print(f"{i} ") }
     loop i :0..10..2 { io::print(f"{i} ") }         // step
     loop v :arr { io::print(f"{v} ") }               // array iter
-    loop (k, v) :scores { io::println(f"{k}={v}") }    // map iter. YEs the bracket is needed to signify that it is a tuple unpacking
+    loop mut k, v :scores { io::println(f"{k}={v}") }    // map iter.
+    loop (k, mut v) :scores { io::println(f"{k}={v}") }    // this also works
     loop kv :scores { io::println(f"{kv[0]}={kv[1]}") }    // map iter
     mut m := 3
     loop m>0 { m-- }                                  // while-style
@@ -743,17 +747,30 @@ pub fn main() {
     // match
     p:i32=1
      q:i32=2
-    when(p, q) {
-        //Important clarification:-Dont use (...) for the multiple value i.e dont do (1,2) or (3,5) because that will be treated as a tuple and it will not match
-        //with the (p,q) which is not a tuple. So just do 1,2 or
+    when p, q {
         3, 5 //Here no : because we want to execute the same code for both cases. : is used only before the body
         1, 2:{ io::println("1,2 or 3, 5") }//This is simliar to how C/C++ cases work/ But no fallthrough. 
                                            //So only this case will be executed if p,q is 1,2 or 3,5 and then it will break automatically.
         1, ?:{ io::println("1,?") }
         ?:{ io::println("?")   }
     }
+
+    when (p, q) {//(p,q) treated as a tuple so dont confuse
+        /*
+        The following is not allowed cuz u need a tuple
+        3, 5
+        1, 2:{ io::println("1,2 or 3, 5") }
+        1, ?:{ io::println("1,?") }
+        ?:{ io::println("?")   }
+        */ 
+        //The following is allowed
+        (3, 5)
+        (1, 2):{ io::println("(1,2) or (3, 5)") }
+        //(1, ?):{ io::println("(1,?)") } Not allowed because u cant have ? inside tuple
+        ?: { io::println("(?,?)") }
+    }
     dir := Dir.N
-    when(dir){
+    when dir{
         Dir.N:{ io::println("north") }
         Dir.S:{ io::println("south") }
         ?:{ io::println("other") }
@@ -765,7 +782,7 @@ pub fn main() {
     //Note  $typeid{Shape}() is same as $typeid(shape). Just 2 ways for simplicity
     //also $typeid expects a type parameter, so you cant do $typeid{shape}() either but u can do $typeid(shape) even if pointless. 
     // You can do $typeid(Circle) or $typeid(Rect) and compare it with shape.id
-    when(shape.id) {//sumtype has an implicit field called id which is the typeid of the currently held variant.
+    when shape.id {//sumtype has an implicit field called id which is the typeid of the currently held variant.
         //typeid is a unique u64 value representing the type of the variable. Set at compile time. Note:It can be diffrent across different compilations and runs,
         //so it should not be used in persistent storage or for serialization. It is only useful for type comparisons at runtime
         $typeid{Circle}():{

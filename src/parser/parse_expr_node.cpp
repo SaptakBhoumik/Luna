@@ -197,21 +197,8 @@ AstNodePtr Parser::parse_thread_or_task_expr(){
     AstNodePtr timeout = std::make_shared<NoLiteral>();
     AstNodePtr always_restart = std::make_shared<NoLiteral>();
     AstNodePtr restart_delay = std::make_shared<NoLiteral>();
-
-    bool has_block = false;
-    {   
-        std::size_t i = 1;
-        TokenType next_type = peek(i).type;
-        while(next_type != TokenType::newline && next_type != TokenType::eof){
-            if(next_type == TokenType::lbrace){
-                has_block = true;
-                break;
-            }
-            i++;
-            next_type = peek(i).type;
-        }
-    }
-    if(peek().type == TokenType::lparen && has_block){
+    
+    if(peek().type == TokenType::lparen && peek(2).type == TokenType::identifier && peek(3).type == TokenType::assign){
         advance(); // on '('
         advance(); // after '('
         while(this->curr_tok.type != TokenType::rparen){
