@@ -31,7 +31,7 @@
 - Primitive scalars: `i8/i16/i32/i64`, `u8/u16/u32/u64`, `f32/f64`, `bool`, `str`.
 - `None` is the null/empty value for optionals and pointers.
 - Constants use `name:Type = value` (e.g., `PI:f64 = 3.14159`).
-- Boolean literals are `True` and `False` (capitalized).
+- Boolean literals are `True` and `False` (capitalized), matching the current small.luna syntax.
 
 ### Enums
 **Current syntax (small.luna):**
@@ -155,7 +155,7 @@
   - `expr!` propagates an error.
   - `expr !! fallback` handles error coalescing.
   - `expr ?? fallback` handles optional coalescing.
-  - Blocks may use `give value` to supply a fallback. If a block does not yield a value, it must terminate control flow (e.g., `ret`, `break`, or `continue` depending on where the coalescing expression appears); otherwise it is a compile-time error.
+  - Blocks may use `give value` to supply a fallback. If a block does not yield a value, it must terminate control flow (e.g., `ret`, `break`, or `continue`). The required termination depends on where the coalescing expression appears. Failure to do so is a compile-time error.
   - Coalescing blocks capture variables in scope by reference.
 - **Legacy (detailed.luna):**
   - `expr or fallback` and `expr or { ... }` handle both errors and optionals.
@@ -215,7 +215,7 @@
 - `Chan{T}` and `TaskChan{T}` are typed channels.
 - `send` and `recv`; `recv()` yields `?T` (None when closed).
 - `select { v <-- ch1:{...} 42 --> ch2:{...} ?:{...} }` handles multiple channel ops.
-- Case ordering is deterministic: if multiple cases are ready simultaneously, the first ready case in source order executes; messages in other ready channels remain buffered and can be handled in subsequent `select` operations.
+- Case ordering is deterministic. If multiple cases are ready simultaneously, the first ready case in source order executes. Messages in other ready channels remain buffered and can be handled in subsequent `select` operations.
 
 ## SIMD
 ### Type syntax (disagreement)
