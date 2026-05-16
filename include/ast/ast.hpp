@@ -1094,7 +1094,7 @@ class LoopStmt : public AstNode {
     std::vector<std::pair<AstNodePtr,bool>> variables; // loop variable; empty for Infinite/WhileStyle. vector of (variable/expression,is mutable)
     std::vector<AstNodePtr> values;// Array of iterable for `for` loop and condition for `while`, no literal for infinite loop
     AstNodePtr body;
-    std::vector<Attribute> attributes; // @[parallel], @[simd], etc.
+    std::vector<Attribute> attributes; // #[parallel], #[simd], etc.
 public:
     LoopStmt(Token tok, LoopKind loop_kind,std::vector<std::pair<AstNodePtr,bool>> variables,std::vector<AstNodePtr> values,AstNodePtr body,std::vector<Attribute> attributes);
 
@@ -1147,7 +1147,7 @@ public:
 // type Name{generics} = base_type
 class TypeDefStmt : public AstNode {
     Token tok;
-    std::vector<Attribute> attributes; // e.g. @[align(16)]
+    std::vector<Attribute> attributes; // e.g. #[align(16)]
     bool pub = false;
     Token name;
     std::vector<Token> generics;

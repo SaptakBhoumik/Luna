@@ -162,7 +162,7 @@ fn test_any(){
     //You only have access to the methods defined 
 
 }
-@[align(16)]
+#[align(16)]
 pub type Vec4 = {
     pub mut x:f32
     pub mut y:f32
@@ -171,11 +171,11 @@ pub type Vec4 = {
 }
 
 pub type __Vec4 = {
-    @[align(16)] pub mut x:f32
-    @[align(16)] pub mut y:f32
-    @[align(16)]
+    #[align(16)] pub mut x:f32
+    #[align(16)] pub mut y:f32
+    #[align(16)]
     pub mut z:f32
-    @[align(16)]
+    #[align(16)]
     pub mut w:f32
 }
 // ---- Forward declarations ----
@@ -379,18 +379,37 @@ fn task_chan_demo() -> !void {
     //We also have a dedicated .cancel method thread also has it
 }
 fn select_demo() -> !void {
+    ch0:Chan{i32} = Chan{i32}(cap = 4)
     ch1:Chan{i32} = Chan{i32}(cap = 4)
-    ch2:Chan{str} = Chan{str}(cap = 4)
+    ch2:Chan{(i32,str)} = Chan{(i32,str)}(cap = 4)
+    ch3:Chan{(i32,str)} = Chan{(i32,str)}(cap = 4)
+    ch4:Chan{(i32,str)} = Chan{(i32,str)}(cap = 4)
     t := timer::after(500)   // Sends a signal after 500ms. Simple but works
     task {
         select {
             // select for waiting on multiple channels and using the one that is ready first.
+            1,2 <-- ch1,ch0:{ //Executed when both are ready and ch1 and ch0 send value 1 and 2 respectively
+                io::println("got 1 and 2") 
+                break
+            }
+            v1,2 <-- (ch1,ch0):{ //Executed when both are ready 
+                io::println(f"got {v1} and 2") 
+                break
+            }
             v <-- ch1:{ 
                 io::println(f"got {v}") 
                 break
             }
-            42 --> ch2:{ 
+            42,"Hello" --> ch2:{ 
                 io::println("sent") 
+                break
+            }
+            mut v1,v2 <-- ch3:{
+                io::println(f"got {v1} and {v2}") 
+                break
+            }
+            (mut v1,v2) <-- ch4:{
+                io::println(f"got {v1} and {v2}") 
                 break
             }
             ?:{ io::println("neither ready") }
@@ -410,29 +429,29 @@ fn select_demo() -> !void {
             //If ch1 is not ready then we skip it. If ch1 is ready then we do if else basically. So if ch1 is 42 then we execute the first case and skip the next 2 cases. 
             //If ch1 is 0 then we skip the first case and execute the second case and skip the third case. If ch1 is some other value then we skip the first 2 cases and 
             //execute the third case.
-            42 --> ch2:{ io::println("sent") }
+            (42,"Hello") --> ch2:{ io::println("sent") }
             _  <-- t:{ io::println("timed out") }
         }
     }
 }
 // ---- Attributes ----. TODO:Other attributes in future like [unjoined_thread](For saying this function has unjoined threads. Useful for C function where the function is opaque) and more
-@[inline] fn fast_add(a:i32, b:i32) -> i32 { ret a+b }
-@[noinline] fn slow_mul(a:i32, b:i32) -> i32 { ret a*b }
+#[inline] fn fast_add(a:i32, b:i32) -> i32 { ret a+b }
+#[noinline] fn slow_mul(a:i32, b:i32) -> i32 { ret a*b }
 
-@[deprecated(msg = "use divide()", after = "2025-01-01")]
+#[deprecated(msg = "use divide()", after = "2025-01-01")]
 fn old_div(a:f64, b:f64) -> f64 { ret a/b }
 
-@[extern("c_puts")]//Note:-You cant put pub on extern functions as they are c functions and not part of this module's public API. They are just linked in from external libraries.
+#[extern("c_puts")]//Note:-You cant put pub on extern functions as they are c functions and not part of this module's public API. They are just linked in from external libraries.
 fn c_puts(ptr:*i32) -> i32
 
-@[inline]
-@[noreturn]
+#[inline]
+#[noreturn]
 fn die(msg:str) { std::exit(1) }
 
-@[export("luna_add")]
+#[export("luna_add")]
 pub fn add(a:i32, b:i32) -> i32 { ret a+b }
 
-@[align(64)] mut cache_buf:[u8,64] = []
+#[align(64)] mut cache_buf:[u8,64] = []
 
 // ---- Variadic ----
 fn sum_all(*args:i32) -> i32 {
@@ -440,7 +459,7 @@ fn sum_all(*args:i32) -> i32 {
     $loop $v : args { t += $v }
     ret t
 }
-@[extern("printf")]
+#[extern("printf")]
 fn c_printf(...) -> i32
 //If a extern function takes in a lambda then during codegen the function passed to the extern function must be wraped in a lambda even if it is already a lambda.
 //This is because the extern function expects a C function pointer and not a Luna function pointer(Which passes by reference somethimes), and the lambda wrapper 
@@ -721,23 +740,23 @@ pub fn main() {
     }
 
     // parallel loops
-    @[align(64)] out:[f32,512] = []
-    @[align(64)]//Yes u can also place it here. Attributes can be placed on the same line or the line before. Both are valid and do the same thing.
+    #[align(64)] out:[f32,512] = []
+    #[align(64)]//Yes u can also place it here. Attributes can be placed on the same line or the line before. Both are valid and do the same thing.
     inp:[f32,512] = []
 
-    @[parallel]
+    #[parallel]
     loop i :0..512 { out[i] = inp[i]*2.0 }
 
     mut total:f32 = 0.0
     add:=fn(a:f32, b:f32) -> f32 { ret a+b }
-    @[parallel(reduce = add, into = total)]//Reducetion operator should / be a binary function. No it cant be a method
+    #[parallel(reduce = add, into = total)]//Reducetion operator should / be a binary function. No it cant be a method
     loop i :0..512 { total += inp[i] }
 
-    @[parallel(threads = 4)]
+    #[parallel(threads = 4)]
     loop i :0..512 { out[i] = out[i]+1.0 }
 
-    @[parallel]
-    @[simd]
+    #[parallel]
+    #[simd]
     loop i :0..512 { out[i] = inp[i]*inp[i] }
 
     // if/else if/else
@@ -916,14 +935,14 @@ pub fn main() {
     dot_r := simd::dot(a_vec, b_vec)
     io::println(f"dot:{dot_r} hsum:{hsum} hmax:{hmax}")
 
-    @[align(16)] darr:[f32,8] = [1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0]
+    #[align(16)] darr:[f32,8] = [1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0]
     c0 := simd::load(darr, offset = 0)
     c1 := simd::load(darr, offset = 4)
     simd::store(darr, offset = 0, val = c0*c1)
 
-    @[align(64)] oa:[f32,1024] = []
-    @[align(64)] ia:[f32,1024] = []
-    @[align(64)] ib:[f32,1024] = []
-    @[simd]
+    #[align(64)] oa:[f32,1024] = []
+    #[align(64)] ia:[f32,1024] = []
+    #[align(64)] ib:[f32,1024] = []
+    #[simd]
     loop i :0..1024 { oa[i] = ia[i]*ib[i]+1.0 }
 }

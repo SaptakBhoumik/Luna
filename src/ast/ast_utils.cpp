@@ -2,9 +2,9 @@
 #include "lexer/token.hpp"
 
 namespace Luna{
-// ---- Attribute: @[name] or @[name(args...)] stored directly on owning nodes ----
+// ---- Attribute: #[name] or #[name(args...)] stored directly on owning nodes ----
 std::string to_string(const Attribute& attr){
-    std::string res = "@["+attr.name.value;
+    std::string res = "#["+attr.name.value;
     if(attr.args.empty() && attr.named_args.empty()){
         return res+"]";
     }
@@ -137,16 +137,27 @@ std::string to_string(const StructField& field){
 // ---- Loop and select arms ----
 std::string to_string(const SelectArm& arm){
     std::string res;
-    switch(arm.arm_kind){
-        case SelectArmKind::Recv:
-            res +=  arm.value->stringify() + " <-- " + arm.channel->stringify();
-            break;
-        case SelectArmKind::Send:
-            res +=  arm.value->stringify() + " --> " + arm.channel->stringify();
-            break;
-        case SelectArmKind::Default:
-            res = "?";
-            break;
+    for(size_t i = 0; i < arm.value.size(); i++){
+        const auto& [val, is_mut] = arm.value[i];
+        res += (is_mut ? "mut " : "") + val->stringify();
+        if(i != arm.value.size() - 1){
+            res += ", ";
+        }
+    }
+    if(arm.arm_kind == SelectArmKind::Default){
+        res += "?";
+    }
+    else if(arm.arm_kind == SelectArmKind::Recv){
+        res += " <-- ";
+    }
+    else if(arm.arm_kind == SelectArmKind::Send){
+        res += " --> ";
+    }
+    for(size_t i = 0; i < arm.channel.size(); i++){
+        res += arm.channel[i]->stringify();
+        if(i != arm.channel.size() - 1){
+            res += ", ";
+        }
     }
     return res;
 }

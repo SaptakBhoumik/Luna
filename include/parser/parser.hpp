@@ -53,6 +53,7 @@ class Parser{
     Parameter parse_parameter();
     CaptureClause parse_capture_clause();
     LambdaFuncSignature parse_lambda_signature();
+    SelectArm parse_select_arm();
 
     // Parse literal nodes
     AstNodePtr parse_int();
@@ -111,9 +112,9 @@ class Parser{
     AstNodePtr parse_using_stmt();
 
     //Parse branch statement nodes
-    AstNodePtr parse_when_stmt();//TODO:
-    AstNodePtr parse_loop_stmt();//TODO:
-    AstNodePtr parse_select_stmt();//TODO:
+    AstNodePtr parse_when_stmt();
+    AstNodePtr parse_loop_stmt(std::vector<Annotation> annotations);
+    AstNodePtr parse_select_stmt();
 
     //Parse definition statement nodes
     AstNodePtr parse_method_def(bool is_pub, std::vector<Annotation> annotations);//TODO:

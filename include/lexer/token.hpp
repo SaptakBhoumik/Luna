@@ -38,6 +38,7 @@ enum class TokenType {
     double_dot,       // ..
     ellipsis,         // ...
     at,               // @
+    hash,             // #
     question,         // ?
     null_coalesce,    // ??
     error_coalesce,   // !!

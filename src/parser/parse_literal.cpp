@@ -127,7 +127,7 @@ AstNodePtr Parser::parse_tuple_or_paren_expr(){
         elements.push_back(parse_expression());
         is_pub_mut.push_back({false,false});// dummy value, not used for regular tuple literal and parenthesized expression
     }
-    if(peek().type == TokenType::comma){
+    if(peek().type == TokenType::comma || is_assign_tuple_literal){
         // tuple literal
         bool is_pub = false;
         bool is_mut = false;

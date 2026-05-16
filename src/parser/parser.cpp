@@ -35,6 +35,7 @@ AstNodePtr Parser::parse(){
 
 AstNodePtr Parser::parse_block(){
     const Token block_tok = this->curr_tok;
+    advance_on_newline();
     advance(); // after '{'
     std::vector<AstNodePtr> statements;
     while(this->curr_tok.type != TokenType::rbrace){

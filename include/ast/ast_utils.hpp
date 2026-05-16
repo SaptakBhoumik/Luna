@@ -8,7 +8,7 @@ class AstNode;
 
 using AstNodePtr = std::shared_ptr<AstNode>;
 
-// ---- Attribute: @[name] or @[name(args...)] stored directly on owning nodes ----
+// ---- Attribute: #[name] or #[name(args...)] stored directly on owning nodes ----
 
 struct Attribute {
     Token name;
@@ -122,8 +122,9 @@ enum class SelectArmKind {
 // For Default arms, pattern and channel are NoLiteral.
 struct SelectArm {
     SelectArmKind arm_kind;
-    AstNodePtr value; // receive variable or literal pattern for value-matching recv
-    AstNodePtr channel;
+    std::vector<std::pair<AstNodePtr, bool>> value; // receive variables or literal patterns for value-matching recv. IT is pair of (variable,is mutable)
+                                                    // For send it is just the value to be sent and false on mutable. For default its just empty.
+    std::vector<AstNodePtr> channel;
 };
 
 std::string to_string(const SelectArm& arm);

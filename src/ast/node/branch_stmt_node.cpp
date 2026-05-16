@@ -38,22 +38,23 @@ std::string WhenStmt::stringify() const {
         const auto& body = branch.second;
         for(size_t i = 0; i < conditions.size(); i++){
             const auto& case_conditions = conditions[i];
+            res += "\t";
             for(size_t j = 0; j < case_conditions.size(); j++){
                 if(case_conditions[j]->kind() == AstKind::NoLiteral){
-                    res += "\t?";
+                    res += "?";
                 } 
                 else {
-                    res += "\t" + case_conditions[j]->stringify();
+                    res += case_conditions[j]->stringify();
                 }
             }
             if(i != conditions.size() - 1){
-                res += "\n";
+                res += "\n\t";
             }
             else{
-                res += ":\n";
+                res += ":";
             }
         }
-        res += "\t{\n" + body->stringify() + "\n\t}\n";
+        res += "{\n" + body->stringify() + "\n\t}\n";
     }
     return res;
 }

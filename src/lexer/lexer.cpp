@@ -311,6 +311,11 @@ void Lexer::lex() {
                 this->push_current(TokenType::at);
                 break;
             }
+            case '#': {
+                this->flush_keyword();
+                this->push_current(TokenType::hash);
+                break;
+            }
             case ',': {
                 this->flush_keyword();
                 this->push_current(TokenType::comma);

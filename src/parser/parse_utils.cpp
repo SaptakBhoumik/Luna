@@ -7,7 +7,7 @@
 
 namespace Luna {
 Attribute Parser::parse_attribute(){
-    expect(TokenType::lbracket, "Expected '[' after '@' for attributel");
+    expect(TokenType::lbracket, "Expected '[' after '#' for attribute");
     expect(TokenType::identifier, "Expected identifier for attribute name after '['");
     Token name = this->curr_tok;
     std::vector<AstNodePtr> args;
@@ -47,8 +47,8 @@ Attribute Parser::parse_attribute(){
 
 StructField Parser::parse_struct_field(){
     std::vector<Attribute> attributes;
-    if(this->curr_tok.type == TokenType::at){
-        while(this->curr_tok.type == TokenType::at){
+    if(this->curr_tok.type == TokenType::hash){
+        while(this->curr_tok.type == TokenType::hash){
             attributes.push_back(parse_attribute()); // we can ignore the parsed attribute here because we will parse the attributes of the struct field again when we are parsing the struct type expression. We just need to advance the tokens here.
             advance_on_newline();
             advance();
@@ -241,5 +241,65 @@ LambdaFuncSignature Parser::parse_lambda_signature(){
         return_type = parse_type_expr();
     }
     return LambdaFuncSignature{parameters, capture, return_type};
+}
+
+
+SelectArm Parser::parse_select_arm(){
+    std::vector<std::pair<AstNodePtr,bool>> value; // receive variables or literal patterns for value-matching recv. IT is pair of (variable,is mutable)
+    std::vector<AstNodePtr> channel;
+    SelectArmKind arm_kind;
+    if(this->curr_tok.type == TokenType::question){
+        arm_kind = SelectArmKind::Default;
+    }
+    else{
+        while(true){
+            bool is_mut = false;
+            if(this->curr_tok.type == TokenType::kw_mut){
+                is_mut = true;
+                advance();
+            }
+            value.push_back({parse_expression(),is_mut});
+            if(peek().type == TokenType::comma){
+                advance(); // on comma and continue parsing variables
+                if(peek().type == TokenType::select_recv || peek().type == TokenType::select_send){
+                    break;
+                }
+                advance(); //After comma
+            }
+            else{
+                break;
+            }
+        }
+        advance(); // on select_recv or select_send
+        if(this->curr_tok.type == TokenType::select_recv){
+            arm_kind = SelectArmKind::Recv;
+        }
+        else if(this->curr_tok.type == TokenType::select_send){
+            arm_kind = SelectArmKind::Send;
+        }
+        else{
+            error(this->curr_tok, "Expected '<--' or '-->' in select arm");
+        }
+        advance(); // on the first token of the channel expression
+        while(true){
+            channel.push_back(parse_expression());
+            if(peek().type == TokenType::comma){
+                advance(); // on comma and continue parsing channels
+                if(peek().type == TokenType::colon || peek().type == TokenType::newline){
+                    break;
+                }
+                advance(); //After comma
+            }
+            else{
+                break;
+            }
+        }
+    }
+    advance(); 
+    if(this->curr_tok.type != TokenType::colon && peek().type != TokenType::newline){
+        error(this->curr_tok, "Expected ':' or 'newline' at the end of select arm");
+    }
+    return SelectArm{arm_kind, value, channel};
+    
 }
 }
