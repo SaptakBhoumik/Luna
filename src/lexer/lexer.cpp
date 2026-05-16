@@ -477,7 +477,7 @@ void Lexer::lex_fstring() {
         // ---- opening brace ----
         else if (this->curr_char == '{') {
             if (this->peek() == '{') {
-                // Escaped '{{' → literal '{'
+                // Escaped '{{' -> literal '{'
                 str += '{';
                 if (!this->advance()) {
                     this->report_error("Unexpected end of file after '{{'");
@@ -516,7 +516,7 @@ void Lexer::lex_fstring() {
         // ---- closing brace ----
         else if (this->curr_char == '}') {
             if (this->peek() == '}') {
-                // Escaped '}}' → literal '}'
+                // Escaped '}}' -> literal '}'
                 str += '}';
                 if (!this->advance()) {
                     this->report_error("Unexpected end of file after '}}'");

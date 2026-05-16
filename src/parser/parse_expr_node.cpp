@@ -7,8 +7,192 @@
 #include <vector>
 
 namespace Luna {
-AstNodePtr Parser::parse_expression(PrecedenceType precedence){
-    //TODO:
+AstNodePtr Parser::parse_expression(PrecedenceType precedence) {
+    AstNodePtr left;
+
+    // -- NUD (prefix / atom) --------------------------------------------------
+    switch (this->curr_tok.type) {
+        case TokenType::integer:{
+            left = parse_int();
+            break;
+        }
+
+        case TokenType::decimal:{
+            left = parse_decimal();
+            break;
+        }
+
+        // raw string: curr_tok is `raw`, parse_string() handles the advance internally
+        case TokenType::raw:
+        case TokenType::string:{
+            left = parse_string();
+            break;
+        }
+
+        // f"..." — parse_formatted_string advances past the 'f' token itself
+        case TokenType::format:{
+            left = parse_formatted_string();
+            break;
+        }
+
+        case TokenType::kw_true:
+        case TokenType::kw_false:{
+            left = parse_bool();
+            break;
+        }
+
+        case TokenType::kw_none:{
+            left = parse_none();
+            break;
+        }
+
+        // identifier also handles path (a::b::c) and generic args (Foo{T}) internally
+        case TokenType::identifier:{
+            left = parse_identifier();
+            break;
+        }
+
+        // grouped expr  (x)  or  tuple  (a, b)  or  assign-tuple  (pub mut a, b)
+        case TokenType::lparen:{
+            left = parse_tuple_or_paren_expr();
+            break;
+        }
+
+        // list literal [1,2,3]  or  dict literal ["a":1]  or  empty []
+        case TokenType::lbracket:{
+            left = parse_map_or_list();
+            break;
+        }
+        // prefix operators: - + ! ~ & * ** ++ --
+        // parse_prefix_op reads curr_tok as the prefix then advances and recurses at pr_prefix
+        // Special case for **: parse_prefix_op already rewrites it as two dereferences (*(*x))
+        case TokenType::minus:
+        case TokenType::plus:
+        case TokenType::bang:       // logical not
+        case TokenType::tilde:      // bitwise not
+        case TokenType::ampersand:  // address-of   &val
+        case TokenType::star:       // pointer deref *ptr
+        case TokenType::pow:        // double deref  **ptr  (rewritten to *(*ptr) in parse_prefix_op)
+        case TokenType::incr:       // prefix ++
+        case TokenType::decr:{      // prefix --
+            left = parse_prefix_op();
+            break;
+        }
+        // $expr — compile-time expression; parse_compile_time_expr advances past '$' then
+        // recurses at pr_prefix so the whole CT sub-expression binds tightly
+        case TokenType::dollar:{
+            left = parse_compile_time_expr();
+            break;
+        }
+        // fn(params)[capture] -> T { body }
+        case TokenType::kw_fn:{
+            left = parse_lambda_expr();
+            break;
+        }
+
+        // thread { } / thread expr   or   task { } / task expr
+        case TokenType::kw_thread:
+        case TokenType::kw_task:{
+            left = parse_thread_or_task_expr();
+            break;
+        }
+
+        case TokenType::eof:{
+            error(this->curr_tok, "Unexpected end of file");
+        }
+        default:{
+            error(this->curr_tok,"'" + this->curr_tok.value + "' is not an expression");
+        }
+    }
+
+    // -- LED (infix) loop -----------------------------------------------------
+    while (peek_precedence() > precedence) {
+        advance(); // curr_tok is now the infix / postfix operator
+        switch (this->curr_tok.type) {
+
+            // -- postfix — consume no RHS ----------------------------------
+            // ++ and -- are in the map at pr_postfix.
+            // ! (bang) is also at pr_postfix here; in the NUD switch above it
+            // acted as logical-not. The disambiguation is positional: if we
+            // reach the LED loop, a left operand already exists, so it must
+            // be error-propagation postfix.
+            case TokenType::incr:
+            case TokenType::decr:
+            case TokenType::bang:{
+                left = parse_postfix_op(left);
+                break;
+            }
+
+            // -- member access — . and -> ----------------------------------
+            case TokenType::dot:
+            case TokenType::arrow:{
+                left = parse_dot_or_arrow_expr(left);
+                break;
+            }
+
+            // -- subscript — x[i]  or  x[i,j] ----------------------------
+            case TokenType::lbracket:{
+                left = parse_index_expr(left);
+                break;
+            }
+
+            // -- function / method call — f(args) -------------------------
+            case TokenType::lparen:{
+                left = parse_func_call(left);
+                break;
+            }
+
+            // -- trailing-block call — f => { }  or  f(args) => fn { } ----
+            case TokenType::thick_arrow:{
+                left = parse_arrow_block_call(left);
+                break;
+            }
+
+            // -- ternary — cond ? then : else -----------------------------
+            case TokenType::question:{
+                left = parse_ternary_expr(left);
+                break;
+            }
+
+            // -- null / error coalescing — ?? and !! ----------------------
+            case TokenType::null_coalesce:
+            case TokenType::error_coalesce:{
+                left = parse_coalescing_op(left);
+                break;
+            }
+
+            // -- range — start..end  or  start..end..step -----------------
+            case TokenType::double_dot:{
+                left = parse_range_expr(left);
+                break;
+            }
+
+            // -- exponentiation — right-associative -----------------------
+            // parse_bin_op would pass pr_power as the minimum for the RHS,
+            // making a**b**c left-associative.  We instead pass pr_product
+            // (one level below pr_power) so that  a**b**c -> a**(b**c).
+            case TokenType::pow: {
+                Token op = this->curr_tok;
+                advance(); // move to first token of RHS
+                AstNodePtr right = parse_expression(PrecedenceType::pr_product);
+                left = std::make_shared<BinOp>(op, left, op, right);
+                break;
+            }
+
+            // -- all remaining binary operators ----------------------------
+            // Covers: + - * / % @ & | ^ << >> == != < > <= >= |>
+            // parse_bin_op reads curr_tok as the op, advances to the RHS,
+            // then recurses at the op's own precedence (left-associative).
+            default:{
+                left = parse_bin_op(left);
+                break;
+            }
+        }
+    }
+
+    // Consume an optional trailing newline so callers don't have to.
+    advance_on_newline();
+    return left;
 }
 
 AstNodePtr Parser::parse_bin_op(AstNodePtr left){
@@ -23,6 +207,13 @@ AstNodePtr Parser::parse_prefix_op(){
     Token prefix = this->curr_tok;
     advance();
     AstNodePtr right = parse_expression(PrecedenceType::pr_prefix);
+    if(prefix.type == TokenType::pow){
+        Token fake_op0 = Token{prefix.col, prefix.source_line, "*", 
+                             prefix.start, prefix.start+1, prefix.line, TokenType::star};
+        Token fake_op1 = Token{prefix.col+1, prefix.source_line, "*", 
+                             prefix.start+1, prefix.start+2, prefix.line, TokenType::star};
+        return std::make_shared<PrefixOp>(fake_op1, fake_op1, std::make_shared<PrefixOp>(fake_op0, fake_op0, right));
+    }
     return std::make_shared<PrefixOp>(prefix, prefix, right);
 }
 AstNodePtr Parser::parse_postfix_op(AstNodePtr left){

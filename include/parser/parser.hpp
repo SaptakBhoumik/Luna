@@ -9,27 +9,29 @@
 
 namespace Luna {
 enum class PrecedenceType {
-    //TODO: Finalize operator precedence levels
-    pr_lowest,      // lowest possible precedence
-    pr_range,       // ..
-    pr_or,      // or
-    pr_ternary,     // ? :
-    pr_coalescing, // ?? and !!
-    pr_and,      // and
-    pr_not,         // not
-    pr_compare,     // ==, !=, <, >, <=, >=
-    pr_bit_or,      // |
-    pr_bit_xor,     // ^
-    pr_bit_and,     // &
-    pr_bit_shift_pipeline,   // >> , <<
-    pr_sum_minus,   // +, -
-    pr_mul_div,     // *, /, %, //
-    pr_expo,        // **
-    pr_prefix,      // -x
-    pr_dot_arrow_ref,     // x.test(), x.prop ,x->y
-    pr_list_access, // x[0], x["test"]
-    pr_call,         // x()
-    pr_postfix      // x++
+    pr_lowest,       // base — not an operator / default for unmapped tokens
+
+    pr_arrow_block,  // =>   trailing-block call (Kotlin-style):  f => { } , f(x) => fn{ }
+    pr_ternary,      // ?    ternary conditional:                  cond ? a : b
+    pr_coalescing,   // ?? !!  null / error coalescing:            expr ?? default , expr !! handler
+    // pr_select,       // <-- -->  channel recv / send inside select: v <-- ch , val --> ch
+    pr_pipeline,     // |>   pipe operator (Elixir-style):         x |> f |> g
+    pr_range,        // ..   range expression:                     0..10 , 0..10..2
+    pr_or,           // |    bitwise-or / short-circuit logical-or (context-dependent)
+    pr_xor,          // ^    bitwise xor
+    pr_and,          // &    bitwise-and / short-circuit logical-and (context-dependent)
+    pr_equality,     // == !=   equality comparison
+    pr_compare,      // < > <= >=  relational comparison (tighter than equality, following C)
+    pr_shift,        // << >>  bit shifts
+    pr_sum,          // + -   additive
+    pr_product,      // * / % @ multiplicative
+    pr_power,        // **   exponentiation — RIGHT-associative: pass pr_product as rhs min
+    pr_prefix,       // sentinel used as argument when recursing for prefix operands (-x, !x, ~x, $x, *x, &x)
+    pr_postfix,      // ++ -- !   postfix ops (++ / -- / error-propagation !)
+    pr_member,       // . -> member access, pointer member access
+    pr_index,        // [   subscript / multi-index (__getitem__)
+    pr_call,         // (   function / method call
+    // pr_generic,      // {   generic instantiation: Foo{T} , func{T}(...)  — above call so {T} is eaten before (args)
 };
 
 class Parser{
@@ -81,7 +83,7 @@ class Parser{
     AstNodePtr parse_interface_type_expr();
 
     // Parse expression nodes
-    AstNodePtr parse_expression(PrecedenceType precedence = PrecedenceType::pr_lowest);//TODO:
+    AstNodePtr parse_expression(PrecedenceType precedence = PrecedenceType::pr_lowest);
     //We are on the op node for the following
     AstNodePtr parse_bin_op(AstNodePtr left);
     AstNodePtr parse_prefix_op();

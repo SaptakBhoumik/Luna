@@ -22,7 +22,11 @@ Token Parser::peek(std::size_t i) const {
     return res;
 }
 PrecedenceType Parser::peek_precedence(size_t i) const {
-    return this->precedence_map.at(peek(i).type);
+    auto it = this->precedence_map.find(peek(i).type);
+    if (it == this->precedence_map.end()) {
+        return PrecedenceType::pr_lowest;
+    }
+    return it->second;
 }
 
 [[noreturn]] void Parser::expect(TokenType expected_type, std::string msg,std::string submsg,std::string ecode) {

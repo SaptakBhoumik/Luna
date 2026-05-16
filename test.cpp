@@ -1,28 +1,9 @@
-#pragma once
-#include <cstddef>
-#include <string>
-
-namespace Luna {
 
 enum class TokenType {
     eof,
 
-    // Literals
-    integer,
-    decimal,
-    string,
-    identifier,
     
-    // Raw string prefix (e.g. r"foo") - the 'r' token before the string literal
-    raw,
-    // Format strings
-    format,           // the 'f' prefix token
-    format_str,       // a text segment inside an f-string
-    format_str_end,   // end-of-f-string marker
-
     // Brackets
-    lparen,           // (
-    rparen,           // )
     lbracket,         // [
     rbracket,         // ]
     lbrace,           // {
@@ -144,17 +125,3 @@ enum class TokenType {
 
     newline,
 };
-
-std::string to_string(TokenType type);//TODO: Implement it
-struct Token {
-    size_t col;          // column of the token start
-    std::string source_line;  // the full source line for diagnostics
-    std::string value;        // raw text of the token
-    //start and end are probably useless but keeping it just in case. They are byte offsets from the start of the file.
-    size_t start;        // byte offset start
-    size_t end;          // byte offset end  
-    size_t line;         // 1-based line number
-    TokenType type;
-};
-
-} // namespace luna

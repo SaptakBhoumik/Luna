@@ -284,7 +284,9 @@ fn fetch(url:str) -> !str {
     resp := http::get(url)!
     ret resp.body
 }
-
+fn matmul(a:Tensor{f32}, b:Tensor{f32}) -> Tensor{f32} {
+    ret a @ b
+}
 mut hit_count:atomic{i32} = 0
 thread_local mut tid:i32 = 0
 thread_local mut (T1,T2) := (0,0)//yes the entire thing is mut now
