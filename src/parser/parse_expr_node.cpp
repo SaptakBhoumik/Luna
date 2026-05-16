@@ -104,14 +104,19 @@ AstNodePtr Parser::parse_index_expr(AstNodePtr container){
 
 AstNodePtr Parser::parse_dot_or_arrow_expr(AstNodePtr left){
     Token op = this->curr_tok;
+    bool compile_time = false;
     advance();
+    if(peek().type == TokenType::dollar){
+        compile_time = true;
+        advance();
+    }
     expect(TokenType::identifier, "Expected identifier after '.' or '->' operator");
     Token member_name = this->curr_tok;
     if(op.type == TokenType::dot){
-        return std::make_shared<DotExpr>(op, left, member_name);
+        return std::make_shared<DotExpr>(op, left, std::make_pair(member_name, compile_time));
     }
     else{
-        return std::make_shared<ArrowExpr>(op, left, member_name);
+        return std::make_shared<ArrowExpr>(op, left, std::make_pair(member_name, compile_time));
     }
 }
 AstNodePtr Parser::parse_func_call(AstNodePtr left){

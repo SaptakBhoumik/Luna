@@ -643,11 +643,11 @@ public:
 class DotExpr : public AstNode {
     Token tok;
     AstNodePtr owner;
-    Token member;
+    std::pair<Token, bool> member; // The second element indicates if the member is compile-time
 public:
-    DotExpr(Token tok, AstNodePtr owner, Token member);
+    DotExpr(Token tok, AstNodePtr owner, std::pair<Token, bool> member);
     AstNodePtr get_owner() const;
-    Token get_member() const;
+    std::pair<Token, bool> get_member() const;
 
     Token token() const;
     AstKind kind() const;
@@ -659,11 +659,11 @@ public:
 class ArrowExpr : public AstNode {
     Token tok;
     AstNodePtr owner;
-    Token member;
+    std::pair<Token, bool> member; // The second element indicates if the member is compile-time
 public:
-    ArrowExpr(Token tok, AstNodePtr owner, Token member);
+    ArrowExpr(Token tok, AstNodePtr owner, std::pair<Token, bool> member);
     AstNodePtr get_owner() const;
-    Token get_member() const;
+    std::pair<Token, bool> get_member() const;
 
     Token token() const;
     AstKind kind() const;
@@ -1145,20 +1145,22 @@ public:
 //  Defination/Assignment statement nodes
 // ============================
 // type Name{generics} = base_type
+// or type Name{generics}  (for opaque type defination)
+// or type Name{generics:interface_constrant} = base_type
 class TypeDefStmt : public AstNode {
     Token tok;
     std::vector<Attribute> attributes; // e.g. #[align(16)]
     bool pub = false;
     Token name;
-    std::vector<Token> generics;
+    std::vector<std::pair<Token, AstNodePtr>> generics; // Each pair contains a generic parameter name and its type constraint (NoLiteral if no constraint)
     AstNodePtr base_type; //No literal for opaque type defination like `type Name{generics}`
 public:
-    TypeDefStmt(Token tok, std::vector<Attribute> attributes, bool pub, Token name, std::vector<Token> generics, AstNodePtr base_type);
+    TypeDefStmt(Token tok, std::vector<Attribute> attributes, bool pub, Token name, std::vector<std::pair<Token, AstNodePtr>> generics, AstNodePtr base_type);
     
     std::vector<Attribute> get_attributes() const;
     bool is_pub() const;
     Token get_name() const;
-    std::vector<Token> get_generics() const;
+    std::vector<std::pair<Token, AstNodePtr>> get_generics() const;
     AstNodePtr get_base_type() const;
 
     Token token() const;
@@ -1242,18 +1244,18 @@ class FuncDefStmt : public AstNode {
     Token tok;
     bool pub;
     Token name;
-    std::vector<Token> generics;
+    std::vector<std::pair<Token, AstNodePtr>> generics;
     std::vector<Parameter> parameters;
     AstNodePtr return_type; // NoLiteral for void / inferred
     AstNodePtr body;// NoLiteral for forward declaration
     std::vector<Annotation> annotation;
 public:
-    FuncDefStmt(Token tok, bool pub, Token name, std::vector<Token> generics,std::vector<Parameter> parameters,AstNodePtr return_type, 
+    FuncDefStmt(Token tok, bool pub, Token name, std::vector<std::pair<Token, AstNodePtr>> generics,std::vector<Parameter> parameters,AstNodePtr return_type, 
                 AstNodePtr body, std::vector<Annotation> annotation);
     
     bool is_pub() const;
     Token get_name() const;
-    std::vector<Token> get_generics() const;
+    std::vector<std::pair<Token, AstNodePtr>> get_generics() const;
     std::vector<Parameter> get_parameters() const;
     AstNodePtr get_return_type() const;
     AstNodePtr get_body() const;
@@ -1272,19 +1274,19 @@ class MethodDefStmt : public AstNode {
     bool pub;
     Parameter receiver;//Only normal type with no default value
     Token name;
-    std::vector<Token> generics;
+    std::vector<std::pair<Token, AstNodePtr>> generics;
     std::vector<Parameter> parameters;
     AstNodePtr return_type;
     AstNodePtr body;// NoLiteral for forward declaration
     std::vector<Attribute> attributes;//A method cant have decorator
 public:
-    MethodDefStmt(Token tok, bool pub, Parameter receiver, Token name, std::vector<Token> generics, std::vector<Parameter> parameters, 
+    MethodDefStmt(Token tok, bool pub, Parameter receiver, Token name, std::vector<std::pair<Token, AstNodePtr>> generics, std::vector<Parameter> parameters, 
                   AstNodePtr return_type, AstNodePtr body, std::vector<Attribute> attributes);
 
     bool is_pub() const;
     Parameter get_receiver() const;
     Token get_name() const;
-    std::vector<Token> get_generics() const;
+    std::vector<std::pair<Token, AstNodePtr>> get_generics() const;
     std::vector<Parameter> get_parameters() const;
     AstNodePtr get_return_type() const;
     AstNodePtr get_body() const;

@@ -31,13 +31,13 @@ struct Decorator{
     std::vector<AstNodePtr> args = {}; // empty if no argument list. 
     std::vector<std::pair<Token, AstNodePtr>> named_args = {}; // empty if no named arguments
 };
-
+ 
 std::string to_string(const Decorator& decorator);
 
 // ---- Annotation: A decorator or a attribute used on a function
 struct Annotation {
     Decorator decorator;
-    Attribute attributes;
+    Attribute attribute;
     bool is_decorator; // true if this annotation is a decorator, false if its an attribute
 };
 

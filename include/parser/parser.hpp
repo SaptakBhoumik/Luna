@@ -43,17 +43,20 @@ class Parser{
     void advance_on_newline();
     Token peek(std::size_t i=1) const;// peek the token at curr_index + i without advancing
     PrecedenceType peek_precedence(size_t i=1) const;
-    void expect(TokenType expected_type, std::string msg="",std::string submsg="",std::string ecode="");
-    void error(Token tok, std::string msg,std::string submsg="",std::string ecode="");
+    [[noreturn]] void expect(TokenType expected_type, std::string msg="",std::string submsg="",std::string ecode="");
+    [[noreturn]] void error(Token tok, std::string msg,std::string submsg="",std::string ecode="");
 
     //Parse utils
     Attribute parse_attribute();
+    Decorator parse_decorator();
+    Annotation parse_annotation();
     StructField parse_struct_field();
     std::vector<Token> parse_path();
     Parameter parse_parameter();
     CaptureClause parse_capture_clause();
     LambdaFuncSignature parse_lambda_signature();
     SelectArm parse_select_arm();
+    std::vector<std::pair<Token, AstNodePtr>> parse_generic_params();
 
     // Parse literal nodes
     AstNodePtr parse_int();
@@ -79,6 +82,7 @@ class Parser{
 
     // Parse expression nodes
     AstNodePtr parse_expression(PrecedenceType precedence = PrecedenceType::pr_lowest);//TODO:
+    //We are on the op node for the following
     AstNodePtr parse_bin_op(AstNodePtr left);
     AstNodePtr parse_prefix_op();
     AstNodePtr parse_postfix_op(AstNodePtr left);
@@ -117,7 +121,16 @@ class Parser{
     AstNodePtr parse_select_stmt();
 
     //Parse definition statement nodes
-    AstNodePtr parse_method_def(bool is_pub, std::vector<Annotation> annotations);//TODO:
+    AstNodePtr parse_type_def_stmt(std::vector<Annotation> annotations, bool is_pub);
+    //For parse_var_stmt, we are either on =,:= or : token. Basically the token after the variable name(s)
+    AstNodePtr parse_var_stmt(std::vector<Annotation> annotations, std::vector<std::pair<AstNodePtr, std::pair<bool, bool>>> names, 
+                              bool is_pub, bool is_mut, VarKind varkind);
+    AstNodePtr parse_aug_assign_stmt(std::vector<AstNodePtr> targets);//On the op token
+    //For the following we sent when the curr tok is fn
+    AstNodePtr parse_func_def(std::vector<Annotation> annotations, bool is_pub);
+    AstNodePtr parse_method_def(std::vector<Annotation> annotations, bool is_pub);
+    AstNodePtr parse_func_or_method_def(std::vector<Annotation> annotations, bool is_pub);
+
     public:
     Parser(const std::vector<Token>& toks, const std::string& filename);
 

@@ -25,7 +25,7 @@ PrecedenceType Parser::peek_precedence(size_t i) const {
     return this->precedence_map.at(peek(i).type);
 }
 
-void Parser::expect(TokenType expected_type, std::string msg,std::string submsg,std::string ecode) {
+[[noreturn]] void Parser::expect(TokenType expected_type, std::string msg,std::string submsg,std::string ecode) {
     //check if the next toke is what we expect or else show error
     if (peek().type != expected_type) {
         if(msg==""){
@@ -41,7 +41,7 @@ void Parser::expect(TokenType expected_type, std::string msg,std::string submsg,
     advance();
 }
 
-void Parser::error(Token tok, std::string msg,std::string submsg,std::string ecode) {
+[[noreturn]] void Parser::error(Token tok, std::string msg,std::string submsg,std::string ecode) {
     //display error
     Location loc{tok.line, tok.col, this->filename, tok.source_line};
     Diagnostic err = {loc,

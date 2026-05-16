@@ -259,7 +259,7 @@ AstNodePtr Parser::parse_interface_type_expr(){
         if(this->curr_tok.type != TokenType::kw_fn){
             error(this->curr_tok, "Expected 'fn' at the beginning of method definition in interface type expression");
         }
-        methods.push_back(parse_method_def(false, {}));// is_pub = false, annotations = {}
+        methods.push_back(parse_method_def({},false));//annotations = {}, is_pub = false
         // advance_on_newline();
         if(peek().type == TokenType::newline){
             advance();//On \n

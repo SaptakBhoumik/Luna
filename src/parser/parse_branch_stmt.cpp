@@ -1,4 +1,4 @@
-//TODO:THis entire file is error prone. Test it properly
+//TODO:THis entire file is really error prone. Test it properly
 #include "ast/ast.hpp"
 #include "ast/ast_utils.hpp"
 #include "lexer/token.hpp"
@@ -89,7 +89,7 @@ AstNodePtr Parser::parse_loop_stmt(std::vector<Annotation> annotations){
             error(annotation.decorator.decorator->token(),"Decorators are not allowed on loop statements");
         }
         else{
-            attributes.push_back(annotation.attributes);
+            attributes.push_back(annotation.attribute);
         }
     }
     Token tok = this->curr_tok;

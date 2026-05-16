@@ -45,6 +45,28 @@ Attribute Parser::parse_attribute(){
     return Attribute(name, args, named_args);
 }
 
+Decorator Parser::parse_decorator(){
+    advance(); // After @
+    AstNodePtr decorator_expr = parse_expression();
+    if(decorator_expr->kind() == AstKind::FuncCall){
+        auto func_call = std::dynamic_pointer_cast<FuncCall>(decorator_expr);
+        return Decorator{func_call->get_callee(), func_call->get_arguments(), func_call->get_named_arguments()};
+    }
+    else {
+        return Decorator{decorator_expr, {}, {}};
+    }
+}
+Annotation Parser::parse_annotation(){
+    if(this->curr_tok.type == TokenType::hash){
+        return Annotation{Decorator{},parse_attribute(),false};
+    }
+    else if(this->curr_tok.type == TokenType::at){
+        return Annotation{parse_decorator(),Attribute{},true};
+    }
+    else{
+        error(this->curr_tok, "Expected '#' for attribute annotation or '@' for decorator annotation");
+    }
+}
 StructField Parser::parse_struct_field(){
     std::vector<Attribute> attributes;
     if(this->curr_tok.type == TokenType::hash){
@@ -301,5 +323,36 @@ SelectArm Parser::parse_select_arm(){
     }
     return SelectArm{arm_kind, value, channel};
     
+}
+std::vector<std::pair<Token, AstNodePtr>> Parser::parse_generic_params(){
+    std::vector<std::pair<Token, AstNodePtr>> generics;
+    while(true){
+        advance_on_newline();
+        expect(TokenType::identifier, "Expected identifier for generic parameter name");
+        Token name = this->curr_tok;
+        advance_on_newline();
+        AstNodePtr constraint = std::make_shared<NoLiteral>();
+        if(peek().type == TokenType::colon){
+            advance(); // on ':'
+            advance_on_newline();
+            advance(); // on the first token of the constraint expression
+            constraint = parse_type_expr();
+        }
+        generics.push_back({name, constraint});
+        advance_on_newline();
+        if(peek().type == TokenType::comma){
+            advance(); // on comma and continue parsing generic parameters
+            advance_on_newline();
+            if(peek().type == TokenType::rbrace){
+                break;
+            }
+            // advance(); //After comma
+        }
+        else{
+            break;
+        }
+    }
+    expect(TokenType::rbrace, "Expected '}' at the end of generic parameter list");
+    return generics;
 }
 }

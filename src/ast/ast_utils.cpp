@@ -54,7 +54,7 @@ std::string to_string(const Annotation& annotation){
         return to_string(annotation.decorator);
     } 
     else {
-        return to_string(annotation.attributes);
+        return to_string(annotation.attribute);
     }
 }
 

@@ -2,7 +2,7 @@
 #include <cstddef>
 
 namespace Luna{
-TypeDefStmt::TypeDefStmt(Token tok, std::vector<Attribute> attributes, bool pub, Token name, std::vector<Token> generics, AstNodePtr base_type){
+TypeDefStmt::TypeDefStmt(Token tok, std::vector<Attribute> attributes, bool pub, Token name, std::vector<std::pair<Token, AstNodePtr>> generics, AstNodePtr base_type){
     this->tok = tok;
     this->attributes = attributes;
     this->pub = pub;
@@ -23,7 +23,7 @@ Token TypeDefStmt::get_name() const {
     return this->name;
 }
 
-std::vector<Token> TypeDefStmt::get_generics() const {
+std::vector<std::pair<Token, AstNodePtr>> TypeDefStmt::get_generics() const {
     return this->generics;
 }
 
@@ -48,7 +48,10 @@ std::string TypeDefStmt::stringify() const {
     result += "type " + name.value;
     if (!generics.empty()) {
         for(size_t i = 0; i < generics.size(); i++) {
-            result += generics[i].value;
+            result += generics[i].first.value;
+            if(generics[i].second->kind() != AstKind::NoLiteral) {
+                result += " : " + generics[i].second->stringify();
+            }
             if (i != generics.size() - 1) {
                 result += ", ";
             }
@@ -200,7 +203,7 @@ std::string AugAssignStmt::stringify() const {
     return result;
 }
 
-FuncDefStmt::FuncDefStmt(Token tok, bool pub, Token name, std::vector<Token> generics,std::vector<Parameter> parameters,AstNodePtr return_type, 
+FuncDefStmt::FuncDefStmt(Token tok, bool pub, Token name, std::vector<std::pair<Token, AstNodePtr>> generics,std::vector<Parameter> parameters,AstNodePtr return_type, 
                          AstNodePtr body, std::vector<Annotation> annotation){
     this->tok = tok;
     this->pub = pub;
@@ -218,7 +221,7 @@ bool FuncDefStmt::is_pub() const {
 Token FuncDefStmt::get_name() const {
     return this->name;
 }
-std::vector<Token> FuncDefStmt::get_generics() const {
+std::vector<std::pair<Token, AstNodePtr>> FuncDefStmt::get_generics() const {
     return this->generics;
 }
 std::vector<Parameter> FuncDefStmt::get_parameters() const {
@@ -252,7 +255,10 @@ std::string FuncDefStmt::stringify() const{
     if (!generics.empty()) {
         result += "{";
         for(size_t i = 0; i < generics.size(); i++) {
-            result += generics[i].value;
+            result += generics[i].first.value;
+            if(generics[i].second->kind() != AstKind::NoLiteral) {
+                result += " : " + generics[i].second->stringify();
+            }
             if (i != generics.size() - 1) {
                 result += ", ";
             }
@@ -277,7 +283,7 @@ std::string FuncDefStmt::stringify() const{
 }
 
 
-MethodDefStmt::MethodDefStmt(Token tok, bool pub, Parameter receiver, Token name, std::vector<Token> generics, std::vector<Parameter> parameters, 
+MethodDefStmt::MethodDefStmt(Token tok, bool pub, Parameter receiver, Token name, std::vector<std::pair<Token, AstNodePtr>> generics, std::vector<Parameter> parameters, 
                              AstNodePtr return_type, AstNodePtr body, std::vector<Attribute> attributes){
 
     this->tok = tok;
@@ -300,7 +306,7 @@ Parameter MethodDefStmt::get_receiver() const {
 Token MethodDefStmt::get_name() const {
     return this->name;
 }
-std::vector<Token> MethodDefStmt::get_generics() const {
+std::vector<std::pair<Token, AstNodePtr>> MethodDefStmt::get_generics() const {
     return this->generics;
 }
 std::vector<Parameter> MethodDefStmt::get_parameters() const {
@@ -334,7 +340,10 @@ std::string MethodDefStmt::stringify() const {
     if (!generics.empty()) {
         result += "{";
         for(size_t i = 0; i < generics.size(); i++) {
-            result += generics[i].value;
+            result += generics[i].first.value;
+            if(generics[i].second->kind() != AstKind::NoLiteral) {
+                result += " : " + generics[i].second->stringify();
+            }
             if (i != generics.size() - 1) {
                 result += ", ";
             }
