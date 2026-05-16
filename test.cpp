@@ -82,46 +82,19 @@ enum class TokenType {
     decr,             // --
 
     // Keywords
-    kw_import,//import
-    kw_using,//using
     kw_pub,//pub
-    kw_enum,//enum
-    kw_interface,//interface
-    kw_type,//type
-    // kw_struct,//struct
-    kw_fn,//fn
 
     kw_mut,//mut
-    kw_ret,//ret
-    // kw_if,//if
-    // kw_elif,//elif
-    // kw_else,//else
-    kw_loop,//loop
-    kw_break,//break
-    kw_continue,//continue
     
-    kw_when,//match
-    // kw_case,//case
 
     kw_true,//True
     kw_false,//False
     kw_none,//None
 
-    kw_give,//give
-    kw_defer,//defer
 
     // kw_atomic,//atomic
-    kw_thread_local,//thread_local
-    kw_task_local,//task_local
     kw_thread,//thread
     kw_task,//task
-    kw_lock,//lock
-    kw_select,//select
-
-    // kw_cast,//Technically not a function but I will treat it as one for simplicity
-    // kw_typesize,//typesize
-    // kw_decltype,//decltype
-    // kw_typeid,//typeid
 
     newline,
 };

@@ -64,20 +64,17 @@ std::string TypeDefStmt::stringify() const {
 }
 
 
-VarStmt::VarStmt(Token tok, std::vector<std::pair<AstNodePtr, std::pair<bool, bool>>> names, AstNodePtr type, std::vector<AstNodePtr> values,
-                 bool is_mut, bool is_def, bool pub, VarKind varkind, std::vector<Attribute> attributes){
+VarStmt::VarStmt(Token tok, std::vector<std::pair<AstNodePtr, triplet<bool, VarKind, bool>>> names, AstNodePtr type, std::vector<AstNodePtr> values,
+                 bool is_def, std::vector<Attribute> attributes){
     this->tok = tok;
     this->names = names;
     this->type = type;
     this->values = values;
-    this->mut = is_mut;
     this->def = is_def;
-    this->pub = pub;
-    this->varkind = varkind;
     this->attributes = attributes;
 }
 
-std::vector<std::pair<AstNodePtr, std::pair<bool, bool>>> VarStmt::get_names() const {
+std::vector<std::pair<AstNodePtr, triplet<bool, VarKind, bool>>> VarStmt::get_names() const {
     return this->names;
 }
 AstNodePtr VarStmt::get_var_type() const {
@@ -86,17 +83,8 @@ AstNodePtr VarStmt::get_var_type() const {
 std::vector<AstNodePtr> VarStmt::get_values() const {
     return this->values;
 }
-bool VarStmt::is_pub() const {
-    return this->pub;
-}
-bool VarStmt::is_mut() const {
-    return this->mut;
-}
 bool VarStmt::is_def() const {
     return this->def;
-}
-VarKind VarStmt::get_varkind() const {
-    return this->varkind;
 }
 std::vector<Attribute> VarStmt::get_attributes() const {
     return this->attributes;
@@ -113,26 +101,21 @@ std::string VarStmt::stringify() const {
     for (const auto& attr : this->attributes) {
         result += to_string(attr) + "\n";
     }
-    if(this->varkind == VarKind::ThreadLocal) {
-        result += "thread_local ";
-    } 
-    else if(this->varkind == VarKind::TaskLocal) {
-        result += "task_local ";
-    }
-    if (pub) {
-        result += "pub ";
-    }
-    if(mut) {
-        result += "mut ";
-    }
     for (size_t i = 0; i < names.size(); ++i) {
         const auto& name_pair = names[i];
         if(name_pair.second.first) { // is_pub
             result += "pub ";
         }        
-        if(name_pair.second.second) { // is_mut
+        if(name_pair.second.second == VarKind::TaskLocal){
+            result += "task_local ";
+        }
+        else if(name_pair.second.second == VarKind::ThreadLocal){
+            result += "thread_local ";
+        }
+        if(name_pair.second.third) { // is_mut
             result += "mut ";
         }
+
         result += name_pair.first->stringify();
         if (i != names.size() - 1) {
             result += ", ";

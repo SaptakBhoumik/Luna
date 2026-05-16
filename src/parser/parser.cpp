@@ -1,4 +1,6 @@
 #include "parser/parser.hpp"
+#include "ast/ast_utils.hpp"
+#include "lexer/token.hpp"
 
 namespace Luna {
 Parser::Parser(const std::vector<Token>& toks, const std::string& filename){
@@ -111,7 +113,7 @@ AstNodePtr Parser::parse(){
     std::vector<AstNodePtr> statements;
     while(this->curr_tok.type != TokenType::eof){
         statements.push_back(parse_stmt());
-        advance();
+        advance_on_newline();
         if(this->curr_tok.type == TokenType::newline){
             advance();
         }
@@ -132,7 +134,7 @@ AstNodePtr Parser::parse_block(){
             error(this->curr_tok, "Unexpected end of file");
         }
         statements.push_back(parse_stmt());
-        advance();
+        advance_on_newline();
         if(this->curr_tok.type == TokenType::newline){
             advance();
         }
@@ -141,5 +143,202 @@ AstNodePtr Parser::parse_block(){
         }
     }
     return std::make_shared<Block>(block_tok,statements);
+}
+
+AstNodePtr Parser::parse_stmt(){
+    switch (this->curr_tok.type) {
+        case TokenType::newline:{
+            advance();
+            return parse_stmt();
+        }
+        
+        case TokenType::kw_defer:{
+            return parse_defer_stmt();
+        }
+        case TokenType::lbrace:{
+            return parse_scope_stmt();
+        }
+        case TokenType::kw_break:{
+            return parse_break_stmt();
+        }
+        case TokenType::kw_continue:{
+            return parse_continue_stmt();
+        }
+        case TokenType::kw_ret:{
+            return parse_return_stmt();
+        }
+        case TokenType::kw_give:{
+            return parse_give_stmt();
+        }
+        case TokenType::kw_lock:{
+            return parse_lock_stmt();
+        }
+
+        case TokenType::kw_import:{
+            return parse_import_stmt();
+        }
+        case TokenType::kw_using:{
+            return parse_using_stmt();
+        }
+
+        case TokenType::kw_when:{
+            return parse_when_stmt();
+        }
+        case TokenType::kw_select:{
+            return parse_select_stmt();
+        }
+
+        case TokenType::dollar:{
+            const Token stmt_tok = this->curr_tok;
+            switch (peek().type){
+                case TokenType::kw_defer:
+                case TokenType::kw_break:
+                case TokenType::kw_continue:
+                case TokenType::kw_ret:
+                case TokenType::kw_give:
+                case TokenType::kw_when:
+                case TokenType::kw_loop:{
+                    advance();
+                    return std::make_shared<CompTimeExpr>(stmt_tok, parse_stmt());
+                }
+                default:{
+                    //Do nothing. Treate it like an expression statement and parse at end. IF it turns out to be var statement then also no issue since the $ will just be part of the name expression
+                }
+            }
+            //Dont put break here since we want to handle the case where $ is used in an expression statement as well. 
+        }
+        default:{
+            std::vector<Annotation> annotations;
+            bool is_pub = false;
+            VarKind varkind = VarKind::Normal;
+            bool is_mut = false;
+            while(this->curr_tok.type == TokenType::at || this->curr_tok.type == TokenType::hash){
+                annotations.push_back(parse_annotation());
+                advance_on_newline();
+                advance();
+            }
+            if(this->curr_tok.type == TokenType::kw_pub){
+                is_pub = true;
+                advance();
+            }
+            if(this->curr_tok.type == TokenType::kw_thread_local){
+                varkind = VarKind::ThreadLocal;
+                advance();
+            }
+            else if(this->curr_tok.type == TokenType::kw_task_local){
+                varkind = VarKind::TaskLocal;
+                advance();
+            }
+            if(this->curr_tok.type == TokenType::kw_mut){
+                is_mut = true;
+                advance();
+            }
+            if(this->curr_tok.type == TokenType::kw_fn){
+                if(is_mut){
+                    error(this->curr_tok, "Functions/methods cannot be mutable");
+                }
+                else if(varkind != VarKind::Normal){
+                    error(this->curr_tok, "Functions/methods cannot be thread_local or task_local");
+                }
+                return parse_func_or_method_def(annotations, is_pub);
+            }
+            else if(this->curr_tok.type == TokenType::kw_type){
+                if(is_mut){
+                    error(this->curr_tok, "Types cannot be mutable");
+                }
+                else if(varkind != VarKind::Normal){
+                    error(this->curr_tok, "Types cannot be thread_local or task_local");
+                }
+                return parse_type_def_stmt(annotations, is_pub);
+            }
+            else if(this->curr_tok.type == TokenType::kw_loop){
+                if(is_mut){
+                    error(this->curr_tok, "Loop statements cannot be mutable");
+                }
+                else if(is_pub){
+                    error(this->curr_tok, "Loop statements cannot be public");
+                }
+                else if(varkind != VarKind::Normal){
+                    error(this->curr_tok, "Loop statements cannot be thread_local or task_local");
+                }
+                return parse_loop_stmt(annotations);
+            }
+            std::vector<std::pair<AstNodePtr, triplet<bool, VarKind, bool>>> names;
+            names.push_back(std::make_pair(parse_expression(), triplet<bool, VarKind, bool>{is_pub,varkind,is_mut}));
+            while (peek().type == TokenType::comma) {
+                advance(); // on ','
+                advance(); // on next token after ','
+                bool is_pub = false;
+                VarKind varkind = VarKind::Normal;
+                bool is_mut = false;
+                if(this->curr_tok.type == TokenType::kw_pub){
+                    is_pub = true;
+                    advance();
+                }
+                if(this->curr_tok.type == TokenType::kw_thread_local){
+                    varkind = VarKind::ThreadLocal;
+                    advance();
+                }
+                else if(this->curr_tok.type == TokenType::kw_task_local){
+                    varkind = VarKind::TaskLocal;
+                    advance();
+                }
+                if(this->curr_tok.type == TokenType::kw_mut){
+                    is_mut = true;
+                    advance();
+                }
+                names.push_back(std::make_pair(parse_expression(), triplet<bool, VarKind, bool>{is_pub,varkind,is_mut}));
+            }
+            auto is_var_def = [](triplet<bool, VarKind, bool> info){
+                //At this stage a valid code can only be var def/assign or aug assign
+                //This just makes sure if the var is definately a var def or not. So not all var def return true but if true then must be var def
+                return info.third == true || info.second != VarKind::Normal || info.first == true;
+            };
+            switch (peek().type){
+                case TokenType::eq:
+                case TokenType::walrus:
+                case TokenType::colon:{
+                    advance(); // on =,:= or :
+                    return parse_var_stmt(annotations, names);
+                }
+                case TokenType::plus_eq:          // +=
+                case TokenType::minus_eq:         // -=
+                case TokenType::star_eq:          // *=
+                case TokenType::pow_eq:           // **=
+                case TokenType::slash_eq:         // /=
+                case TokenType::percent_eq:       // %=
+                case TokenType::caret_eq:         // ^=
+                case TokenType::amp_eq:           // &=
+                case TokenType::pipe_eq:          // |=
+                case TokenType::shl_eq:           // <<=
+                case TokenType::shr_eq:{          // >>=
+                    std::vector<AstNodePtr> targets;
+                    if(annotations.size() > 0){
+                        error(this->curr_tok, "Cannot have annotations on augmented assignment");
+                    }
+                    for(const auto& name : names){
+                        if(!is_var_def(name.second)){
+                            error(this->curr_tok, "Unexpected token in variable defination");
+                        }
+                        targets.push_back(name.first);
+                    }
+                    advance(); // on the aug assign operator
+                    return parse_aug_assign_stmt(targets);
+                }
+                default:{
+                    if(annotations.size() > 0){
+                        error(this->curr_tok, "Unexpected token after annotation");
+                    }
+                    else if(names.size() > 1){
+                        error(this->curr_tok, "Unexpected token after multiple variable names");
+                    }
+                    else if(is_var_def(names[0].second)){
+                        error(this->curr_tok, "Unexpected token after variable name");
+                    }
+                    return names[0].first;//This is just an expression statement, not a variable definition/assignment. So we just parse it as an expression and return
+                }
+            }
+        }
+    }
 }
 }

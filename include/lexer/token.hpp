@@ -3,7 +3,6 @@
 #include <string>
 
 namespace Luna {
-
 enum class TokenType {
     eof,
 
@@ -145,7 +144,8 @@ enum class TokenType {
     newline,
 };
 
-std::string to_string(TokenType type);//TODO: Implement it
+std::string to_string(TokenType type);
+
 struct Token {
     size_t col;          // column of the token start
     std::string source_line;  // the full source line for diagnostics
@@ -156,5 +156,5 @@ struct Token {
     size_t line;         // 1-based line number
     TokenType type;
 };
-
+std::string to_string(const Token& tok);
 } // namespace luna

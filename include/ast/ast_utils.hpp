@@ -4,8 +4,15 @@
 #include <map>
 #include <vector>
 namespace Luna{
-class AstNode;
+template<typename T1, typename T2, typename T3>
+struct triplet{
+    T1 first;
+    T2 second;
+    T3 third;
+    triplet(T1 first, T2 second, T3 third):first(first),second(second),third(third) {}
+};
 
+class AstNode;
 using AstNodePtr = std::shared_ptr<AstNode>;
 
 // ---- Attribute: #[name] or #[name(args...)] stored directly on owning nodes ----

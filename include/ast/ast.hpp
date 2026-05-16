@@ -298,12 +298,13 @@ public:
 class AssignTupleLiteral : public AstNode {
     Token tok;
     std::vector<AstNodePtr> elements;
-    std::vector<std::pair<bool,bool>> is_pub_mut; // parallel to elements vector, first bool is true if pub, second bool is true if mut
+    std::vector<triplet<bool,VarKind,bool>> is_pub_varkind_mut; // parallel to elements vector, first bool is true if pub, third bool is true if mut
+                                                                // The second is if the variable is thread local or task local or normal
 public:
-    AssignTupleLiteral(Token tok, std::vector<AstNodePtr> elements, std::vector<std::pair<bool,bool>> is_pub_mut);
+    AssignTupleLiteral(Token tok, std::vector<AstNodePtr> elements, std::vector<triplet<bool,VarKind,bool>> is_pub_varkind_mut);
 
     std::vector<AstNodePtr> get_elements() const;
-    std::vector<std::pair<bool,bool>> get_is_pub_mut() const;
+    std::vector<triplet<bool,VarKind,bool>> get_is_pub_varkind_mut() const;
 
     Token token() const;
     AstKind kind() const;
@@ -1181,7 +1182,7 @@ public:
 // type is NoLiteral when inferred; value is NoLiteral when uninitialized.
 class VarStmt : public AstNode {
     Token tok;
-    std::vector<std::pair<AstNodePtr, std::pair<bool, bool>>> names;//Can be tuple, list access or dot access etc etc. (expr,(is_pub,is_mut))
+    std::vector<std::pair<AstNodePtr, triplet<bool,VarKind, bool>>> names;//Can be tuple, list access or dot access etc etc. (expr,(is_pub,is_mut,varkind))
     AstNodePtr type;
     std::vector<AstNodePtr> values;
     /*pub, mut if the mut,pub exists at the variable level. That is for something like the following:-
@@ -1192,24 +1193,18 @@ class VarStmt : public AstNode {
     we set pub = false
     Same logic applies to mut as well
     */
-    bool pub = false;//If pub
-    bool mut = false;//If mut
     bool def = false;//Means if it is an assignment or defination. IF false then the type and stuff is no literal but the type checker will fill that up later. 
                      //Like for the following statement:- x = 5. It is an assignment and not a defination. So is_def will be false and type and value will be 
                      //no literal. But the type checker will fill the type as i32 and value as 5 later when it processes this statement.
-    VarKind varkind = VarKind::Normal;
     std::vector<Attribute> attributes;
 public:
-    VarStmt(Token tok, std::vector<std::pair<AstNodePtr, std::pair<bool, bool>>> names, AstNodePtr type, std::vector<AstNodePtr> values,
-            bool is_mut, bool is_def, bool pub, VarKind varkind, std::vector<Attribute> attributes);
+    VarStmt(Token tok, std::vector<std::pair<AstNodePtr, triplet<bool, VarKind, bool>>> names, AstNodePtr type, std::vector<AstNodePtr> values,
+            bool is_def, std::vector<Attribute> attributes);
     
-    std::vector<std::pair<AstNodePtr, std::pair<bool, bool>>> get_names() const;
+    std::vector<std::pair<AstNodePtr, triplet<bool, VarKind, bool>>> get_names() const;
     AstNodePtr get_var_type() const;
     std::vector<AstNodePtr> get_values() const;
-    bool is_pub() const;
-    bool is_mut() const;
     bool is_def() const;
-    VarKind get_varkind() const;
     std::vector<Attribute> get_attributes() const;
 
     Token token() const;

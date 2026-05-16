@@ -239,17 +239,17 @@ std::string TupleLiteral::stringify() const{
 }
 
 
-AssignTupleLiteral::AssignTupleLiteral(Token tok, std::vector<AstNodePtr> elements, std::vector<std::pair<bool,bool>> is_pub_mut){
+AssignTupleLiteral::AssignTupleLiteral(Token tok, std::vector<AstNodePtr> elements, std::vector<triplet<bool,VarKind,bool>> is_pub_varkind_mut){
     this->tok = tok;
     this->elements = elements;
-    this->is_pub_mut = is_pub_mut;
+    this->is_pub_varkind_mut = is_pub_varkind_mut;
 }
 
 std::vector<AstNodePtr> AssignTupleLiteral::get_elements() const{
     return this->elements;
 }
-std::vector<std::pair<bool,bool>> AssignTupleLiteral::get_is_pub_mut() const{
-    return this->is_pub_mut;
+std::vector<triplet<bool,VarKind,bool>> AssignTupleLiteral::get_is_pub_varkind_mut() const{
+    return this->is_pub_varkind_mut;
 }
 
 Token AssignTupleLiteral::token() const{
@@ -261,10 +261,16 @@ AstKind AssignTupleLiteral::kind() const{
 std::string AssignTupleLiteral::stringify() const{
     std::string res = "(";
     for(size_t i = 0; i < this->elements.size(); i++){
-        if(this->is_pub_mut[i].first){
+        if(this->is_pub_varkind_mut[i].first){
             res += "pub ";
         }
-        if(this->is_pub_mut[i].second){
+        if(this->is_pub_varkind_mut[i].second == VarKind::TaskLocal){
+            res += "task_local ";
+        }
+        else if(this->is_pub_varkind_mut[i].second == VarKind::ThreadLocal){
+            res += "thread_local ";
+        }
+        if(this->is_pub_varkind_mut[i].third){
             res += "mut ";
         }
         res += this->elements[i]->stringify();

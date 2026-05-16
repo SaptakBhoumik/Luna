@@ -38,8 +38,7 @@ AstNodePtr Parser::parse_type_def_stmt(std::vector<Annotation> annotations, bool
 
 }
 
-AstNodePtr Parser::parse_var_stmt(std::vector<Annotation> annotations, std::vector<std::pair<AstNodePtr, std::pair<bool, bool>>> names, bool is_pub, 
-                                  bool is_mut, VarKind varkind){
+AstNodePtr Parser::parse_var_stmt(std::vector<Annotation> annotations, std::vector<std::pair<AstNodePtr, triplet<bool, VarKind, bool>>> names){
     std::vector<Attribute> attributes;
     for(const auto& ann : annotations){
         if(ann.is_decorator){
@@ -79,7 +78,7 @@ AstNodePtr Parser::parse_var_stmt(std::vector<Annotation> annotations, std::vect
             values.push_back(parse_expression());
         }
     }
-    return std::make_shared<VarStmt>(tok, names, type, values, is_mut, def, is_pub, varkind, attributes);
+    return std::make_shared<VarStmt>(tok, names, type, values, def, attributes);
 }
 
 AstNodePtr Parser::parse_aug_assign_stmt(std::vector<AstNodePtr> targets){

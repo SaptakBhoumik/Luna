@@ -1,4 +1,5 @@
 #include "ast/ast.hpp"
+#include "ast/ast_utils.hpp"
 #include "lexer/token.hpp"
 #include "parser/parser.hpp"
 #include <vector>
@@ -106,13 +107,23 @@ AstNodePtr Parser::parse_tuple_or_paren_expr(){
     const Token tok = this->curr_tok;
     advance(); // consume '('
     std::vector<AstNodePtr> elements;
-    std::vector<std::pair<bool,bool>> is_pub_mut; // only used for assign tuple literal, ignored for regular tuple literal and parenthesized expression.
+    std::vector<triplet<bool,VarKind,bool>> is_pub_varkind_mut; // only used for assign tuple literal, ignored for regular tuple literal and parenthesized expression.
     bool is_assign_tuple_literal = false;
-    if(this->curr_tok.type == TokenType::kw_mut || this->curr_tok.type == TokenType::kw_pub){
+    if(this->curr_tok.type == TokenType::kw_mut || this->curr_tok.type == TokenType::kw_pub || 
+       this->curr_tok.type == TokenType::kw_thread_local || this->curr_tok.type == TokenType::kw_task_local){
         bool is_pub = false;
+        VarKind varkind = VarKind::Normal;
         bool is_mut = false;
         if(this->curr_tok.type == TokenType::kw_pub){
             is_pub = true;
+            advance();
+        }
+        if(this->curr_tok.type == TokenType::kw_thread_local){
+            varkind = VarKind::ThreadLocal;
+            advance();
+        }
+        else if(this->curr_tok.type == TokenType::kw_task_local){
+            varkind = VarKind::TaskLocal;
             advance();
         }
         if(this->curr_tok.type == TokenType::kw_mut){
@@ -120,16 +131,17 @@ AstNodePtr Parser::parse_tuple_or_paren_expr(){
             advance();
         }
         elements.push_back(parse_expression());
-        is_pub_mut.push_back({is_pub,is_mut});
+        is_pub_varkind_mut.push_back({is_pub,varkind,is_mut});
         is_assign_tuple_literal = true;
     }
     else{
         elements.push_back(parse_expression());
-        is_pub_mut.push_back({false,false});// dummy value, not used for regular tuple literal and parenthesized expression
+        is_pub_varkind_mut.push_back({false,VarKind::Normal,false});// dummy value, not used for regular tuple literal and parenthesized expression
     }
     if(peek().type == TokenType::comma || is_assign_tuple_literal){
         // tuple literal
         bool is_pub = false;
+        VarKind varkind = VarKind::Normal;
         bool is_mut = false;
         while(peek().type == TokenType::comma){
             advance(); // on ,
@@ -145,6 +157,21 @@ AstNodePtr Parser::parse_tuple_or_paren_expr(){
             else{
                 is_pub = false;
             }
+
+            if(this->curr_tok.type == TokenType::kw_thread_local){
+                varkind = VarKind::ThreadLocal;
+                advance();
+                is_assign_tuple_literal = true;
+            }
+            else if(this->curr_tok.type == TokenType::kw_task_local){
+                varkind = VarKind::TaskLocal;
+                advance();
+                is_assign_tuple_literal = true;
+            }
+            else{
+                varkind = VarKind::Normal;
+            }
+
             if(this->curr_tok.type == TokenType::kw_mut){
                 is_mut = true;
                 advance();
@@ -154,11 +181,11 @@ AstNodePtr Parser::parse_tuple_or_paren_expr(){
                 is_mut = false;
             }
             elements.push_back(parse_expression());
-            is_pub_mut.push_back({is_pub,is_mut});
+            is_pub_varkind_mut.push_back({is_pub,varkind,is_mut});
         }
         advance(); // consume ')'
         if(is_assign_tuple_literal){
-            return std::make_shared<AssignTupleLiteral>(tok,elements,is_pub_mut);
+            return std::make_shared<AssignTupleLiteral>(tok,elements,is_pub_varkind_mut);
         }
         return std::make_shared<TupleLiteral>(tok,elements);
     }

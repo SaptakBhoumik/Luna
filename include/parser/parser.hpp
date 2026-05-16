@@ -101,7 +101,7 @@ class Parser{
     AstNodePtr parse_arrow_block_call(AstNodePtr left);
 
     // Parse statement nodes and blocks
-    AstNodePtr parse_stmt();//TODO:
+    AstNodePtr parse_stmt();
     AstNodePtr parse_block();//Expects the current token to be lbrace('{'), and parses until the matching rbrace('}')
 
     // Parse simple statement nodes
@@ -125,8 +125,7 @@ class Parser{
     //Parse definition statement nodes
     AstNodePtr parse_type_def_stmt(std::vector<Annotation> annotations, bool is_pub);
     //For parse_var_stmt, we are either on =,:= or : token. Basically the token after the variable name(s)
-    AstNodePtr parse_var_stmt(std::vector<Annotation> annotations, std::vector<std::pair<AstNodePtr, std::pair<bool, bool>>> names, 
-                              bool is_pub, bool is_mut, VarKind varkind);
+    AstNodePtr parse_var_stmt(std::vector<Annotation> annotations, std::vector<std::pair<AstNodePtr, triplet<bool, VarKind, bool>>> names);
     AstNodePtr parse_aug_assign_stmt(std::vector<AstNodePtr> targets);//On the op token
     //For the following we sent when the curr tok is fn
     AstNodePtr parse_func_def(std::vector<Annotation> annotations, bool is_pub);
