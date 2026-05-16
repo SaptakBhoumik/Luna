@@ -3,7 +3,6 @@
 #include <vector>
 
 namespace Luna {
-
 // ANSI colour codes - Should work on most modern terminals. If not then not my headache lol
 namespace colour {
     inline constexpr const char* reset = "\033[0m";

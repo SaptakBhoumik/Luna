@@ -8,6 +8,7 @@ class AstVisitor {
     //Basic nodes
     virtual bool visit(const Program& node) { return false; };
     virtual bool visit(const NoLiteral& node) { return false; };
+    virtual bool visit(const Block& node) { return false; };
     //Literal nodes
     virtual bool visit(const IntegerLiteral& node) { return false; };
     virtual bool visit(const DecimalLiteral& node) { return false; };
@@ -48,6 +49,7 @@ class AstVisitor {
     virtual bool visit(const LambdaExpr& node) { return false; };
     virtual bool visit(const FormattedStr& node) { return false; };
     virtual bool visit(const ThreadOrTaskExpr& node) { return false; };
+    virtual bool visit(const ArrowBlockCallExpr& node) { return false; };
     //Simple Statement nodes
     virtual bool visit(const DeferStmt& node) { return false; };
     virtual bool visit(const ScopeStmt& node) { return false; };

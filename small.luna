@@ -72,7 +72,7 @@ But not <f32, 2+2> or <f32, $some_func()>, <f32, $some_var + 1> and so on.
 This is just done for making the parser simpler without reducing features 
 */
 //Why is there no &Type? Because it is a bit confusing. Sure it makes life easy but can be error prone so we just use *Type when needed. 
-/ ---- Imports ----
+// ---- Imports ----
 import math
 import fs
 import std::io::{println, print}

@@ -81,7 +81,12 @@ AstNodePtr Parser::parse_expression(PrecedenceType precedence) {
         // $expr — compile-time expression; parse_compile_time_expr advances past '$' then
         // recurses at pr_prefix so the whole CT sub-expression binds tightly
         case TokenType::dollar:{
-            left = parse_compile_time_expr();
+            if(peek().type == TokenType::identifier){
+                left = parse_identifier();
+            }
+            else{
+                left = parse_compile_time_expr();
+            }
             break;
         }
         // fn(params)[capture] -> T { body }
@@ -104,7 +109,6 @@ AstNodePtr Parser::parse_expression(PrecedenceType precedence) {
             error(this->curr_tok,"'" + this->curr_tok.value + "' is not an expression");
         }
     }
-
     // -- LED (infix) loop -----------------------------------------------------
     while (peek_precedence() > precedence) {
         advance(); // curr_tok is now the infix / postfix operator
@@ -313,7 +317,7 @@ AstNodePtr Parser::parse_dot_or_arrow_expr(AstNodePtr left){
 AstNodePtr Parser::parse_func_call(AstNodePtr left){
     Token tok = this->curr_tok;
     std::vector<AstNodePtr> args;
-    std::vector<std::pair<Token, AstNodePtr>> named_args;
+    std::vector<std::pair<std::pair<Token,bool>, AstNodePtr>> named_args;
     while(peek().type != TokenType::rparen){
         if(peek().type == TokenType::identifier && peek(2).type == TokenType::assign){
             // named argument
@@ -322,7 +326,16 @@ AstNodePtr Parser::parse_func_call(AstNodePtr left){
             advance(); // on '='
             advance(); // on start of expression
             AstNodePtr arg = parse_expression();
-            named_args.push_back(std::make_pair(name, arg));
+            named_args.push_back(std::make_pair(std::make_pair(name, false), arg));
+        }
+        if(peek().type == TokenType::dollar && peek(2).type == TokenType::identifier && peek(3).type == TokenType::assign){
+            advance(); // on '$'
+            advance(); // on identifier
+            Token name = this->curr_tok;
+            advance(); // on '='
+            advance(); // on start of expression
+            AstNodePtr arg = parse_expression();
+            named_args.push_back(std::make_pair(std::make_pair(name, true), arg));
         }
         else{
             // positional argument
@@ -455,7 +468,7 @@ AstNodePtr Parser::parse_arrow_block_call(AstNodePtr left){
     const Token tok = this->curr_tok;
     AstNodePtr callee;
     std::vector<AstNodePtr> args;
-    std::vector<std::pair<Token, AstNodePtr>> named_args;
+    std::vector<std::pair<std::pair<Token,bool>, AstNodePtr>> named_args;
     if(left->kind() == AstKind::FuncCall){
         auto func_call = std::dynamic_pointer_cast<FuncCall>(left);
         callee = func_call->get_callee();

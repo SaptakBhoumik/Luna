@@ -11,7 +11,7 @@ Attribute Parser::parse_attribute(){
     expect(TokenType::identifier, "Expected identifier for attribute name after '['");
     Token name = this->curr_tok;
     std::vector<AstNodePtr> args;
-    std::vector<std::pair<Token, AstNodePtr>> named_args;
+    std::vector<std::pair<std::pair<Token,bool>, AstNodePtr>> named_args;
     if(peek().type == TokenType::lparen){
         advance(); // consume '('
         while(peek().type != TokenType::rparen){
@@ -22,7 +22,16 @@ Attribute Parser::parse_attribute(){
                 advance(); // on '='
                 advance(); // the tok after '=' i.e first token of argument value
                 AstNodePtr arg_value = parse_expression();
-                named_args.push_back({arg_name, arg_value});
+                named_args.push_back({{arg_name, false}, arg_value});
+            }
+            else if(this->curr_tok.type == TokenType::dollar && peek().type == TokenType::identifier && peek(2).type == TokenType::assign){
+                // compile-time named argument
+                advance(); // after '$'
+                Token arg_name = this->curr_tok;
+                advance(); // after identifier. On '='
+                advance(); // after '='
+                AstNodePtr arg_value = parse_expression();
+                named_args.push_back({{arg_name, true}, arg_value});
             }
             else{
                 // positional argument
@@ -33,7 +42,7 @@ Attribute Parser::parse_attribute(){
                 }
             }
             if(peek().type == TokenType::comma){
-                advance(); // On ',
+                advance(); // On ','
             }
             else if(peek().type != TokenType::rparen){
                 error(peek(), "Expected ',' or ')' after argument in attribute");
@@ -116,17 +125,29 @@ StructField Parser::parse_struct_field(){
     return StructField(name, type, default_value, is_pub, is_mut, attributes);
 }
 
-std::vector<Token> Parser::parse_path(){
+std::pair<std::vector<Token>, bool> Parser::parse_path(){
+    if(this->curr_tok.type == TokenType::dollar){
+        advance(); // after '$'
+        return {{this->curr_tok,}, true};
+    }
     std::vector<Token> path = {this->curr_tok};
+    bool compile_time = false;
     // if(peek().type == TokenType::double_colon){
         // parse path like A::B::C
-    while(peek().type == TokenType::double_colon && peek(2).type == TokenType::identifier){
+    while(peek().type == TokenType::double_colon && (peek(2).type == TokenType::identifier)){
         advance(); // On double colon
         expect(TokenType::identifier,"expected identifier after '::' in path");
         path.push_back(this->curr_tok);
     }
+    if(peek().type == TokenType::double_colon && (peek(2).type == TokenType::dollar)){
+        advance(); // On double colon
+        advance(); // On dollar
+        compile_time = true;
+        expect(TokenType::identifier,"expected identifier after '::' and '$' in path");
+        path.push_back(this->curr_tok);
+    }
     // }
-    return path;
+    return {path, compile_time};
 }
 
 Parameter Parser::parse_parameter(){

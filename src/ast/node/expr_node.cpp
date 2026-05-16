@@ -232,7 +232,7 @@ std::string ArrowExpr::stringify() const {
 }
 
 
-FuncCall::FuncCall(Token tok, AstNodePtr callee, std::vector<AstNodePtr> args, std::vector<std::pair<Token, AstNodePtr>> named_args){
+FuncCall::FuncCall(Token tok, AstNodePtr callee, std::vector<AstNodePtr> args, std::vector<std::pair<std::pair<Token,bool>, AstNodePtr>> named_args){
     this->tok = tok;
     this->callee = callee;
     this->args = args;
@@ -245,7 +245,7 @@ AstNodePtr FuncCall::get_callee() const {
 std::vector<AstNodePtr> FuncCall::get_arguments() const {
     return this->args;
 }
-std::vector<std::pair<Token, AstNodePtr>> FuncCall::get_named_arguments() const {
+std::vector<std::pair<std::pair<Token,bool>, AstNodePtr>> FuncCall::get_named_arguments() const {
     return this->named_args;
 }
 
@@ -265,7 +265,7 @@ std::string FuncCall::stringify() const {
     }
     size_t count = 0;
     for(const auto& [name, arg] : this->named_args){
-        res += name.value + "=" + arg->stringify();
+        res += (name.second ? "$" : "") + name.first.value + "=" + arg->stringify();
         if(count != this->named_args.size() - 1){
             res += ", ";
         }
@@ -475,7 +475,8 @@ std::string ThreadOrTaskExpr::stringify() const{
 }
 
 
-ArrowBlockCallExpr::ArrowBlockCallExpr(Token tok, AstNodePtr callee, std::vector<AstNodePtr> args, std::vector<std::pair<Token, AstNodePtr>> named_args, AstNodePtr body){
+ArrowBlockCallExpr::ArrowBlockCallExpr(Token tok, AstNodePtr callee, std::vector<AstNodePtr> args, 
+                                       std::vector<std::pair<std::pair<Token,bool>, AstNodePtr>> named_args, AstNodePtr body){
     this->tok = tok;
     this->callee = callee;
     this->args = args;
@@ -489,7 +490,7 @@ AstNodePtr ArrowBlockCallExpr::get_callee() const{
 std::vector<AstNodePtr> ArrowBlockCallExpr::get_arguments() const{
     return this->args;
 }
-std::vector<std::pair<Token, AstNodePtr>> ArrowBlockCallExpr::get_named_arguments() const{
+std::vector<std::pair<std::pair<Token,bool>, AstNodePtr>> ArrowBlockCallExpr::get_named_arguments() const{
     return this->named_args;
 }
 AstNodePtr ArrowBlockCallExpr::get_body() const{
@@ -519,7 +520,7 @@ std::string ArrowBlockCallExpr::stringify() const{
         }
         size_t count = 0;
         for(const auto& [name, arg] : this->named_args){
-            res += name.value + "=" + arg->stringify();
+            res += (name.second ? "$" : "") + name.first.value + "=" + arg->stringify();
             if(count != this->named_args.size() - 1){
                 res += ", ";
             }

@@ -1,0 +1,17 @@
+/* ---- Imports ---- */
+import math
+
+
+import fs
+import std::io::{println /*comment*/, print}
+import gui::{window,}
+import gui::{button, textbox,}
+import error::{compile_time::$panic,
+                 warning,}
+import os::{platform::Linux,$get_os}
+using io = std::io
+using math // Same as ``using namespace std`` in c++
+
+a:= "Hello " + $get_os() + "!"
+
+defer{}

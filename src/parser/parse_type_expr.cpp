@@ -66,6 +66,17 @@ AstNodePtr Parser::parse_type_expr(bool can_be_sumtype){
     }
     return type_expr;
 }
+AstNodePtr Parser::parse_identifier_type_expr(){
+    const Token tok = this->curr_tok;
+    AstNodePtr type_expr = parse_identifier();
+    AstNodePtr idx = std::make_shared<NoLiteral>();
+    if(peek().type == TokenType::lbracket){
+        advance();
+        idx = parse_expression();
+        expect(TokenType::rbracket, "Expected ']' after index in identifier type expression");
+    }
+    return std::make_shared<TypeExpr>(tok, type_expr, idx);
+}
 AstNodePtr Parser::parse_list_type_expr(){
     const Token list_tok = this->curr_tok;
     advance();//After [

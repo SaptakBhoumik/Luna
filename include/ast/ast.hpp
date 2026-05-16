@@ -221,12 +221,14 @@ public:
 class IdentifierLiteral : public AstNode {
     Token tok;
     std::vector<Token> path;//The path. Like A::B::C will be ["A", "B", "C"]
+    bool compile_time = false;//If the symbol is compile time or not
     std::vector<AstNodePtr> generic_args; // populated if this identifier is something like func{generic_arg1, generic_arg2} but we dont call the funciton yet. 
     // This is just the identifier with generic args, the actual function call will be a separate FunctionCall node with this as the callee.
 public:
-    IdentifierLiteral(Token tok, std::vector<Token> path, std::vector<AstNodePtr> generic_args);
+    IdentifierLiteral(Token tok, std::vector<Token> path, bool compile_time, std::vector<AstNodePtr> generic_args);
 
     std::vector<Token> get_path() const;
+    bool is_compile_time() const;
     std::vector<AstNodePtr> get_generic_args() const;
 
     Token token() const;
@@ -677,13 +679,13 @@ class FuncCall : public AstNode {
     Token tok;
     AstNodePtr callee;
     std::vector<AstNodePtr> args;
-    std::vector<std::pair<Token, AstNodePtr>> named_args; // for calls with named arguments
+    std::vector<std::pair<std::pair<Token,bool>, AstNodePtr>> named_args; // for calls with named arguments. The pair is (argument name, is_compile_time)
 public:
-    FuncCall(Token tok, AstNodePtr callee,std::vector<AstNodePtr> args, std::vector<std::pair<Token, AstNodePtr>> named_args);
+    FuncCall(Token tok, AstNodePtr callee,std::vector<AstNodePtr> args, std::vector<std::pair<std::pair<Token,bool>, AstNodePtr>> named_args);
 
     AstNodePtr get_callee() const;
     std::vector<AstNodePtr> get_arguments() const;
-    std::vector<std::pair<Token, AstNodePtr>> get_named_arguments() const;
+    std::vector<std::pair<std::pair<Token,bool>, AstNodePtr>> get_named_arguments() const;
 
     Token token() const;
     AstKind kind() const;
@@ -805,7 +807,7 @@ class ArrowBlockCallExpr:public AstNode{
     Token tok;
     AstNodePtr callee; // For func(args) => {...} case we need it callee to store ``func`` and not the whole func(args) as callee because dont make sense
     std::vector<AstNodePtr> args; // empty for func => {...}
-    std::vector<std::pair<Token, AstNodePtr>> named_args; // empty for func => {...}
+    std::vector<std::pair<std::pair<Token,bool>, AstNodePtr>> named_args; // empty for func => {...}
     AstNodePtr body;//THis is a lamda defination. 
     /*
     For something like the following:-
@@ -823,11 +825,11 @@ class ArrowBlockCallExpr:public AstNode{
     We still store it in LambdaExpr where capture is [] and no parameter and void return type
     */
 public:
-    ArrowBlockCallExpr(Token tok, AstNodePtr callee, std::vector<AstNodePtr> args, std::vector<std::pair<Token, AstNodePtr>> named_args, AstNodePtr body);
+    ArrowBlockCallExpr(Token tok, AstNodePtr callee, std::vector<AstNodePtr> args, std::vector<std::pair<std::pair<Token,bool>, AstNodePtr>> named_args, AstNodePtr body);
 
     AstNodePtr get_callee() const;
     std::vector<AstNodePtr> get_arguments() const;
-    std::vector<std::pair<Token, AstNodePtr>> get_named_arguments() const;
+    std::vector<std::pair<std::pair<Token,bool>, AstNodePtr>> get_named_arguments() const;
     AstNodePtr get_body() const;
 
     Token token() const;
@@ -958,21 +960,21 @@ public:
 class ImportStmt : public AstNode {
     Token tok;
     std::vector<Token> module_path;
-    std::vector<std::vector<Token>> imported_symbols;
+    std::vector<std::pair<std::vector<Token>, bool>> imported_symbols;//The bool says if we are importing a compile time symbol
     /*
     import std::io::{println, print}
-    For the above imported_symbols = {{println}, {print}} and module_path = {std, io}
+    For the above imported_symbols = {{println, false}, {print, false}} and module_path = {std, io}
 
     import os::{platform::Linux}
-    For the above imported_symbols = {{platform, Linux}} and module_path = {os}
+    For the above imported_symbols = {{platform, Linux}, false} and module_path = {os}
 
     Basically each element of imported symbols is the path of the imported symbol
     */
 public:
-    ImportStmt(Token tok, std::vector<Token> module_path, std::vector<std::vector<Token>> imported_symbols);
+    ImportStmt(Token tok, std::vector<Token> module_path, std::vector<std::pair<std::vector<Token>, bool>> imported_symbols);
 
     std::vector<Token> get_module_path() const;
-    std::vector<std::vector<Token>> get_imported_symbols() const;
+    std::vector<std::pair<std::vector<Token>, bool>> get_imported_symbols() const;
 
     Token token() const;
     AstKind kind() const;

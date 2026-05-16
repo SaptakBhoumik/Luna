@@ -102,14 +102,18 @@ std::string NoneLiteral::stringify() const{
     return "None";
 }
 
-IdentifierLiteral::IdentifierLiteral(Token tok, std::vector<Token> path, std::vector<AstNodePtr> generic_args){
+IdentifierLiteral::IdentifierLiteral(Token tok, std::vector<Token> path, bool compile_time, std::vector<AstNodePtr> generic_args){
     this->tok = tok;
     this->path = path;
+    this->compile_time = compile_time;
     this->generic_args = generic_args;
 }
 
 std::vector<Token> IdentifierLiteral::get_path() const{
     return this->path;
+}
+bool IdentifierLiteral::is_compile_time() const{
+    return this->compile_time;
 }
 std::vector<AstNodePtr> IdentifierLiteral::get_generic_args() const{
     return this->generic_args;
@@ -124,6 +128,9 @@ AstKind IdentifierLiteral::kind() const{
 std::string IdentifierLiteral::stringify() const{
     std::string res;
     for(size_t i = 0; i < this->path.size(); i++){
+        if(i == this->path.size() - 1 && this->compile_time){
+            res += "$";
+        }
         res += this->path[i].value;
         if(i != this->path.size() - 1){
             res += "::";

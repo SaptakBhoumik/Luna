@@ -45,15 +45,15 @@ class Parser{
     void advance_on_newline();
     Token peek(std::size_t i=1) const;// peek the token at curr_index + i without advancing
     PrecedenceType peek_precedence(size_t i=1) const;
-    [[noreturn]] void expect(TokenType expected_type, std::string msg="",std::string submsg="",std::string ecode="");
-    [[noreturn]] void error(Token tok, std::string msg,std::string submsg="",std::string ecode="");
+    void expect(TokenType expected_type, std::string msg="",std::string submsg="",std::string ecode="");
+    void error(Token tok, std::string msg,std::string submsg="",std::string ecode="");
 
     //Parse utils
     Attribute parse_attribute();
     Decorator parse_decorator();
     Annotation parse_annotation();
     StructField parse_struct_field();
-    std::vector<Token> parse_path();
+    std::pair<std::vector<Token>, bool> parse_path();
     Parameter parse_parameter();
     CaptureClause parse_capture_clause();
     LambdaFuncSignature parse_lambda_signature();

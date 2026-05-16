@@ -27,7 +27,7 @@ AstNodePtr Parser::parse_none(){
 }
 AstNodePtr Parser::parse_identifier(){
     const Token tok = this->curr_tok;
-    std::vector<Token> path = parse_path();
+    std::pair<std::vector<Token>, bool> path = parse_path();
     std::vector<AstNodePtr> generic_args = {};
     
     if(peek().type == TokenType::lbrace){
@@ -51,7 +51,7 @@ AstNodePtr Parser::parse_identifier(){
         }
         advance(); // consume '}'
     }
-    return std::make_shared<IdentifierLiteral>(tok,path,generic_args);
+    return std::make_shared<IdentifierLiteral>(tok,path.first,path.second,generic_args);
 }
 
 AstNodePtr Parser::parse_map_or_list(){

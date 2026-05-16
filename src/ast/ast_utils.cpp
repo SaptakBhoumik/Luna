@@ -17,7 +17,7 @@ std::string to_string(const Attribute& attr){
     }
     if(!attr.named_args.empty()){
         for(const auto& [name, arg] : attr.named_args){
-            res += name.value + "=" + arg->stringify() + ", ";
+            res += (name.second ? "$" : "") + name.first.value + "=" + arg->stringify() + ", ";
         }
         res.pop_back(); // remove last space
         res.pop_back(); // remove last comma
@@ -40,7 +40,7 @@ std::string to_string(const Decorator& decorator){
     }
     if(!decorator.named_args.empty()){
         for(const auto& [name, arg] : decorator.named_args){
-            res += name.value + "=" + arg->stringify() + ", ";
+            res += (name.second ? "$" : "") + name.first.value + "=" + arg->stringify() + ", ";
         }
         res.pop_back(); // remove last space
         res.pop_back(); // remove last comma

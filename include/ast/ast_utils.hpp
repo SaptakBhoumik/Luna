@@ -20,7 +20,7 @@ using AstNodePtr = std::shared_ptr<AstNode>;
 struct Attribute {
     Token name;
     std::vector<AstNodePtr> args = {}; // empty if no argument list
-    std::vector<std::pair<Token, AstNodePtr>> named_args = {}; // empty if no named arguments
+    std::vector<std::pair<std::pair<Token,bool>, AstNodePtr>> named_args = {}; // empty if no named arguments
 };
 
 std::string to_string(const Attribute& attr);
@@ -36,7 +36,7 @@ struct Decorator{
     */
     AstNodePtr decorator; // An IdentifierLiteral or some expression
     std::vector<AstNodePtr> args = {}; // empty if no argument list. 
-    std::vector<std::pair<Token, AstNodePtr>> named_args = {}; // empty if no named arguments
+    std::vector<std::pair<std::pair<Token,bool>, AstNodePtr>> named_args = {}; // empty if no named arguments
 };
  
 std::string to_string(const Decorator& decorator);

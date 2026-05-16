@@ -1,6 +1,7 @@
 #include "parser/parser.hpp"
 #include "ast/ast_utils.hpp"
 #include "lexer/token.hpp"
+#include <iostream>
 
 namespace Luna {
 Parser::Parser(const std::vector<Token>& toks, const std::string& filename){
@@ -9,7 +10,7 @@ Parser::Parser(const std::vector<Token>& toks, const std::string& filename){
     if (!toks.empty()) {
         this->curr_tok = toks[0];
     }
-    std::map<TokenType, PrecedenceType> precedence_map = {
+    this->precedence_map = {
         //'f' i.e format is handled as nud in parse_expr using the parse_formatted_string function
         //'$' is also handled as a nud using parse_compile_time_expr
         //'#' is also handled by parse_stmt. Dont worry about it in parse_expr
@@ -151,7 +152,7 @@ AstNodePtr Parser::parse_stmt(){
             advance();
             return parse_stmt();
         }
-        
+
         case TokenType::kw_defer:{
             return parse_defer_stmt();
         }

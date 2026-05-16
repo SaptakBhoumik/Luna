@@ -9,8 +9,8 @@
 namespace Luna {
 AstNodePtr Parser::parse_import_stmt(){
     expect(TokenType::identifier, "Expected identifier after 'import'");
-    std::vector<Token> path = parse_path();
-    std::vector<std::vector<Token>> symbols;
+    std::pair<std::vector<Token>, bool> path = parse_path();
+    std::vector<std::pair<std::vector<Token>, bool>> symbols;
     if(peek().type == TokenType::double_colon){
         advance(); // on '::'
         expect(TokenType::lbrace, "Expected '{' after '::' in import statement");
@@ -31,7 +31,10 @@ AstNodePtr Parser::parse_import_stmt(){
         }
         advance(); // on '}'
     }
-    return std::make_shared<ImportStmt>(this->curr_tok, path, symbols);
+    if(path.second){
+        error(this->curr_tok, "Compile-time paths cannot be used in import statements");
+    }
+    return std::make_shared<ImportStmt>(this->curr_tok, path.first, symbols);
 }
 AstNodePtr Parser::parse_using_stmt(){
     const Token using_tok = this->curr_tok;
@@ -42,7 +45,10 @@ AstNodePtr Parser::parse_using_stmt(){
         advance(); // On =
     }
     expect(TokenType::identifier, "Expected identifier in using statement");
-    std::vector<Token> path = parse_path();
-    return std::make_shared<UsingStmt>(using_tok, path, alias);
+    std::pair<std::vector<Token>, bool> path = parse_path();
+    if(path.second){
+        error(this->curr_tok, "Compile-time paths cannot be used in using statements");
+    }
+    return std::make_shared<UsingStmt>(using_tok, path.first, alias);
 }
 }

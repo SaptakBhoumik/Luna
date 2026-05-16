@@ -8,7 +8,9 @@ void Program::accept(AstVisitor& visitor) const {
 void NoLiteral::accept(AstVisitor& visitor) const {
     visitor.visit(*this);
 }
-
+void Block::accept(AstVisitor& visitor) const {
+    visitor.visit(*this);
+}
 //Literal nodes
 void IntegerLiteral::accept(AstVisitor& visitor) const {
     visitor.visit(*this);
@@ -121,6 +123,9 @@ void FormattedStr::accept(AstVisitor& visitor) const {
     visitor.visit(*this);
 }
 void ThreadOrTaskExpr::accept(AstVisitor& visitor) const {
+    visitor.visit(*this);
+}
+void ArrowBlockCallExpr::accept(AstVisitor& visitor) const {
     visitor.visit(*this);
 }
 // Simple Statement nodes

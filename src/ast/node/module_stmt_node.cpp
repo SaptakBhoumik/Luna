@@ -1,7 +1,7 @@
 #include "ast/ast.hpp"
 
 namespace Luna{
-ImportStmt::ImportStmt(Token tok, std::vector<Token> module_path, std::vector<std::vector<Token>> imported_symbols){
+ImportStmt::ImportStmt(Token tok, std::vector<Token> module_path, std::vector<std::pair<std::vector<Token>, bool>> imported_symbols){
     this->tok = tok;
     this->module_path = module_path;
     this->imported_symbols = imported_symbols;
@@ -10,7 +10,7 @@ ImportStmt::ImportStmt(Token tok, std::vector<Token> module_path, std::vector<st
 std::vector<Token> ImportStmt::get_module_path() const{
     return this->module_path;
 }
-std::vector<std::vector<Token>> ImportStmt::get_imported_symbols() const{
+std::vector<std::pair<std::vector<Token>, bool>> ImportStmt::get_imported_symbols() const{
     return this->imported_symbols;
 }
 
@@ -31,9 +31,12 @@ std::string ImportStmt::stringify() const{
     if (!this->imported_symbols.empty()){
         res += "::{";
         for (size_t i = 0; i < this->imported_symbols.size(); i++){
-            for (size_t j = 0; j < this->imported_symbols[i].size(); j++){
-                res += this->imported_symbols[i][j].value;
-                if (j != this->imported_symbols[i].size() - 1){
+            for (size_t j = 0; j < this->imported_symbols[i].first.size(); j++){
+                if(j == this->imported_symbols[i].first.size() - 1 && this->imported_symbols[i].second){
+                    res += "$";
+                }
+                res += this->imported_symbols[i].first[j].value;
+                if (j != this->imported_symbols[i].first.size() - 1){
                     res += "::";
                 }
             }
