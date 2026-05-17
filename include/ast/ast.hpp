@@ -300,13 +300,12 @@ public:
 class AssignTupleLiteral : public AstNode {
     Token tok;
     std::vector<AstNodePtr> elements;
-    std::vector<triplet<bool,VarKind,bool>> is_pub_varkind_mut; // parallel to elements vector, first bool is true if pub, third bool is true if mut
-                                                                // The second is if the variable is thread local or task local or normal
+    std::vector<std::pair<bool,bool>> is_pub_mut; // parallel to elements vector, first bool is true if pub, second bool is true if mut
 public:
-    AssignTupleLiteral(Token tok, std::vector<AstNodePtr> elements, std::vector<triplet<bool,VarKind,bool>> is_pub_varkind_mut);
+    AssignTupleLiteral(Token tok, std::vector<AstNodePtr> elements, std::vector<std::pair<bool,bool>> is_pub_mut);
 
     std::vector<AstNodePtr> get_elements() const;
-    std::vector<triplet<bool,VarKind,bool>> get_is_pub_varkind_mut() const;
+    std::vector<std::pair<bool,bool>> get_is_pub_mut() const;
 
     Token token() const;
     AstKind kind() const;
@@ -1184,7 +1183,7 @@ public:
 // type is NoLiteral when inferred; value is NoLiteral when uninitialized.
 class VarStmt : public AstNode {
     Token tok;
-    std::vector<std::pair<AstNodePtr, triplet<bool,VarKind, bool>>> names;//Can be tuple, list access or dot access etc etc. (expr,(is_pub,is_mut,varkind))
+    std::vector<std::pair<AstNodePtr, std::pair<bool,bool>>> names;//Can be tuple, list access or dot access etc etc. (expr,(is_pub,is_mut))
     AstNodePtr type;
     std::vector<AstNodePtr> values;
     /*pub, mut if the mut,pub exists at the variable level. That is for something like the following:-
@@ -1200,10 +1199,10 @@ class VarStmt : public AstNode {
                      //no literal. But the type checker will fill the type as i32 and value as 5 later when it processes this statement.
     std::vector<Attribute> attributes;
 public:
-    VarStmt(Token tok, std::vector<std::pair<AstNodePtr, triplet<bool, VarKind, bool>>> names, AstNodePtr type, std::vector<AstNodePtr> values,
+    VarStmt(Token tok, std::vector<std::pair<AstNodePtr, std::pair<bool,bool>>> names, AstNodePtr type, std::vector<AstNodePtr> values,
             bool is_def, std::vector<Attribute> attributes);
     
-    std::vector<std::pair<AstNodePtr, triplet<bool, VarKind, bool>>> get_names() const;
+    std::vector<std::pair<AstNodePtr, std::pair<bool,bool>>> get_names() const;
     AstNodePtr get_var_type() const;
     std::vector<AstNodePtr> get_values() const;
     bool is_def() const;

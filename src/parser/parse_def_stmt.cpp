@@ -2,6 +2,7 @@
 #include "ast/ast_utils.hpp"
 #include "lexer/token.hpp"
 #include "parser/parser.hpp"
+#include <iostream>
 #include <vector>
 
 namespace Luna {
@@ -20,10 +21,13 @@ AstNodePtr Parser::parse_type_def_stmt(std::vector<Annotation> annotations, bool
     Token name = this->curr_tok;
     std::vector<std::pair<Token, AstNodePtr>> generics;
     advance();
-    if(curr_tok.type == TokenType::lbrace){
+    if(peek().type == TokenType::lt && this->curr_tok.type == TokenType::double_colon){
+        advance(); // on '<'
+    }
+    if(curr_tok.type == TokenType::lt){
         generics = parse_generic_params();
         if(peek().type == TokenType::assign){
-            advance();
+            advance(); // on '='
         }
     }
     if(curr_tok.type == TokenType::assign){
@@ -38,7 +42,7 @@ AstNodePtr Parser::parse_type_def_stmt(std::vector<Annotation> annotations, bool
 
 }
 
-AstNodePtr Parser::parse_var_stmt(std::vector<Annotation> annotations, std::vector<std::pair<AstNodePtr, triplet<bool, VarKind, bool>>> names){
+AstNodePtr Parser::parse_var_stmt(std::vector<Annotation> annotations, std::vector<std::pair<AstNodePtr, std::pair<bool, bool>>> names){
     std::vector<Attribute> attributes;
     for(const auto& ann : annotations){
         if(ann.is_decorator){
@@ -103,8 +107,11 @@ AstNodePtr Parser::parse_func_def(std::vector<Annotation> annotations, bool is_p
     expect(TokenType::identifier, "Expected function name after 'fn' keyword");
     Token name = this->curr_tok;
     std::vector<std::pair<Token, AstNodePtr>> generics;
-    if(peek().type == TokenType::lbrace){
-        advance(); // on '{'
+    if(peek().type == TokenType::double_colon && peek(2).type == TokenType::lt){
+        advance(); // on '::'
+    }
+    if(peek().type == TokenType::lt){
+        advance(); // on '<'
         generics = parse_generic_params();
     }
     expect(TokenType::lparen, "Expected '(' at the beginning of parameter list in function definition");
@@ -175,8 +182,11 @@ AstNodePtr Parser::parse_method_def(std::vector<Annotation> annotations, bool is
     expect(TokenType::identifier, "Expected method name after method receiver");
     Token name = this->curr_tok;
     std::vector<std::pair<Token, AstNodePtr>> generics;
-    if(peek().type == TokenType::lbrace){
-        advance(); // on '{'
+    if(peek().type == TokenType::double_colon && peek(2).type == TokenType::lt){
+        advance(); // on '::'
+    }
+    if(peek().type == TokenType::lt){
+        advance(); // on '<'
         generics = parse_generic_params();
     }
     expect(TokenType::lparen, "Expected '(' at the beginning of parameter list in method definition");

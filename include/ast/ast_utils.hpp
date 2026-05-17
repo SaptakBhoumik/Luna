@@ -135,11 +135,4 @@ struct SelectArm {
 };
 
 std::string to_string(const SelectArm& arm);
-
-// ----Types of variable----
-enum class VarKind {
-    Normal,
-    ThreadLocal,
-    TaskLocal,
-};
 }

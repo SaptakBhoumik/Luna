@@ -53,7 +53,7 @@ class Parser{
     Decorator parse_decorator();
     Annotation parse_annotation();
     StructField parse_struct_field();
-    std::pair<std::vector<Token>, bool> parse_path();
+    std::pair<std::vector<Token>, bool> parse_path(bool allow_turbo_fish = false);//if allow_turbo_fish and turbo fish is detected then it will return at :: token before the <
     Parameter parse_parameter();
     CaptureClause parse_capture_clause();
     LambdaFuncSignature parse_lambda_signature();
@@ -66,7 +66,7 @@ class Parser{
     AstNodePtr parse_string();
     AstNodePtr parse_bool();
     AstNodePtr parse_none();
-    AstNodePtr parse_identifier();
+    AstNodePtr parse_identifier(bool turbo_fish_required = true);//turbo_fish_required is true if u want generic to be like name::<T> and false if you want it to be like name<T> or name::<T>
     AstNodePtr parse_map_or_list();
     AstNodePtr parse_tuple_or_paren_expr();
 
@@ -125,7 +125,7 @@ class Parser{
     //Parse definition statement nodes
     AstNodePtr parse_type_def_stmt(std::vector<Annotation> annotations, bool is_pub);
     //For parse_var_stmt, we are either on =,:= or : token. Basically the token after the variable name(s)
-    AstNodePtr parse_var_stmt(std::vector<Annotation> annotations, std::vector<std::pair<AstNodePtr, triplet<bool, VarKind, bool>>> names);
+    AstNodePtr parse_var_stmt(std::vector<Annotation> annotations, std::vector<std::pair<AstNodePtr, std::pair<bool, bool>>> names);
     AstNodePtr parse_aug_assign_stmt(std::vector<AstNodePtr> targets);//On the op token
     //For the following we sent when the curr tok is fn
     AstNodePtr parse_func_def(std::vector<Annotation> annotations, bool is_pub);

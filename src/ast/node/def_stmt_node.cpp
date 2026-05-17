@@ -47,6 +47,7 @@ std::string TypeDefStmt::stringify() const {
     }
     result += "type " + name.value;
     if (!generics.empty()) {
+        result += "::<";
         for(size_t i = 0; i < generics.size(); i++) {
             result += generics[i].first.value;
             if(generics[i].second->kind() != AstKind::NoLiteral) {
@@ -56,6 +57,7 @@ std::string TypeDefStmt::stringify() const {
                 result += ", ";
             }
         }
+        result += ">";
     }
     if(base_type->kind() != AstKind::NoLiteral) {
         result += " = " + base_type->stringify();
@@ -64,7 +66,7 @@ std::string TypeDefStmt::stringify() const {
 }
 
 
-VarStmt::VarStmt(Token tok, std::vector<std::pair<AstNodePtr, triplet<bool, VarKind, bool>>> names, AstNodePtr type, std::vector<AstNodePtr> values,
+VarStmt::VarStmt(Token tok, std::vector<std::pair<AstNodePtr, std::pair<bool, bool>>> names, AstNodePtr type, std::vector<AstNodePtr> values,
                  bool is_def, std::vector<Attribute> attributes){
     this->tok = tok;
     this->names = names;
@@ -74,7 +76,7 @@ VarStmt::VarStmt(Token tok, std::vector<std::pair<AstNodePtr, triplet<bool, VarK
     this->attributes = attributes;
 }
 
-std::vector<std::pair<AstNodePtr, triplet<bool, VarKind, bool>>> VarStmt::get_names() const {
+std::vector<std::pair<AstNodePtr, std::pair<bool, bool>>> VarStmt::get_names() const {
     return this->names;
 }
 AstNodePtr VarStmt::get_var_type() const {
@@ -105,14 +107,8 @@ std::string VarStmt::stringify() const {
         const auto& name_pair = names[i];
         if(name_pair.second.first) { // is_pub
             result += "pub ";
-        }        
-        if(name_pair.second.second == VarKind::TaskLocal){
-            result += "task_local ";
-        }
-        else if(name_pair.second.second == VarKind::ThreadLocal){
-            result += "thread_local ";
-        }
-        if(name_pair.second.third) { // is_mut
+        }  
+        if(name_pair.second.second) { // is_mut
             result += "mut ";
         }
 
@@ -236,7 +232,7 @@ std::string FuncDefStmt::stringify() const{
     }
     result += "fn " + name.value;
     if (!generics.empty()) {
-        result += "{";
+        result += "::<";
         for(size_t i = 0; i < generics.size(); i++) {
             result += generics[i].first.value;
             if(generics[i].second->kind() != AstKind::NoLiteral) {
@@ -246,7 +242,7 @@ std::string FuncDefStmt::stringify() const{
                 result += ", ";
             }
         }
-        result += "}";
+        result += ">";
     }
     result += "(";
     for(size_t i = 0; i < parameters.size(); i++) {
@@ -321,7 +317,7 @@ std::string MethodDefStmt::stringify() const {
     }
     result += "fn (" + to_string(receiver) + ") " + name.value;
     if (!generics.empty()) {
-        result += "{";
+        result += "::<";
         for(size_t i = 0; i < generics.size(); i++) {
             result += generics[i].first.value;
             if(generics[i].second->kind() != AstKind::NoLiteral) {
@@ -331,7 +327,7 @@ std::string MethodDefStmt::stringify() const {
                 result += ", ";
             }
         }
-        result += "}";
+        result += ">";
     }
     result += "(";
     for(size_t i = 0; i < parameters.size(); i++) {

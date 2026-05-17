@@ -129,8 +129,8 @@ enum class TokenType {
     kw_defer,//defer
 
     // kw_atomic,//atomic
-    kw_thread_local,//thread_local
-    kw_task_local,//task_local
+    // kw_thread_local,//thread_local
+    // kw_task_local,//task_local
     kw_thread,//thread
     kw_task,//task
     kw_lock,//lock
@@ -157,4 +157,6 @@ struct Token {
     TokenType type;
 };
 std::string to_string(const Token& tok);
+
+std::ostream& operator<<(std::ostream& os, const Token& tok);
 } // namespace luna

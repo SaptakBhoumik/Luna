@@ -72,10 +72,10 @@ AstNodePtr Parser::parse_when_stmt(){
                 advance();
             }
             else if(this->curr_tok.type != TokenType::colon){
-                error(peek(), "Expected newline or ':' after select arm");
+                error(peek(), "Expected newline or ':' after when condition/case");
             }
         }
-        expect(TokenType::lbrace,"expected '{' before select arm body");
+        expect(TokenType::lbrace,"expected '{' before when statement body");
         branches.push_back({__conditions_or_cases, parse_block()});
         advance_on_newline();
         advance();

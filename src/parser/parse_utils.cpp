@@ -125,17 +125,27 @@ StructField Parser::parse_struct_field(){
     return StructField(name, type, default_value, is_pub, is_mut, attributes);
 }
 
-std::pair<std::vector<Token>, bool> Parser::parse_path(){
+std::pair<std::vector<Token>, bool> Parser::parse_path(bool allow_turbo_fish){
     if(this->curr_tok.type == TokenType::dollar){
         advance(); // after '$'
-        return {{this->curr_tok,}, true};
+        const Token tok = this->curr_tok;
+        if(allow_turbo_fish){
+            if(peek().type == TokenType::double_colon && peek(2).type == TokenType::lt){
+                advance(); // on double colon
+            }
+        }
+        return {{tok,}, true};
     }
     std::vector<Token> path = {this->curr_tok};
     bool compile_time = false;
     // if(peek().type == TokenType::double_colon){
         // parse path like A::B::C
-    while(peek().type == TokenType::double_colon && (peek(2).type == TokenType::identifier)){
+    while(peek().type == TokenType::double_colon && (peek(2).type == TokenType::identifier || peek(2).type == TokenType::lt)){
         advance(); // On double colon
+        if(allow_turbo_fish && peek().type == TokenType::lt){
+            // If allow_turbo_fish is true and we see a '<' after '::' then we stop parsing the path here and return. This is for handling cases like func::<i32>() where we want to treat func as the path and not func::<
+            break;
+        }
         expect(TokenType::identifier,"expected identifier after '::' in path");
         path.push_back(this->curr_tok);
     }
@@ -145,6 +155,9 @@ std::pair<std::vector<Token>, bool> Parser::parse_path(){
         compile_time = true;
         expect(TokenType::identifier,"expected identifier after '::' and '$' in path");
         path.push_back(this->curr_tok);
+        if(peek().type == TokenType::double_colon && peek(2).type == TokenType::lt && allow_turbo_fish){
+            advance(); // On double colon
+        }
     }
     // }
     return {path, compile_time};
@@ -152,7 +165,7 @@ std::pair<std::vector<Token>, bool> Parser::parse_path(){
 
 Parameter Parser::parse_parameter(){
     if(this->curr_tok.type == TokenType::ellipsis){//ellipsis cant be mut
-        advance();
+        // advance();
         return Parameter{std::make_shared<NoLiteral>(), Token{}, std::make_shared<NoLiteral>(), false, ParamKind::CVariadic};
     }
     bool is_mut = false;
@@ -338,10 +351,10 @@ SelectArm Parser::parse_select_arm(){
             }
         }
     }
-    advance(); 
-    if(this->curr_tok.type != TokenType::colon && peek().type != TokenType::newline){
-        error(this->curr_tok, "Expected ':' or 'newline' at the end of select arm");
-    }
+    // advance(); 
+    // if(this->curr_tok.type != TokenType::colon && peek().type != TokenType::newline){
+    //     error(this->curr_tok, "Expected ':' or 'newline' at the end of select arm");
+    // }
     return SelectArm{arm_kind, value, channel};
     
 }
@@ -364,7 +377,7 @@ std::vector<std::pair<Token, AstNodePtr>> Parser::parse_generic_params(){
         if(peek().type == TokenType::comma){
             advance(); // on comma and continue parsing generic parameters
             advance_on_newline();
-            if(peek().type == TokenType::rbrace){
+            if(peek().type == TokenType::gt){
                 break;
             }
             // advance(); //After comma
@@ -373,7 +386,7 @@ std::vector<std::pair<Token, AstNodePtr>> Parser::parse_generic_params(){
             break;
         }
     }
-    expect(TokenType::rbrace, "Expected '}' at the end of generic parameter list");
+    expect(TokenType::gt, "Expected '>' at the end of generic parameter list");
     return generics;
 }
 }

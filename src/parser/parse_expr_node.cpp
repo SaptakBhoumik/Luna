@@ -195,7 +195,7 @@ AstNodePtr Parser::parse_expression(PrecedenceType precedence) {
     }
 
     // Consume an optional trailing newline so callers don't have to.
-    advance_on_newline();
+    // advance_on_newline();
     return left;
 }
 
@@ -300,7 +300,7 @@ AstNodePtr Parser::parse_index_expr(AstNodePtr container){
 AstNodePtr Parser::parse_dot_or_arrow_expr(AstNodePtr left){
     Token op = this->curr_tok;
     bool compile_time = false;
-    advance();
+    // advance();
     if(peek().type == TokenType::dollar){
         compile_time = true;
         advance();
@@ -328,7 +328,7 @@ AstNodePtr Parser::parse_func_call(AstNodePtr left){
             AstNodePtr arg = parse_expression();
             named_args.push_back(std::make_pair(std::make_pair(name, false), arg));
         }
-        if(peek().type == TokenType::dollar && peek(2).type == TokenType::identifier && peek(3).type == TokenType::assign){
+        else if(peek().type == TokenType::dollar && peek(2).type == TokenType::identifier && peek(3).type == TokenType::assign){
             advance(); // on '$'
             advance(); // on identifier
             Token name = this->curr_tok;
@@ -446,11 +446,15 @@ AstNodePtr Parser::parse_thread_or_task_expr(){
                 error(this->curr_tok, "Unknown thread/task option: " + option_name);
             }
             if(peek().type == TokenType::comma){
-                advance();
+                advance();//On ','
+                advance();//After ','
                 if(peek().type == TokenType::rparen){
                     advance();
                     break;
                 }
+            }
+            else{
+                expect(TokenType::rparen, "Expected ')' after thread/task options");
             }
         }
     }

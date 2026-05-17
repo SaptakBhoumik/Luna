@@ -135,11 +135,16 @@ AstNodePtr Parser::parse_block(){
             error(this->curr_tok, "Unexpected end of file");
         }
         statements.push_back(parse_stmt());
-        advance_on_newline();
-        if(this->curr_tok.type == TokenType::newline){
+        if(peek().type == TokenType::newline){
+            advance();
             advance();
         }
+        else if(peek().type == TokenType::rbrace){
+            advance(); // on '}'
+            break;
+        }
         else if(this->curr_tok.type != TokenType::rbrace){
+            std::cout << this->curr_tok << std::endl;
             error(this->curr_tok, "Expected newline after statement in block");
         }
     }
@@ -211,7 +216,6 @@ AstNodePtr Parser::parse_stmt(){
         default:{
             std::vector<Annotation> annotations;
             bool is_pub = false;
-            VarKind varkind = VarKind::Normal;
             bool is_mut = false;
             while(this->curr_tok.type == TokenType::at || this->curr_tok.type == TokenType::hash){
                 annotations.push_back(parse_annotation());
@@ -222,14 +226,6 @@ AstNodePtr Parser::parse_stmt(){
                 is_pub = true;
                 advance();
             }
-            if(this->curr_tok.type == TokenType::kw_thread_local){
-                varkind = VarKind::ThreadLocal;
-                advance();
-            }
-            else if(this->curr_tok.type == TokenType::kw_task_local){
-                varkind = VarKind::TaskLocal;
-                advance();
-            }
             if(this->curr_tok.type == TokenType::kw_mut){
                 is_mut = true;
                 advance();
@@ -238,17 +234,11 @@ AstNodePtr Parser::parse_stmt(){
                 if(is_mut){
                     error(this->curr_tok, "Functions/methods cannot be mutable");
                 }
-                else if(varkind != VarKind::Normal){
-                    error(this->curr_tok, "Functions/methods cannot be thread_local or task_local");
-                }
                 return parse_func_or_method_def(annotations, is_pub);
             }
             else if(this->curr_tok.type == TokenType::kw_type){
                 if(is_mut){
                     error(this->curr_tok, "Types cannot be mutable");
-                }
-                else if(varkind != VarKind::Normal){
-                    error(this->curr_tok, "Types cannot be thread_local or task_local");
                 }
                 return parse_type_def_stmt(annotations, is_pub);
             }
@@ -259,44 +249,32 @@ AstNodePtr Parser::parse_stmt(){
                 else if(is_pub){
                     error(this->curr_tok, "Loop statements cannot be public");
                 }
-                else if(varkind != VarKind::Normal){
-                    error(this->curr_tok, "Loop statements cannot be thread_local or task_local");
-                }
                 return parse_loop_stmt(annotations);
             }
-            std::vector<std::pair<AstNodePtr, triplet<bool, VarKind, bool>>> names;
-            names.push_back(std::make_pair(parse_expression(), triplet<bool, VarKind, bool>{is_pub,varkind,is_mut}));
+            std::vector<std::pair<AstNodePtr, std::pair<bool, bool>>> names;
+            names.push_back(std::make_pair(parse_expression(), std::pair<bool, bool>{is_pub,is_mut}));
             while (peek().type == TokenType::comma) {
                 advance(); // on ','
                 advance(); // on next token after ','
                 bool is_pub = false;
-                VarKind varkind = VarKind::Normal;
                 bool is_mut = false;
                 if(this->curr_tok.type == TokenType::kw_pub){
                     is_pub = true;
-                    advance();
-                }
-                if(this->curr_tok.type == TokenType::kw_thread_local){
-                    varkind = VarKind::ThreadLocal;
-                    advance();
-                }
-                else if(this->curr_tok.type == TokenType::kw_task_local){
-                    varkind = VarKind::TaskLocal;
                     advance();
                 }
                 if(this->curr_tok.type == TokenType::kw_mut){
                     is_mut = true;
                     advance();
                 }
-                names.push_back(std::make_pair(parse_expression(), triplet<bool, VarKind, bool>{is_pub,varkind,is_mut}));
+                names.push_back(std::make_pair(parse_expression(), std::pair<bool, bool>{is_pub,is_mut}));
             }
-            auto is_var_def = [](triplet<bool, VarKind, bool> info){
+            auto is_var_def = [](std::pair<bool, bool> info){
                 //At this stage a valid code can only be var def/assign or aug assign
                 //This just makes sure if the var is definately a var def or not. So not all var def return true but if true then must be var def
-                return info.third == true || info.second != VarKind::Normal || info.first == true;
+                return (info.second == true)|| (info.first == true);
             };
             switch (peek().type){
-                case TokenType::eq:
+                case TokenType::assign:
                 case TokenType::walrus:
                 case TokenType::colon:{
                     advance(); // on =,:= or :
@@ -318,7 +296,7 @@ AstNodePtr Parser::parse_stmt(){
                         error(this->curr_tok, "Cannot have annotations on augmented assignment");
                     }
                     for(const auto& name : names){
-                        if(!is_var_def(name.second)){
+                        if(is_var_def(name.second)){
                             error(this->curr_tok, "Unexpected token in variable defination");
                         }
                         targets.push_back(name.first);

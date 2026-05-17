@@ -99,8 +99,8 @@ void Lexer::flush_keyword() {
         { "defer", TokenType::kw_defer },
 
         // { "atomic", TokenType::kw_atomic },
-        { "thread_local", TokenType::kw_thread_local },
-        { "task_local", TokenType::kw_task_local },
+        // { "thread_local", TokenType::kw_thread_local },
+        // { "task_local", TokenType::kw_task_local },
         { "thread", TokenType::kw_thread },
         { "task", TokenType::kw_task },
         { "lock", TokenType::kw_lock },

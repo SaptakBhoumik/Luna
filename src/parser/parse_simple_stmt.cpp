@@ -35,6 +35,9 @@ AstNodePtr Parser::parse_continue_stmt(){
 }
 AstNodePtr Parser::parse_return_stmt(){
     Token tok = this->curr_tok;
+    if(peek().type == TokenType::newline){
+        return std::make_shared<ReturnStmt>(tok, std::vector<AstNodePtr>{});
+    }
     this->advance();
     std::vector<AstNodePtr> values = {parse_expression()};
     while(peek().type == TokenType::comma){
@@ -46,6 +49,9 @@ AstNodePtr Parser::parse_return_stmt(){
 }
 AstNodePtr Parser::parse_give_stmt(){
     Token tok = this->curr_tok;
+    if(peek().type == TokenType::newline){
+        return std::make_shared<ReturnStmt>(tok, std::vector<AstNodePtr>{});
+    }
     this->advance();
     std::vector<AstNodePtr> values = {parse_expression()};
     while(peek().type == TokenType::comma){
@@ -67,7 +73,8 @@ AstNodePtr Parser::parse_lock_stmt(){
             "In Luna, you cant enter new line before the '{' token in any kind of statement. This is the make the code more readable and uniform");
     }
     else{
-        AstNodePtr target = parse_tuple_or_paren_expr();
+        AstNodePtr target = parse_expression();
+        advance_on_newline();
         if(this->curr_tok.type == TokenType::newline){
             error(this->curr_tok, "Unexpected newline after lock target", 
             "In Luna, you cant enter new line before the '{' token in any kind of statement. This is the make the code more readable and uniform");

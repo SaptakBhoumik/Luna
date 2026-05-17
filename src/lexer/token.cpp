@@ -90,8 +90,8 @@ std::string to_string(TokenType type) {
         case TokenType::kw_none: return "None";
         case TokenType::kw_give: return "give";
         case TokenType::kw_defer: return "defer";
-        case TokenType::kw_thread_local: return "thread_local";
-        case TokenType::kw_task_local: return "task_local";
+        // case TokenType::kw_thread_local: return "thread_local";
+        // case TokenType::kw_task_local: return "task_local";
         case TokenType::kw_thread: return "thread";
         case TokenType::kw_task: return "task";
         case TokenType::kw_lock: return "lock";
@@ -102,5 +102,10 @@ std::string to_string(TokenType type) {
 }
 std::string to_string(const Token& tok){
     return "Token(col : " + std::to_string(tok.col) + ", line: " + std::to_string(tok.line) + ", value: " + tok.value + ", type: " + to_string(tok.type) + ")";
+}
+
+std::ostream& operator<<(std::ostream& os, const Token& tok){
+    os << to_string(tok);
+    return os;
 }
 }

@@ -68,10 +68,11 @@ AstNodePtr Parser::parse_type_expr(bool can_be_sumtype){
 }
 AstNodePtr Parser::parse_identifier_type_expr(){
     const Token tok = this->curr_tok;
-    AstNodePtr type_expr = parse_identifier();
+    AstNodePtr type_expr = parse_identifier(false);
     AstNodePtr idx = std::make_shared<NoLiteral>();
     if(peek().type == TokenType::lbracket){
-        advance();
+        advance();//On '['
+        advance();//On the first token of the index expression
         idx = parse_expression();
         expect(TokenType::rbracket, "Expected ']' after index in identifier type expression");
     }
@@ -221,11 +222,8 @@ AstNodePtr Parser::parse_enum_type_expr(){
             advance();
             value = parse_expression();
         }
-        // advance_on_newline();
-        if(peek().type == TokenType::newline){
-            advance();//On \n
-        }
-        else if(peek().type != TokenType::rbrace){
+        advance_on_newline();
+        if(peek().type != TokenType::rbrace && this->curr_tok.type != TokenType::newline){
             error(peek(), "Expected '<new line>' or '}' after enum variant in enum type expression");
         }
         variants.push_back(std::make_pair(name, value));
@@ -244,11 +242,8 @@ AstNodePtr Parser::parse_struct_type_expr(){
         // }
         advance(); 
         fields.push_back(parse_struct_field());
-        // advance_on_newline();
-        if(peek().type == TokenType::newline){
-            advance();//On \n
-        }
-        else if(peek().type != TokenType::rbrace){
+        advance_on_newline();
+        if(peek().type != TokenType::rbrace && this->curr_tok.type != TokenType::newline){
             error(peek(), "Expected '<new line>' or '}' after struct field in struct type expression");
         }
     }
@@ -271,11 +266,8 @@ AstNodePtr Parser::parse_interface_type_expr(){
             error(this->curr_tok, "Expected 'fn' at the beginning of method definition in interface type expression");
         }
         methods.push_back(parse_method_def({},false));//annotations = {}, is_pub = false
-        // advance_on_newline();
-        if(peek().type == TokenType::newline){
-            advance();//On \n
-        }
-        else if(peek().type != TokenType::rbrace){
+        advance_on_newline();
+        if(peek().type != TokenType::rbrace && this->curr_tok.type != TokenType::newline){
             error(peek(), "Expected '<new line>' or '}' after interface method in interface type expression");
         }
     }

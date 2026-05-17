@@ -323,7 +323,7 @@ AstKind InterfaceTypeExpr::kind() const{
     return AstKind::InterfaceTypeExpr;
 }
 std::string InterfaceTypeExpr::stringify() const{
-    std::string res = "interface {";
+    std::string res = "interface {\n";
     for (size_t i = 0; i < this->methods.size(); i++){
         res += "\t" + this->methods[i]->stringify() + "\n";
     }

@@ -13,5 +13,6 @@ using io = std::io
 using math // Same as ``using namespace std`` in c++
 
 a:= "Hello " + $get_os() + "!"
-
+b:Any = 1
+b = "hello"
 defer{}

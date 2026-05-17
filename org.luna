@@ -330,7 +330,7 @@ fn lock_demo() -> !void {
     }
     t1.join()!
     t2.join()!
-    io::println("bal:{bal}")
+    io::println(f"bal:{bal}")
 }
 CONST1:=10.2E-3
 CONST2:!i32 = Error("not initialized")//Yes this is actually valid. Btw you can also have *!T but idk why you will need it. But u can just for consistancy
@@ -399,11 +399,11 @@ fn select_demo() -> !void {
                 break
             }
             v1,2 <-- (ch1,ch0):{ //Executed when both are ready 
-                io::println("got {v1} and 2") 
+                io::println(f"got {v1} and 2") 
                 break
             }
             v <-- ch1:{ 
-                io::println("got {v}") 
+                io::println(f"got {v}") 
                 break
             }
             42,"Hello" --> ch2:{ 
@@ -411,11 +411,11 @@ fn select_demo() -> !void {
                 break
             }
             mut v1,v2 <-- ch3:{
-                io::println("got {v1} and {v2}") 
+                io::println(f"got {v1} and {v2}") 
                 break
             }
             (mut v1,v2) <-- ch4:{
-                io::println("got {v1} and {v2}") 
+                io::println(f"got {v1} and {v2}") 
                 break
             }
             ?:{ io::println("neither ready") }
@@ -431,7 +431,7 @@ fn select_demo() -> !void {
             5    <-- ch1//No : after ch1 because we want to execute the same code for both 5 and 42. So if ch1 is 5 or 42 then we will execute the same code.
             42   <-- ch1:{ io::println("got 42 or 5") }
             0    <-- ch1:{ io::println("got zero") }
-            v    <-- ch1:{ io::println("got {v}") }  // catch-all
+            v    <-- ch1:{ io::println(f"got {v}") }  // catch-all
             //If ch1 is not ready then we skip it. If ch1 is ready then we do if else basically. So if ch1 is 42 then we execute the first case and skip the next 2 cases. 
             //If ch1 is 0 then we skip the first case and execute the second case and skip the third case. If ch1 is some other value then we skip the first 2 cases and 
             //execute the third case.
@@ -473,9 +473,9 @@ fn c_printf(...) -> i32
 // ---- Decorators ----
 fn logged(f:fn(i32)->i32) -> fn(i32)->i32 {
     ret fn(x:i32)[=] -> i32 {
-        io::println("in:{x}")
+        io::println(f"in:{x}")
         r := f(x)
-        io::println("out:{r}")
+        io::println(f"out:{r}")
         ret r
     }
 }
@@ -525,7 +525,7 @@ fn double(x:i32) -> i32 { ret x*2 }
 fn inc(x:i32) -> i32 { ret x+1 }
 fn square(x:i32) -> i32 { ret x*x }
 fn minmax(a:i32, b:i32) -> (i32,i32) { ret a<b ? (a,b) :(b,a) }
-fn greet(name:str, msg:str = "Hi") -> str { ret "{msg} {name}" }
+fn greet(name:str, msg:str = "Hi") -> str { ret f"{msg} {name}" }
 
 fn sizeof<T>(val:T) -> u64 {
     ret $typesize::<T>()
@@ -620,7 +620,7 @@ pub fn main() {
     mut flag := True
 
     // string interp
-    io::println("x={x} msg={msg} pi={PI}")
+    io::println(f"x={x} msg={msg} pi={PI}")
 
     // ternary
     sign := x>0 ? "pos" :"neg"
@@ -691,7 +691,7 @@ pub fn main() {
     // multiple return + tuple index
     (lo, hi) := minmax(10,3)
     t := minmax(5,8)
-    io::println("{t[0]} {t[1]}")  // tuple index must be const expr
+    io::println(f"{t[0]} {t[1]}")  // tuple index must be const expr
 
     // named args
     io::println(greet("Alice"))
@@ -702,7 +702,7 @@ pub fn main() {
 
     // error handling. The (err) part is optional if you dont need the error message. You can also give it a different name like (e) or (error_msg) or whatever you want.
     r1 := divide(10.0, 0.0) !! (err){
-        io::println("error occurred")
+        io::println(f"error occurred")
         ret
     }
     r2 := divide(10.0, 2.0) !! 0.0
@@ -714,7 +714,7 @@ pub fn main() {
         expr1 !! expr2 is allowed and is same as expr1 !! {give expr2}
         But if u do ``expr1 !! (err)`` then u need to use {}  that is ``expr1 !! (err) { give expr2 }`` is valid but ``expr1 !! (err) expr2`` is not valid syntactically.
         */
-        io::println("err:{err}")
+        io::println(f"err:{err}")
         give 0.0
     }
     mut var:i32//Without a set default value
@@ -724,14 +724,14 @@ pub fn main() {
     r6:!f64 = r5 
     err:?Error = r5.err//This is how you can get the error value from a !T variable. Note if no error then it will be None. err is implicit field of !T
     // loops
-    loop i :0..5 { io::print("{i} ") }
-    loop i :0..10..2 { io::print("{i} ") }         // step
-    loop v :arr { io::print("{v} ") }               // array iter
-    loop mut k, v :scores { io::println("{k}={v}") }    // map iter. k mutable
-    loop (k, mut v) :scores { io::println("{k}={v}") }    // this also works. v mutable
-    loop mut (k, v) :scores { io::println("{k}={v}") }    // both mutable. 
-    loop kv :scores { io::println("{kv[0]}={kv[1]}") }    // map iter
-    loop v1,v2:arr,arr { io::println("{v1} {v2}") } // multiple iter. Note:Both arrays must have the same length. No zip needed
+    loop i :0..5 { io::print(f"{i} ") }
+    loop i :0..10..2 { io::print(f"{i} ") }         // step
+    loop v :arr { io::print(f"{v} ") }               // array iter
+    loop mut k, v :scores { io::println(f"{k}={v}") }    // map iter. k mutable
+    loop (k, mut v) :scores { io::println(f"{k}={v}") }    // this also works. v mutable
+    loop mut (k, v) :scores { io::println(f"{k}={v}") }    // both mutable. 
+    loop kv :scores { io::println(f"{kv[0]}={kv[1]}") }    // map iter
+    loop v1,v2:arr,arr { io::println(f"{v1} {v2}") } // multiple iter. Note:Both arrays must have the same length. No zip needed
     mut m := 3
     loop m>0 { m-- }                                  // while-style
     loop {                                            // infinite+break
@@ -742,7 +742,7 @@ pub fn main() {
     }
     loop i :0..6 {                                    // continue
         when { i%2==0:{ continue } }
-        io::print("{i} ")
+        io::print(f"{i} ")
     }
 
     // parallel loops
@@ -818,11 +818,11 @@ pub fn main() {
         //so it should not be used in persistent storage or for serialization. It is only useful for type comparisons at runtime
         $typeid::<Circle>():{
             c := $cast::<Circle>(shape)
-            io::println("area:{area(c)}")
+            io::println(f"area:{area(c)}")
         }
         $typeid::<Rect>():{
             r := $cast::<Rect>(shape)
-            io::println("area:{area(r)}")
+            io::println(f"area:{area(r)}")
         }
         ?:{ io::println("unknown") }
     }
@@ -835,13 +835,13 @@ pub fn main() {
 
     // pipe
     piped := 3 |> double |> inc |> square
-    io::println("piped:{piped}")
+    io::println(f"piped:{piped}")
 
     // structs & methods
     v1 := Point(x = 3.0, y = 4.0)
     v2 := Point(x = 1.0, y = 2.0)
     v3 := v1+v2
-    io::println("len:{v1.len()}")
+    io::println(f"len:{v1.len()}")
     when { v1!=v2:{ io::println("differ") } }
 
     // lambdas
@@ -882,12 +882,12 @@ pub fn main() {
     io::println(fast_add(2,3))
 
     // recursion
-    io::println("5!={fact(5)}")
-    io::println("fib(7)={fib(7)}")
+    io::println(f"5!={fact(5)}")
+    io::println(f"fib(7)={fib(7)}")
     loop i :2..20 { 
         when { 
             is_prime(i):{ 
-                io::print("{i}") 
+                io::print(f"{i}") 
             } 
         }
     }
@@ -907,7 +907,7 @@ pub fn main() {
     r_a := t_a.join() !! ""
     r_b := t_b.join() !! ""
     io::println(r_a+r_b)
-    io::println("count:{counter_demo()}")
+    io::println(f"count:{counter_demo()}")
     lock_demo()!
     chan_demo()!
 
@@ -918,12 +918,12 @@ pub fn main() {
     // local type alias
     type Num = f64
     lf:Num = 2.71
-    io::println("lf={lf}")
+    io::println(f"lf={lf}")
 
     // SIMD.TODO: Should I use (...) or [...] for simd?
     a_vec:<f32,4> = (1.0, 2.0, 3.0, 4.0)
     b_vec:<f32,4> = (2.0, 3.0, 4.0, 5.0)
-    ones:<f32,4> = simd::splat::<<f32,4>>(1.0)
+    ones:<f32,4> = simd::splat::<f32,4>(1.0)
 
     sum_v := a_vec+b_vec
     prod_v := a_vec*b_vec
@@ -939,7 +939,7 @@ pub fn main() {
     hsum := simd::hadd(a_vec)
     hmax := simd::hmax(a_vec)
     dot_r := simd::dot(a_vec, b_vec)
-    io::println("dot:{dot_r} hsum:{hsum} hmax:{hmax}")
+    io::println(f"dot:{dot_r} hsum:{hsum} hmax:{hmax}")
 
     #[align(16)] darr:[f32,8] = [1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0]
     c0 := simd::load(darr, offset = 0)
