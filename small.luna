@@ -1,4 +1,4 @@
-//Luna code example
+//Luna code example.
 //TODO:While testing parser, make sure it can handle trailing commas in function calls, struct literals, tuples, arrays, maps, and so on. 
 //Important nuiences:-
 // ---- Variadic & $loop generalization ----

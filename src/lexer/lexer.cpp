@@ -500,7 +500,10 @@ void Lexer::lex_fstring() {
                     return;
                 }
 
-                this->lex(); // returns at matching '}'
+                const size_t saved_brace_depth = this->brace_depth;
+                this->brace_depth = 0;
+                this->lex();// returns when it sees '}' with brace_depth==0
+                this->brace_depth = saved_brace_depth;
 
                 if (!this->advance()) {
                     this->report_error("Unexpected end of file after f-string expression");
