@@ -46,6 +46,9 @@ std::string WhenStmt::stringify() const {
                 else {
                     res += case_conditions[j]->stringify();
                 }
+                if(j != case_conditions.size() - 1){
+                    res += ", ";
+                }
             }
             if(i != conditions.size() - 1){
                 res += "\n\t";
@@ -56,6 +59,7 @@ std::string WhenStmt::stringify() const {
         }
         res += "{\n" + body->stringify() + "\n\t}\n";
     }
+    res += "}";
     return res;
 }
 

@@ -392,6 +392,9 @@ AstNodePtr Parser::parse_formatted_string(){
             // expression part
             AstNodePtr expr = parse_expression();
             expressions.push_back(expr);
+            if(parts.size() == 0){
+                parts.push_back(Token{tok.col, tok.source_line, "", tok.start, tok.start, tok.line, TokenType::format_str});
+            }
             advance();
         }
     }
