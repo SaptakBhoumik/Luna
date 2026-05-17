@@ -45,6 +45,7 @@ class Parser{
     void advance_on_newline();
     Token peek(std::size_t i=1) const;// peek the token at curr_index + i without advancing
     PrecedenceType peek_precedence(size_t i=1) const;
+    void handle_angle_bracket();
     void expect(TokenType expected_type, std::string msg="",std::string submsg="",std::string ecode="");
     void error(Token tok, std::string msg,std::string submsg="",std::string ecode="");
 

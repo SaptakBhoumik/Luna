@@ -130,7 +130,7 @@ std::pair<std::vector<Token>, bool> Parser::parse_path(bool allow_turbo_fish){
         advance(); // after '$'
         const Token tok = this->curr_tok;
         if(allow_turbo_fish){
-            if(peek().type == TokenType::double_colon && peek(2).type == TokenType::lt){
+            if(peek().type == TokenType::double_colon && (peek(2).type == TokenType::lt || peek(2).type == TokenType::shl)){
                 advance(); // on double colon
             }
         }
@@ -140,10 +140,11 @@ std::pair<std::vector<Token>, bool> Parser::parse_path(bool allow_turbo_fish){
     bool compile_time = false;
     // if(peek().type == TokenType::double_colon){
         // parse path like A::B::C
-    while(peek().type == TokenType::double_colon && (peek(2).type == TokenType::identifier || peek(2).type == TokenType::lt)){
+    while(peek().type == TokenType::double_colon && 
+          (peek(2).type == TokenType::identifier || peek(2).type == TokenType::lt || peek(2).type == TokenType::shl)){
         advance(); // On double colon
-        if(allow_turbo_fish && peek().type == TokenType::lt){
-            // If allow_turbo_fish is true and we see a '<' after '::' then we stop parsing the path here and return. This is for handling cases like func::<i32>() where we want to treat func as the path and not func::<
+        if(allow_turbo_fish && (peek().type == TokenType::lt || peek().type == TokenType::shl)){
+            // If allow_turbo_fish is true and we see a '<' or '<<' after '::' then we stop parsing the path here and return. This is for handling cases like func::<i32>() where we want to treat func as the path and not func::<
             break;
         }
         expect(TokenType::identifier,"expected identifier after '::' in path");
@@ -155,7 +156,7 @@ std::pair<std::vector<Token>, bool> Parser::parse_path(bool allow_turbo_fish){
         compile_time = true;
         expect(TokenType::identifier,"expected identifier after '::' and '$' in path");
         path.push_back(this->curr_tok);
-        if(peek().type == TokenType::double_colon && peek(2).type == TokenType::lt && allow_turbo_fish){
+        if(peek().type == TokenType::double_colon && (peek(2).type == TokenType::lt || peek(2).type == TokenType::shl) && allow_turbo_fish){
             advance(); // On double colon
         }
     }

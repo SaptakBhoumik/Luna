@@ -172,16 +172,26 @@ AstNodePtr Parser::parse_tuple_or_paren_type_expr(){
 
 AstNodePtr Parser::parse_simd_type_expr(){
     const Token simd_tok = this->curr_tok;
-    advance();
+    handle_angle_bracket();
+    advance();//After <
     AstNodePtr elem_type = parse_type_expr();
     expect(TokenType::comma, "Expected ',' after element type in SIMD type expression");
     advance();//After ,
     AstNodePtr size;
     if(this->curr_tok.type == TokenType::dollar){
         const auto size_tok = this->curr_tok;
-        expect(TokenType::identifier, "Expected identifier after '$' in SIMD type expression");
-        auto size_identifier = parse_identifier();
-        size = std::make_shared<CompTimeExpr>(size_tok, size_identifier);
+        // expect(TokenType::identifier, "Expected identifier after '$' in SIMD type expression");
+        // auto size_identifier = parse_identifier();
+        if(peek().type == TokenType::lparen){
+            advance(); // on '('
+            size = std::make_shared<CompTimeExpr>(size_tok, parse_tuple_or_paren_expr());
+        }
+        else if(peek().type == TokenType::identifier){
+            size = parse_identifier();//Automatically handles compile time
+        }
+        else{
+            error(peek(), "Expected identifier or '(' after '$' in SIMD type expression");
+        }
     }
     else{
         if(this->curr_tok.type != TokenType::integer){

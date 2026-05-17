@@ -923,8 +923,20 @@ pub fn main() {
     // SIMD.TODO: Should I use (...) or [...] for simd?
     a_vec:<f32,4> = (1.0, 2.0, 3.0, 4.0)
     b_vec:<f32,4> = (2.0, 3.0, 4.0, 5.0)
-    ones:<f32,4> = simd::splat::<f32,4>(1.0)
-
+    c_vec:<f32,$compile_time_var> = (2.0, 3.0, 4.0, 5.0)
+    c_vec:<f32,$(2*$compile_time_var)> = (2.0, 3.0, 4.0, 5.0) //By default, the size of simd must be an int literal, compile time const or compile time expr
+                                                              //To prevent parser ambiguity, we require the size to be a compile time paren expr
+                                                              //So <f32,2*$compile_time_var> is not valid but <f32,$(2*$compile_time_var)> is valid. 
+    //Parsing the following few statement is hard because the lexer outputs << or >> instead of <,< and >,>. So we need to be careful while parsing. It can also output >= and >>=
+    c:Stack<f32>=Stack::<f32>(top = 0)
+    ones:<f32,4> = simd::splat::<<f32,4>>(1.0)
+    ones_:<f32,4>= simd::splat::<<f32,4>>(1.0)
+    a:Stack<Stack<f32>> = Stack::<Stack<f32>>(top = 0)
+    a_:Stack<Stack<f32>>= Stack::<Stack<f32>>(top = 0)
+    b:Stack<<f32,4>> = Stack::<<f32,4>>(top = 0)
+    z:= F::<i8>>F::<i8>
+    z = F::<i8>>=F::<i8>
+    
     sum_v := a_vec+b_vec
     prod_v := a_vec*b_vec
     diff_v := b_vec-a_vec

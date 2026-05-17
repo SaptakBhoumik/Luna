@@ -2,6 +2,7 @@
 #include "ast/ast_utils.hpp"
 #include "lexer/token.hpp"
 #include "parser/parser.hpp"
+#include <iostream>
 #include <vector>
 
 namespace Luna {
@@ -30,7 +31,7 @@ AstNodePtr Parser::parse_identifier(bool turbo_fish_required){
     std::pair<std::vector<Token>, bool> path = parse_path(true);
     std::vector<AstNodePtr> generic_args = {};
     bool has_generic_args = false;
-    if(peek().type == TokenType::lt){
+    if(peek().type == TokenType::lt || peek().type == TokenType::shl){
         if(turbo_fish_required){
             has_generic_args = this->curr_tok.type == TokenType::double_colon;
         }
@@ -39,8 +40,9 @@ AstNodePtr Parser::parse_identifier(bool turbo_fish_required){
         }
     }
     if(has_generic_args){
-        // parse generic args like Type{T, U}
-        advance(); // On '<'
+        advance(); // On '<' or '<<'
+        handle_angle_bracket();
+        // parse generic args like Type<T, U>
         // advance(); // consume '{'
         while(peek().type != TokenType::gt){
             advance_on_newline();
@@ -54,6 +56,8 @@ AstNodePtr Parser::parse_identifier(bool turbo_fish_required){
                 advance(); // On comma and continue parsing generic args
             }
             else if(peek().type != TokenType::gt){
+                std::cout<<peek() << std::endl;
+                std::cout<<this->curr_tok << std::endl;
                 error(peek(),"expected ',' or '>' in generic argument list");
             }
         }
