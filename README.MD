@@ -125,6 +125,19 @@ My main inspiration was Lua(Although it is significantly different from Lua righ
 
  Actually I am using code from my previous project named peregrine so there will be some inconsistancies in the code and will take time to fix them
 
+# Compiling and running
+
+```sh
+git clone https://github.com/SaptakBhoumik/Luna.git
+cd Luna
+meson builddir
+cd builddir
+ninja
+./luna.elf <path_to_luna_file>
+```
+ 
+After running ``./luna.elf <path_to_luna_file>`` it will print out the luna file reconstruted from the ast and also the token stream. Yes the compiler is not mature enough to do anything useful yet
+
 # Contributing note
 
 Note:-Not accepting contributions at the moment. I will be accepting contributions in the future when the language is more stable and has more features. For now, I only made it public to keep myself accountable 
