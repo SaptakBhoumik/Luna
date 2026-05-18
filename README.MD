@@ -141,3 +141,8 @@ After running ``./luna.elf <path_to_luna_file>`` it will print out the luna file
 # Contributing note
 
 Note:-Not accepting contributions at the moment. I will be accepting contributions in the future when the language is more stable and has more features. For now, I only made it public to keep myself accountable 
+
+# Contact 
+
+- 💌 Reach me at: `saptakbhoumik.acad@gmail.com`
+- 📢 Follow me on [X](https://x.com/saptakbhoumik)
