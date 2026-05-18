@@ -7,29 +7,6 @@ The language is still WIP. I am making it public so that I can keep myself accou
 Check out the small.luna file for a small demo of the language features. The code is not meant to be perfect or even good, it is just meant to show the features of the language. I will be adding more features and improving the existing ones in the future.
 Check out detailed.luna for a detailed demo. But remember the detailed demo is an old syntax and is not updated to the latest syntax. So some of the code in detailed.luna might not work with the latest version of the language. I will be updating the detailed demo in the future.
 
-# Reason behind the name
-
-My main inspiration was Lua(Although it is significantly different from Lua right now) so there's that + Luna is a cute name
-
-# Inspiration 
-
-It innitially stated with Lua as the main inspiration and the backbone. But as time went on, I added more features and changed syntax to the point it no longer looks like Lua. It also draws heavily from Go,python,vlang and rust
-
-# Goals
-
-Make a language based on what I think is ideal design. So you may find some syntax that you will hate but you will also find some syntax that you will love. I am not trying to make a language that is perfect for everyone, but rather a language that is perfect for me. This language is meant to be a personal test bed to try out some of the ideas and ideals I have for language design. One of then is achieve more with less. That is why this language packs a lot of features with only 22 reserved keywords. Another goal is to make the compiler do most of the work while you sit back and relax
-
-# Features
-
-- Powerful type system with type inference, generics, interfaces, and more
-- First class simd support
-- First class os threads and green threads(tasks)
-- First class channels for inter-thread communication
-- Powerful select mechanism for waiting on multiple channels and timers
-- Powerful pattern matching with value and range patterns
-- Powerful compile time features but not too powerful that it becomes a mess
-- More
-
 # Code snippet
 
 The syntax is more or less fixed at this point. It looks something like this
@@ -105,6 +82,31 @@ pub fn main() {
 }
 
 ```
+
+# Features
+
+- Powerful type system with type inference, generics, interfaces, and more
+- First class simd support
+- First class os threads and green threads(tasks)
+- First class channels for inter-thread communication
+- Powerful select mechanism for waiting on multiple channels and timers
+- Powerful pattern matching with value and range patterns
+- Powerful compile time features but not too powerful that it becomes a mess
+- More
+
+# Goals
+
+Make a language based on what I think is ideal design. So you may find some syntax that you will hate but you will also find some syntax that you will love. I am not trying to make a language that is perfect for everyone, but rather a language that is perfect for me. This language is meant to be a personal test bed to try out some of the ideas and ideals I have for language design. One of then is achieve more with less. That is why this language packs a lot of features with only 22 reserved keywords. Another goal is to make the compiler do most of the work while you sit back and relax
+
+
+# Inspiration 
+
+It innitially stated with Lua as the main inspiration and the backbone. But as time went on, I added more features and changed syntax to the point it no longer looks like Lua. It also draws heavily from Go,python,vlang and rust
+
+# Reason behind the name
+
+My main inspiration was Lua(Although it is significantly different from Lua right now) so there's that + Luna is a cute name
+
 # Current progress
  - [x] Error lib
  - [x] Test error lib
@@ -123,4 +125,6 @@ pub fn main() {
 
  Actually I am using code from my previous project named peregrine so there will be some inconsistancies in the code and will take time to fix them
 
- Note:-Not accepting contributions at the moment. I will be accepting contributions in the future when the language is more stable and has more features. For now, I only made it public to keep myself accountable 
+# Contributing note
+
+Note:-Not accepting contributions at the moment. I will be accepting contributions in the future when the language is more stable and has more features. For now, I only made it public to keep myself accountable 
