@@ -79,7 +79,9 @@ pub fn main() {
         ch.close() 
     }
 
-    thread {
+    thread(restart_count = 100, timeout = 1000) {
+        //Time out is in ms. If task is running for more than 1000ms then it will be killed and restarted. Note if we have no restart then we just kill the thread on time out
+        //And timeout duration is calculated fresh from each restart
         #[no_fallthrough]
         select {
             v <-- ch: { io::println(f"received {v}") }
@@ -88,6 +90,9 @@ pub fn main() {
     }
 
     // pattern match on values or ranges
+    // `when` uses pattern.__match_eq__(x) - so Range(1,100).__match_eq__(x) just works
+    // customize matching behaviour per type by implementing __match_eq__
+    // uses __eq__ when __match_eq__ not available
     when val {
         0:      { io::println("zero") }
         1..100: { io::println("in range") }
