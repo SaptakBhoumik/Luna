@@ -8,7 +8,16 @@
 #include <vector>
 
 namespace Luna {
-AstNodePtr Parser::parse_when_stmt(){
+AstNodePtr Parser::parse_when_stmt(std::vector<Annotation> annotations){
+    std::vector<Attribute> attributes;
+    for(const auto& annotation : annotations){
+        if(annotation.is_decorator){
+            error(annotation.decorator.decorator->token(),"Decorators are not allowed on when statements");
+        }
+        else{
+            attributes.push_back(annotation.attribute);
+        }
+    }
     Token tok = this->curr_tok;
     std::vector<AstNodePtr> subjects;
     std::vector<std::pair<std::vector<std::vector<AstNodePtr>>, AstNodePtr>> branches;
@@ -38,7 +47,7 @@ AstNodePtr Parser::parse_when_stmt(){
             }
             branches = {{{subjects}, parse_block()}};
             subjects = {};
-            return std::make_shared<WhenStmt>(tok,subjects,branches);
+            return std::make_shared<WhenStmt>(tok,subjects,branches,attributes);
         }
     }
     //On '{'
@@ -80,7 +89,7 @@ AstNodePtr Parser::parse_when_stmt(){
         advance_on_newline();
         advance();
     }
-    return std::make_shared<WhenStmt>(tok,subjects,branches);
+    return std::make_shared<WhenStmt>(tok,subjects,branches,attributes);
 }
 AstNodePtr Parser::parse_loop_stmt(std::vector<Annotation> annotations){
     std::vector<Attribute> attributes;
@@ -146,7 +155,16 @@ AstNodePtr Parser::parse_loop_stmt(std::vector<Annotation> annotations){
     expect(TokenType::lbrace,"expected '{' before loop body");
     return std::make_shared<LoopStmt>(tok,loop_kind,variables,values,parse_block(),attributes);
 }
-AstNodePtr Parser::parse_select_stmt(){
+AstNodePtr Parser::parse_select_stmt(std::vector<Annotation> annotations){
+    std::vector<Attribute> attributes;
+    for(const auto& annotation : annotations){
+        if(annotation.is_decorator){
+            error(annotation.decorator.decorator->token(),"Decorators are not allowed on when statements");
+        }
+        else{
+            attributes.push_back(annotation.attribute);
+        }
+    }
     Token tok = this->curr_tok;
     expect(TokenType::lbrace,"expected '{' after 'select'");
     std::vector<std::pair<std::vector<SelectArm>, AstNodePtr>> cases;
@@ -172,6 +190,6 @@ AstNodePtr Parser::parse_select_stmt(){
         advance_on_newline();
         advance();
     }
-    return std::make_shared<SelectStmt>(tok,cases);
+    return std::make_shared<SelectStmt>(tok,cases,attributes);
 }
 }

@@ -1,0 +1,36 @@
+fn when_demo(){
+    sc:i32 = 75
+    when sc==81 | sc>=90 : { 
+        io::println("A")
+    }
+    when {
+        sc==81 
+        sc>=90:{ io::println("A") }
+        sc>=80:{ io::println("B") }
+        sc>=70:{ io::println("C") }
+        ?:{ io::println("F") }
+    }
+
+    // match
+    p:i32=1
+    q:i32=2
+    #[fallback]//By default there is no fall back but here we explicietely enable fallback
+    $when p, q {
+        3, 5 
+        1, 2:{ io::println("1,2 or 3, 5") }
+        1, ?:{ io::println("1,?") }
+        ?:{ io::println("?")   }
+    }
+
+    $when (p, q) {
+        (3, 5)
+        (1, 2):{ io::println("(1,2) or (3, 5)") }
+        ?: { io::println("(?,?)") }
+    }
+    dir := Dir.N
+    when dir{
+        Dir.N:{ io::println("north") }
+        Dir.S:{ io::println("south") }
+        ?:{ io::println("other") }
+    }
+}

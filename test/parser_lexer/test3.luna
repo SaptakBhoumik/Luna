@@ -1,0 +1,64 @@
+fn func1(){
+    defer {
+        print("deferred")
+    }
+    defer print("deferred 2")
+    defer {print("deferred 3")}
+    defer {print("deferred 4")
+    }
+    {}
+    {
+
+    }
+    {
+        print("hello")
+    }
+    {print("hello 2")
+    }
+    {print("hello 3")}
+
+    loop {
+        break
+    }
+    loop {
+        continue
+    }
+    ret
+}
+
+fn func2(){
+    a:=get_value() ?? {
+        give 1,3,4
+    }
+    ret 1,3,4
+}
+
+fn func3(){
+    a:=get_value() ?? {
+        give 1,3
+    }
+    ret (1,3)
+}
+
+fn func4(){
+    a:=get_value() ?? {
+        give 1
+    }
+    ret 1
+}
+
+fn func5(){
+    mut bal:atomic<i32> = 100
+    mut old_bal:i32 = 100
+    t1 := thread { lock bal { bal = bal - 10 } }
+    t2 := thread { 
+        lock (bal,old_bal) { 
+            old_bal = bal
+            bal = bal + 20 
+        } 
+        lock bal,old_bal {} 
+        lock {
+            //This is also valid syntax. Locks every variable used in this block
+        }
+    }
+}

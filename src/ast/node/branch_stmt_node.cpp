@@ -1,10 +1,11 @@
 #include "ast/ast.hpp"
 
 namespace Luna{
-WhenStmt::WhenStmt(Token tok, std::vector<AstNodePtr> subjects, std::vector<std::pair<std::vector<std::vector<AstNodePtr>>, AstNodePtr>> branches){
+WhenStmt::WhenStmt(Token tok, std::vector<AstNodePtr> subjects, std::vector<std::pair<std::vector<std::vector<AstNodePtr>>, AstNodePtr>> branches, std::vector<Attribute> attributes){
     this->tok = tok;
     this->subjects = subjects;
     this->branches = branches;
+    this->attributes = attributes;
 }
 
 std::vector<AstNodePtr> WhenStmt::get_subjects() const {
@@ -12,6 +13,9 @@ std::vector<AstNodePtr> WhenStmt::get_subjects() const {
 }
 std::vector<std::pair<std::vector<std::vector<AstNodePtr>>, AstNodePtr>> WhenStmt::get_branches() const {
     return this->branches;
+}
+std::vector<Attribute> WhenStmt::get_attributes() const {
+    return this->attributes;
 }
 
 Token WhenStmt::token() const {
@@ -23,17 +27,21 @@ AstKind WhenStmt::kind() const {
 }
 
 std::string WhenStmt::stringify() const {
-    std::string res = "when ";
-    if(!subjects.empty()){
-        for(size_t i = 0; i < subjects.size(); i++){
-            res += subjects[i]->stringify();
-            if(i != subjects.size() - 1){
+    std::string res;
+    for(const auto& attr : this->attributes){
+        res += to_string(attr) + "\n";
+    }
+    res += "when ";
+    if(!this->subjects.empty()){
+        for(size_t i = 0; i < this->subjects.size(); i++){
+            res += this->subjects[i]->stringify();
+            if(i != this->subjects.size() - 1){
                 res += ", ";
             }
         }
     }
     res += "{\n";
-    for(const auto& branch : branches){
+    for(const auto& branch : this->branches){
         const auto& conditions = branch.first;
         const auto& body = branch.second;
         for(size_t i = 0; i < conditions.size(); i++){
@@ -102,7 +110,7 @@ AstKind LoopStmt::kind() const {
 }
 std::string LoopStmt::stringify() const {
     std::string res;
-    for(const auto& attr : attributes){
+    for(const auto& attr : this->attributes){
         res += to_string(attr) + "\n";
     }
     res += "loop ";
@@ -131,13 +139,17 @@ std::string LoopStmt::stringify() const {
 }
 
 
-SelectStmt::SelectStmt(Token tok, std::vector<std::pair<std::vector<SelectArm>, AstNodePtr>> cases){
+SelectStmt::SelectStmt(Token tok, std::vector<std::pair<std::vector<SelectArm>, AstNodePtr>> cases, std::vector<Attribute> attributes){
     this->tok = tok;
     this->cases = cases;
+    this->attributes = attributes;
 }
 
 std::vector<std::pair<std::vector<SelectArm>, AstNodePtr>> SelectStmt::get_cases() const {
     return this->cases;
+}
+std::vector<Attribute> SelectStmt::get_attributes() const {
+    return this->attributes;
 }
 
 Token SelectStmt::token() const {
@@ -147,8 +159,12 @@ AstKind SelectStmt::kind() const {
     return AstKind::SelectStmt;
 }
 std::string SelectStmt::stringify() const {
-    std::string res = "select {\n";
-    for(auto& c : cases){
+    std::string res;
+    for(const auto& attr : this->attributes){
+        res += to_string(attr) + "\n";
+    }
+    res += "select {\n";
+    for(auto& c : this->cases){
         auto& arms = c.first;
         auto& body = c.second;
         for(size_t i = 0; i < arms.size(); i++){

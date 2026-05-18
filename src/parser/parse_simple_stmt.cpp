@@ -66,14 +66,19 @@ AstNodePtr Parser::parse_lock_stmt(){
     this->advance();
     if(this->curr_tok.type == TokenType::lbrace){
         AstNodePtr body = parse_block();
-        return std::make_shared<LockStmt>(tok, std::make_shared<NoLiteral>(), body);
+        return std::make_shared<LockStmt>(tok, std::vector<AstNodePtr>{std::make_shared<NoLiteral>()}, body);
     }
     else if(this->curr_tok.type == TokenType::newline){
         error(this->curr_tok, "Unexpected newline after 'lock'", 
             "In Luna, you cant enter new line before the '{' token in any kind of statement. This is the make the code more readable and uniform");
     }
     else{
-        AstNodePtr target = parse_expression();
+        std::vector<AstNodePtr> target = {parse_expression()};
+        while(peek().type == TokenType::comma){
+            advance();//on ','
+            advance();//After ','
+            target.push_back(parse_expression());
+        }
         advance_on_newline();
         if(this->curr_tok.type == TokenType::newline){
             error(this->curr_tok, "Unexpected newline after lock target", 

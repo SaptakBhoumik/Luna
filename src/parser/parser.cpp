@@ -187,13 +187,6 @@ AstNodePtr Parser::parse_stmt(){
             return parse_using_stmt();
         }
 
-        case TokenType::kw_when:{
-            return parse_when_stmt();
-        }
-        case TokenType::kw_select:{
-            return parse_select_stmt();
-        }
-
         case TokenType::dollar:{
             const Token stmt_tok = this->curr_tok;
             switch (peek().type){
@@ -201,9 +194,7 @@ AstNodePtr Parser::parse_stmt(){
                 case TokenType::kw_break:
                 case TokenType::kw_continue:
                 case TokenType::kw_ret:
-                case TokenType::kw_give:
-                case TokenType::kw_when:
-                case TokenType::kw_loop:{
+                case TokenType::kw_give:{
                     advance();
                     return std::make_shared<CompTimeExpr>(stmt_tok, parse_stmt());
                 }
@@ -230,6 +221,22 @@ AstNodePtr Parser::parse_stmt(){
                 is_mut = true;
                 advance();
             }
+            if(this->curr_tok.type == TokenType::dollar && (peek().type == TokenType::kw_when || peek().type == TokenType::kw_loop)){
+                if(is_mut){
+                    error(this->curr_tok, "When statements cannot be mutable");
+                }
+                else if(is_pub){
+                    error(this->curr_tok, "When statements cannot be public");
+                }
+                auto dollar_tok = this->curr_tok;
+                advance(); // after $
+                if(this->curr_tok.type == TokenType::kw_when){
+                    return std::make_shared<CompTimeExpr>(dollar_tok, parse_when_stmt(annotations));
+                }
+                else{
+                    return std::make_shared<CompTimeExpr>(dollar_tok, parse_loop_stmt(annotations));
+                }
+            }
             if(this->curr_tok.type == TokenType::kw_fn){
                 if(is_mut){
                     error(this->curr_tok, "Functions/methods cannot be mutable");
@@ -250,6 +257,24 @@ AstNodePtr Parser::parse_stmt(){
                     error(this->curr_tok, "Loop statements cannot be public");
                 }
                 return parse_loop_stmt(annotations);
+            }
+            else if(this->curr_tok.type == TokenType::kw_when){
+                if(is_mut){
+                    error(this->curr_tok, "When statements cannot be mutable");
+                }
+                else if(is_pub){
+                    error(this->curr_tok, "When statements cannot be public");
+                }
+                return parse_when_stmt(annotations);
+            }
+            else if(this->curr_tok.type == TokenType::kw_select){
+                if(is_mut){
+                    error(this->curr_tok, "Select statements cannot be mutable");
+                }
+                else if(is_pub){
+                    error(this->curr_tok, "Select statements cannot be public");
+                }
+                return parse_select_stmt(annotations);
             }
             std::vector<std::pair<AstNodePtr, std::pair<bool, bool>>> names;
             names.push_back(std::make_pair(parse_expression(), std::pair<bool, bool>{is_pub,is_mut}));

@@ -936,12 +936,12 @@ public:
 // lock var { body }  or  lock (var1, var2) { body } or lock {body}
 class LockStmt : public AstNode {
     Token tok;
-    AstNodePtr target;//Either a tuple of identifiers or an identifier. It can also be no literal
+    std::vector<AstNodePtr> target;//Either a tuple of identifiers or an identifier. It can also be no literal
     AstNodePtr body;
 public:
-    LockStmt(Token tok, AstNodePtr target, AstNodePtr body);
+    LockStmt(Token tok, std::vector<AstNodePtr> target, AstNodePtr body);
 
-    AstNodePtr get_target() const;
+    std::vector<AstNodePtr> get_target() const;
     AstNodePtr get_body() const;
     
     Token token() const;
@@ -1074,11 +1074,13 @@ class WhenStmt : public AstNode {
             {{{?}}, else_body}
         }
     */
+    std::vector<Attribute> attributes;
 public:
-    WhenStmt(Token tok, std::vector<AstNodePtr> subjects, std::vector<std::pair<std::vector<std::vector<AstNodePtr>>, AstNodePtr>> branches);
+    WhenStmt(Token tok, std::vector<AstNodePtr> subjects, std::vector<std::pair<std::vector<std::vector<AstNodePtr>>, AstNodePtr>> branches, std::vector<Attribute> attributes);
 
     std::vector<AstNodePtr> get_subjects() const;
     std::vector<std::pair<std::vector<std::vector<AstNodePtr>>, AstNodePtr>> get_branches() const;
+    std::vector<Attribute> get_attributes() const;
 
     Token token() const;
     AstKind kind() const;
@@ -1117,6 +1119,7 @@ public:
 class SelectStmt : public AstNode {
     Token tok;
     std::vector<std::pair<std::vector<SelectArm>, AstNodePtr>> cases;
+    std::vector<Attribute> attributes; // #[fair], etc.
     //The above is a vector of (arms, body) pairs. Each arm is a separate case that can trigger the same body. Like for the following select statement:-
     /*
     select {
@@ -1132,9 +1135,10 @@ class SelectStmt : public AstNode {
     }
     */
 public:
-    SelectStmt(Token tok, std::vector<std::pair<std::vector<SelectArm>, AstNodePtr>> cases);
+    SelectStmt(Token tok, std::vector<std::pair<std::vector<SelectArm>, AstNodePtr>> cases, std::vector<Attribute> attributes);
 
     std::vector<std::pair<std::vector<SelectArm>, AstNodePtr>> get_cases() const;
+    std::vector<Attribute> get_attributes() const;
 
     Token token() const;
     AstKind kind() const;
@@ -1245,9 +1249,10 @@ class FuncDefStmt : public AstNode {
     AstNodePtr return_type; // NoLiteral for void / inferred
     AstNodePtr body;// NoLiteral for forward declaration
     std::vector<Annotation> annotation;
+    bool compile_time = false; // true if it's a compile-time function 
 public:
     FuncDefStmt(Token tok, bool pub, Token name, std::vector<std::pair<Token, AstNodePtr>> generics,std::vector<Parameter> parameters,AstNodePtr return_type, 
-                AstNodePtr body, std::vector<Annotation> annotation);
+                AstNodePtr body, std::vector<Annotation> annotation, bool compile_time);
     
     bool is_pub() const;
     Token get_name() const;
@@ -1256,6 +1261,7 @@ public:
     AstNodePtr get_return_type() const;
     AstNodePtr get_body() const;
     std::vector<Annotation> get_annotation() const;
+    bool is_compile_time() const;
 
     Token token() const;
     AstKind kind() const;
@@ -1275,9 +1281,10 @@ class MethodDefStmt : public AstNode {
     AstNodePtr return_type;
     AstNodePtr body;// NoLiteral for forward declaration
     std::vector<Attribute> attributes;//A method cant have decorator
+    bool compile_time = false; // true if it's a compile-time method
 public:
     MethodDefStmt(Token tok, bool pub, Parameter receiver, Token name, std::vector<std::pair<Token, AstNodePtr>> generics, std::vector<Parameter> parameters, 
-                  AstNodePtr return_type, AstNodePtr body, std::vector<Attribute> attributes);
+                  AstNodePtr return_type, AstNodePtr body, std::vector<Attribute> attributes, bool compile_time);
 
     bool is_pub() const;
     Parameter get_receiver() const;
@@ -1287,6 +1294,7 @@ public:
     AstNodePtr get_return_type() const;
     AstNodePtr get_body() const;
     std::vector<Attribute> get_attributes() const;
+    bool is_compile_time() const;
 
     Token token() const;
     AstKind kind() const;

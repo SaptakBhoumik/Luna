@@ -1,0 +1,52 @@
+fn select_demo() -> !void {
+    ch0:Chan<i32> = Chan::<i32>(cap = 4)
+    ch1:Chan<i32> = Chan::<i32>(cap = 4)
+    ch2:Chan<(i32,str)> = Chan::<(i32,str)>(cap = 4)
+    ch3:Chan<(i32,str)> = Chan::<(i32,str)>(cap = 4)
+    ch4:Chan<(i32,str)> = Chan::<(i32,str)>(cap = 4)
+    t := timer::after(500)  
+    task {
+        #[fair]//Randomly selects one of the ready cases to execute. 
+        select {
+            1,2 <-- ch1,ch0:{ 
+                io::println("got 1 and 2") 
+                break
+            }
+            v1,2 <-- (ch1,ch0):{
+                io::println(f"got {v1} and 2") 
+                break
+            }
+            v <-- ch1:{ 
+                io::println(f"got {v}") 
+                break
+            }
+            42,"Hello" --> ch2:{ 
+                io::println("sent") 
+                break
+            }
+            mut v1,v2 <-- ch3:{
+                io::println(f"got {v1} and {v2}") 
+                break
+            }
+            (mut v1,v2) <-- ch4:{
+                io::println(f"got {v1} and {v2}") 
+                break
+            }
+            ?:{ io::println("neither ready") }
+        }
+    }
+    task {
+        select {
+            5    <-- ch1
+            42   <-- ch1:{ io::println("got 42 or 5") }
+            0    <-- ch1:{ io::println("got zero") }
+            v    <-- ch1:{ io::println(f"got {v}") }  
+            (42,"Hello") --> ch2:{ io::println("sent") }
+            _  <-- t:{ io::println("timed out") }
+        }
+        select{}
+        select{
+
+        }
+    }
+}

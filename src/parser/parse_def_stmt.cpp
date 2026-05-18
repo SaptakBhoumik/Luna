@@ -150,13 +150,7 @@ AstNodePtr Parser::parse_func_def(std::vector<Annotation> annotations, bool is_p
         advance(); // on '{'
         body = parse_block();
     }
-    AstNodePtr func = std::make_shared<FuncDefStmt>(tok, is_pub, name, generics, parameters, return_type, body, annotations);
-    if(is_compile_time){
-        return std::make_shared<CompTimeExpr>(tok, func);
-    }
-    else{
-        return func;
-    }
+    return std::make_shared<FuncDefStmt>(tok, is_pub, name, generics, parameters, return_type, body, annotations,is_compile_time);
 }
 
 AstNodePtr Parser::parse_method_def(std::vector<Annotation> annotations, bool is_pub){
@@ -225,13 +219,7 @@ AstNodePtr Parser::parse_method_def(std::vector<Annotation> annotations, bool is
         advance(); // on '{'
         body = parse_block();
     }
-    AstNodePtr method = std::make_shared<MethodDefStmt>(tok, is_pub, receiver, name, generics, parameters, return_type, body, attributes);
-    if(is_compile_time){
-        return std::make_shared<CompTimeExpr>(tok, method);
-    }
-    else{
-        return method;
-    }
+    return std::make_shared<MethodDefStmt>(tok, is_pub, receiver, name, generics, parameters, return_type, body, attributes, is_compile_time);
 }
 
 AstNodePtr Parser::parse_func_or_method_def(std::vector<Annotation> annotations, bool is_pub){

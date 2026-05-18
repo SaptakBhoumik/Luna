@@ -1,0 +1,42 @@
+fn loop_demo(){
+    // loops
+    loop i :0..5 { io::print(f"{i} ") }
+    loop i :0..10..2 { io::print(f"{i} ") }         // step
+    loop v :arr { io::print(f"{v} ") }               // array iter
+    loop mut k, v :scores { io::println(f"{k}={v}") }    // map iter. k mutable
+    loop (k, mut v) :scores { io::println(f"{k}={v}") }    // this also works. v mutable
+    loop mut (k, v) :scores { io::println(f"{k}={v}") }    // both mutable. 
+    loop kv :scores { io::println(f"{kv[0]}={kv[1]}") }    // map iter
+    loop v1,v2:arr,arr { io::println(f"{v1} {v2}") } // multiple iter. Note:Both arrays must have the same length. No zip needed
+    mut m := 3
+    loop m>0 { m-- }                                  // while-style
+    loop {                                            // infinite+break
+        when { 
+            !flag:{ break } 
+        }
+        flag = False
+    }
+    $loop i :0..6 {                                    // continue
+        when { i%2==0:{ continue } }
+        io::print(f"{i} ")
+    }
+    // parallel loops
+    #[align(64)] out:[f32,512] = []
+    #[align(64)]//Yes u can also place it here. Attributes can be placed on the same line or the line before. Both are valid and do the same thing.
+    inp:[f32,512] = []
+
+    #[attribute]
+    $loop i :0..512 { out[i] = inp[i]*2.0 }
+
+    mut total:f32 = 0.0
+    add:=fn(a:f32, b:f32) -> f32 { ret a+b }
+    #[parallel(reduce = add, into = total)]//Reducetion operator should / be a binary function. No it cant be a method
+    loop i :0..512 { total += inp[i] }
+
+    #[parallel(threads = 4)]
+    loop i :0..512 { out[i] = out[i]+1.0 }
+
+    #[parallel]
+    #[simd]
+    loop i :0..512 { out[i] = inp[i]*inp[i] }
+}

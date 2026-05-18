@@ -25,7 +25,11 @@ AstKind TypeExpr::kind() const{
 }
 
 std::string TypeExpr::stringify() const{
-    return this->value->stringify();
+    std::string res = this->value->stringify();
+    if(this->idx->kind() != AstKind::NoLiteral){
+        res += "[" + this->idx->stringify() + "]";
+    }
+    return res;
 }
 
 

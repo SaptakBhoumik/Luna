@@ -61,7 +61,7 @@ class Parser{
     SelectArm parse_select_arm();
     std::vector<std::pair<Token, AstNodePtr>> parse_generic_params();
 
-    // Parse literal nodes
+    // Parse literal nodes 
     AstNodePtr parse_int();
     AstNodePtr parse_decimal();
     AstNodePtr parse_string();
@@ -119,9 +119,9 @@ class Parser{
     AstNodePtr parse_using_stmt();
 
     //Parse branch statement nodes
-    AstNodePtr parse_when_stmt();
+    AstNodePtr parse_when_stmt(std::vector<Annotation> annotations);
     AstNodePtr parse_loop_stmt(std::vector<Annotation> annotations);
-    AstNodePtr parse_select_stmt();
+    AstNodePtr parse_select_stmt(std::vector<Annotation> annotations);
 
     //Parse definition statement nodes
     AstNodePtr parse_type_def_stmt(std::vector<Annotation> annotations, bool is_pub);

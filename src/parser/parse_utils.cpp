@@ -286,6 +286,9 @@ LambdaFuncSignature Parser::parse_lambda_signature(){
             }
         }
     }
+    else{
+        advance(); // on ')'
+    }
     CaptureClause capture = CaptureClause{CaptureKind::None, {}};
     if(peek().type == TokenType::lbracket){
         advance(); // on '['

@@ -142,13 +142,13 @@ std::string GiveStmt::stringify() const {
 }
 
 
-LockStmt::LockStmt(Token tok, AstNodePtr target, AstNodePtr body){
+LockStmt::LockStmt(Token tok, std::vector<AstNodePtr> target, AstNodePtr body){
     this->tok = tok;
     this->target = target;
     this->body = body;
 }
 
-AstNodePtr LockStmt::get_target() const {
+std::vector<AstNodePtr> LockStmt::get_target() const {
     return this->target;
 }
 AstNodePtr LockStmt::get_body() const {
@@ -162,6 +162,13 @@ AstKind LockStmt::kind() const {
     return AstKind::LockStmt;
 }
 std::string LockStmt::stringify() const {
-    return "lock " + this->target->stringify() + " {\n" + this->body->stringify() + "\n}";
+    std::string target_str = "";
+    for(size_t i=0; i<this->target.size(); i++){
+        target_str += this->target[i]->stringify();
+        if(i != this->target.size() - 1){
+            target_str += ", ";
+        }
+    }
+    return "lock " + target_str + " {\n" + this->body->stringify() + "\n}";
 }
 }

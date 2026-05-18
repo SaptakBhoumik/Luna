@@ -1,0 +1,101 @@
+fn func1(){
+
+}
+
+@dec
+fn func2(){
+
+}
+
+#[att]
+fn $func3::<T:Number>()->T{
+
+}
+
+@dec
+#[att]
+fn func4<T>(...) -> T{
+
+}
+
+fn func5(arg1,mut arg2, arg3:i32,mut arg4,mut arg5:i32, $arg6, mut $arg7, mut $arg8:i32, $arg9:i32, arg10 := 10, mut arg11 := 20, 
+            arg12:i32 = 30, mut arg13:i32 = 40, $arg14 := 50, mut $arg15 := 60, $arg16:i32 = 70, mut $arg17:i32 = 80){
+
+}
+
+fn func6(*args, **kwargs){
+
+}
+fn func7(mut *args,mut **kwargs){
+
+}
+fn func8(*args: [i32],**kwargs: map::<string, i32>){
+
+}
+fn func9(mut *args: [i32],mut **kwargs: map::<string, i32>){
+
+}
+
+
+fn func10(*args := [], **kwargs := []){
+
+}
+fn func11(mut *args := [],mut **kwargs := []){
+
+}
+fn func12(*args: [i32] = [],**kwargs: map::<string, i32> = []){
+
+}
+fn func13(mut *args: [i32] = [],mut **kwargs: map::<string, i32> = []){
+
+}
+
+
+fn func14(*$args, **$kwargs){
+    a:=**b
+    c:=***b
+}
+fn func15(mut *$args,mut **$kwargs){
+
+}
+fn func16(*$args: [i32],**$kwargs: map::<string, i32>){
+
+}
+fn func17(mut *$args: [i32],mut **$kwargs: map::<string, i32>){
+
+}
+
+
+fn func18(*$args := [], **$kwargs := []){
+
+}
+fn func19(mut *$args := [],mut **$kwargs := []){
+
+}
+fn func20(*$args: [i32] = [],**$kwargs: map::<string, i32> = []){
+
+}
+fn func21(mut *$args: [i32] = [],mut **$kwargs: map::<string, i32> = []){
+
+}
+
+fn (receiver:i8)func22() -> i32{
+
+}
+
+fn (mut $receiver:i8)$func23(){
+
+}
+
+fn (receiver:i8)func24<T>() -> i32{
+
+}
+
+fn (mut $receiver:i8)$func25::<T>(){
+
+}
+
+fn (reciever:i8)func26() -> i32
+fn (reciever:i8)func27()
+fn func28() -> i32
+fn func29()

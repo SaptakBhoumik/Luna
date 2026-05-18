@@ -372,6 +372,8 @@ AstNodePtr Parser::parse_compile_time_expr(){
 AstNodePtr Parser::parse_lambda_expr(){
     const Token tok = this->curr_tok;
     LambdaFuncSignature signature = parse_lambda_signature();
+    std::cout<<this->curr_tok<<std::endl;
+    std::cout<<peek(1)<<std::endl;
     expect(TokenType::lbrace, "Expected '{' at the start of lambda body");
     AstNodePtr body = parse_block();
     return std::make_shared<LambdaExpr>(tok, signature.capture, signature.parameters, signature.return_type, body);

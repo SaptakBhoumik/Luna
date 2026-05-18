@@ -1,0 +1,98 @@
+pub type Dir = enum{ 
+    N 
+    S
+    E
+    W 
+}
+pub type Code = enum:f32{ 
+    Ok = 0 
+    Err = 1
+}//U can specify the underlying type of the enum if u want
+
+pub type Result = enum {
+    //Yes. You can have any value(constexpr) associated with enum varients
+    Success = "success"
+    Error = "error"
+}
+
+// ---- Type aliases ----
+type Shape = Circle | Rect
+type Pair  = (i32, i32)
+type inv_generic_pair<T> = (T[1],T[0])
+type GenericPair::<T1,T2> = (T1, T2,)
+type simd_vec4 =<f32, 4>
+type func_ptr = fn(i32) -> i32
+type optional = ?i32
+type error_or_value = !i32
+type list_of_ints = [i32]
+type map_of_string_to_int = map::<string,i32>
+type map_of_string_to_float = map<string,f32>
+// ---- Structs ----
+pub type Point = {
+    pub mut x:= 192.0
+    pub mut y:f64 = 0.0
+}
+
+pub type Circle = {
+    pub mut c:Point
+    pub mut r:f64
+}
+
+pub type Rect = {
+    pub mut tl:Point
+    pub mut br:Point
+}
+
+pub type Buf = {
+    pub mut fd:i32
+}
+
+fn (mut b:Buf) __drop__() { fs::close(b.fd) }
+
+type Number = interface {
+    //Exact same logic and working as in Go
+    fn (this:Number)__add__(other:Number) -> Number
+    fn (this:Number)__sub__(other:Number) -> Number
+    //And so on for other operators and methods. Basically write the method signature i.e forward declaration
+}
+
+pub type Stack<T:Number> = {//The generic type parameter T must have the methods defined in the interface Number i.e T must satisfy the interface Number
+    mut data:[T,32]
+    pub mut top:i32
+}
+
+type Any = interface {}
+
+fn test_any(){
+    //Resolved at runtime. 
+    a:Any = 1
+    a = "hello"
+    //Just like sumtype, u can use the .id field to check the type id of the value stored in the interface.
+    //You only have access to the methods defined 
+
+}
+#[align(16)]
+pub type Vec4 = {
+    pub mut x:f32
+    pub mut y:f32
+    pub mut z:f32
+    pub mut w:f32
+}
+
+pub type __Vec4 = {
+    #[align(16)] pub mut x:f32
+    #[align(16)] pub mut y:f32
+    #[align(16)]
+    #[thread_local]
+    pub mut z:f32
+    #[align(16)]
+    pub mut w:f32
+}
+// ---- Forward declarations ----
+type Node
+type Node2<T>
+
+type Node = {
+    pub val:i32
+    pub mut next:*Node
+}

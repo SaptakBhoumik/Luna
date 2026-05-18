@@ -170,6 +170,11 @@ pub type Vec4 = {
     pub mut w:f32
 }
 
+fn Vec4(x:f32,y:f32) -> Vec4 {
+    //Custom constructor for Vec4. Yes u can have custom constructors like this. It is just a normal function that returns the struct.
+    ret Vec4(x=x,y=y,z=256,w=123)
+}
+
 pub type __Vec4 = {
     #[align(16)] pub mut x:f32
     #[align(16)] pub mut y:f32
@@ -320,10 +325,11 @@ fn lock_demo() -> !void {
     mut old_bal:i32 = 100
     t1 := thread { lock bal { bal = bal - 10 } }
     t2 := thread { 
-        lock (bal,old_bal) { //The bracket is needed to signify that it is a tuple of variables and not just a single variable.
+        lock (bal,old_bal) { 
             old_bal = bal
             bal = bal + 20 
         } 
+        lock bal,old_bal {} //The bracket is optional i.e bal,old_bal and bal,old_bal both work
         lock {
             //This is also valid syntax. Locks every variable used in this block
         }
@@ -437,6 +443,13 @@ fn select_demo() -> !void {
             //execute the third case.
             (42,"Hello") --> ch2:{ io::println("sent") }
             _  <-- t:{ io::println("timed out") }
+        }
+        #[fair] //Fair select. I.e if multiple cases are ready we choose randomly among them instead of based on order in code.
+        select {
+            5    <-- ch1:{ io::println("got 5") }
+            42   <-- ch1:{ io::println("got 42") }
+            0    <-- ch1:{ io::println("got zero") }
+            v    <-- ch1:{ io::println(f"got {v}") }  // catch-all
         }
     }
 }
@@ -785,7 +798,13 @@ pub fn main() {
         1, ?:{ io::println("1,?") }
         ?:{ io::println("?")   }
     }
-
+    #[fallback]//By default there is no fall back but here we explicietely enable fallback
+    when p, q {
+        3, 5 
+        1, 2:{ io::println("1,2 or 3, 5") }
+        1, ?:{ io::println("1,?") }
+        ?:{ io::println("?")   }
+    }
     when (p, q) {//(p,q) treated as a tuple so dont confuse
         /*
         The following is not allowed cuz u need a tuple
@@ -800,6 +819,24 @@ pub fn main() {
         //(1, ?):{ io::println("(1,?)") } Not allowed because u cant have ? inside tuple
         ?: { io::println("(?,?)") }
     }
+
+    // Pattern matching with `when`
+    x := 42
+    when x {
+        //'when' uses __match__eq__ method for comparision if available. So u can customize the pattern matching behaviour.. That is how we match 'x' a int value
+        //with 1..100 which is of type range
+        //Use the attribute #[regular_equality] if u want it to use the usual __eq__ method instead of __match__eq__.
+        //Note:__match_eq__ is used only for pattern matching and not for normal equality check. So if use 'when' like an if else statement then it will use
+        //__eq__ and not __match_eq__. So it is only when we use 'when' for pattern matching that __match_eq__ is used.
+        /*
+        Also important clarification. __match_eq__ is used like pattern.__match_eq__(x)
+        So if the pattern is (A==B) then we do (A==B).__match_eq__(x) i.e (A.__eq__(B))/__match_eq__(x) and not (A.__match_eq__(B)).__match_eq__(x)
+        This is very important
+        */
+        0: { io::println("zero") }
+        1..100: { io::println("small") }
+        ?: { io::println("other") }
+    } 
     dir := Dir.N
     when dir{
         Dir.N:{ io::println("north") }

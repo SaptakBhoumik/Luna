@@ -1,4 +1,0 @@
-a:=12
-b:=f"{a+1} is a number"
-tricky_string1:="\\"
-tricky_string2:="\\\""

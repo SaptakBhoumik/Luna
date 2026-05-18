@@ -183,7 +183,7 @@ std::string AugAssignStmt::stringify() const {
 }
 
 FuncDefStmt::FuncDefStmt(Token tok, bool pub, Token name, std::vector<std::pair<Token, AstNodePtr>> generics,std::vector<Parameter> parameters,AstNodePtr return_type, 
-                         AstNodePtr body, std::vector<Annotation> annotation){
+                         AstNodePtr body, std::vector<Annotation> annotation, bool compile_time){
     this->tok = tok;
     this->pub = pub;
     this->name = name;
@@ -192,6 +192,7 @@ FuncDefStmt::FuncDefStmt(Token tok, bool pub, Token name, std::vector<std::pair<
     this->return_type = return_type;
     this->body = body;
     this->annotation = annotation;
+    this->compile_time = compile_time;
 }
 
 bool FuncDefStmt::is_pub() const {
@@ -215,6 +216,9 @@ AstNodePtr FuncDefStmt::get_body() const {
 std::vector<Annotation> FuncDefStmt::get_annotation() const {
     return this->annotation;
 }
+bool FuncDefStmt::is_compile_time() const {
+    return this->compile_time;
+}
 
 Token FuncDefStmt::token() const {
     return this->tok;
@@ -230,7 +234,7 @@ std::string FuncDefStmt::stringify() const{
     if (is_pub()) {
         result += "pub ";
     }
-    result += "fn " + name.value;
+    result += (this->compile_time ? "fn $" : "fn ") + name.value;
     if (!generics.empty()) {
         result += "::<";
         for(size_t i = 0; i < generics.size(); i++) {
@@ -263,7 +267,7 @@ std::string FuncDefStmt::stringify() const{
 
 
 MethodDefStmt::MethodDefStmt(Token tok, bool pub, Parameter receiver, Token name, std::vector<std::pair<Token, AstNodePtr>> generics, std::vector<Parameter> parameters, 
-                             AstNodePtr return_type, AstNodePtr body, std::vector<Attribute> attributes){
+                             AstNodePtr return_type, AstNodePtr body, std::vector<Attribute> attributes, bool compile_time){
 
     this->tok = tok;
     this->pub = pub;
@@ -274,6 +278,7 @@ MethodDefStmt::MethodDefStmt(Token tok, bool pub, Parameter receiver, Token name
     this->return_type = return_type;
     this->body = body;
     this->attributes = attributes;
+    this->compile_time = compile_time;
 }
 
 bool MethodDefStmt::is_pub() const {
@@ -300,6 +305,9 @@ AstNodePtr MethodDefStmt::get_body() const {
 std::vector<Attribute> MethodDefStmt::get_attributes() const {
     return this->attributes;
 }
+bool MethodDefStmt::is_compile_time() const {
+    return this->compile_time;
+}
 
 Token MethodDefStmt::token() const {
     return this->tok;
@@ -315,7 +323,7 @@ std::string MethodDefStmt::stringify() const {
     if (is_pub()) {
         result += "pub ";
     }
-    result += "fn (" + to_string(receiver) + ") " + name.value;
+    result += "fn (" + to_string(receiver) + (this->compile_time ? ")$" : ")") + name.value;
     if (!generics.empty()) {
         result += "::<";
         for(size_t i = 0; i < generics.size(); i++) {
