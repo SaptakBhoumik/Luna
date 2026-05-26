@@ -73,6 +73,7 @@ class Parser{
 
     // Parse type expression nodes
     AstNodePtr parse_type_expr(bool can_be_sumtype = true);
+    AstNodePtr parse_decltype_expr();
     AstNodePtr parse_identifier_type_expr();
     AstNodePtr parse_list_type_expr();
     AstNodePtr parse_ptr_optional_error_type_expr();
@@ -115,8 +116,8 @@ class Parser{
     AstNodePtr parse_lock_stmt();
 
     //Parse module statement nodes
-    AstNodePtr parse_import_stmt();
-    AstNodePtr parse_using_stmt();
+    // AstNodePtr parse_import_stmt();
+    // AstNodePtr parse_using_stmt();
 
     //Parse branch statement nodes
     AstNodePtr parse_when_stmt(std::vector<Annotation> annotations);
@@ -125,8 +126,8 @@ class Parser{
 
     //Parse definition statement nodes
     AstNodePtr parse_type_def_stmt(std::vector<Annotation> annotations, bool is_pub);
-    //For parse_var_stmt, we are either on =,:= or : token. Basically the token after the variable name(s)
-    AstNodePtr parse_var_stmt(std::vector<Annotation> annotations, std::vector<std::pair<AstNodePtr, std::pair<bool, bool>>> names);
+    //For parse_var_or_import_stmt, we are either on =,:= or : token. Basically the token after the variable name(s)
+    AstNodePtr parse_var_or_import_stmt(std::vector<Annotation> annotations, std::vector<std::pair<AstNodePtr, std::pair<bool, bool>>> names);
     AstNodePtr parse_aug_assign_stmt(std::vector<AstNodePtr> targets);//On the op token
     //For the following we sent when the curr tok is fn
     AstNodePtr parse_func_def(std::vector<Annotation> annotations, bool is_pub);

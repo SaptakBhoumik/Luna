@@ -32,6 +32,24 @@ std::string TypeExpr::stringify() const{
     return res;
 }
 
+DeclTypeExpr::DeclTypeExpr(Token tok, AstNodePtr expr){
+    this->tok = tok;
+    this->expr = expr;
+}
+
+AstNodePtr DeclTypeExpr::get_expr() const{
+    return this->expr;
+}
+
+Token DeclTypeExpr::token() const{
+    return this->tok;
+}
+AstKind DeclTypeExpr::kind() const{
+    return AstKind::DeclTypeExpr;
+}
+std::string DeclTypeExpr::stringify() const{
+    return "decltype(" + this->expr->stringify() + ")";
+}
 
 ListTypeExpr::ListTypeExpr(Token tok, AstNodePtr elem_type, AstNodePtr size){
     this->tok = tok;

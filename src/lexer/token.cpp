@@ -73,7 +73,7 @@ std::string to_string(TokenType type) {
         case TokenType::decr: return "--";
         // Keywords
         case TokenType::kw_import: return "import";
-        case TokenType::kw_using: return "using";
+        // case TokenType::kw_using: return "using";
         case TokenType::kw_pub: return "pub";
         case TokenType::kw_enum: return "enum";
         case TokenType::kw_interface: return "interface";
@@ -96,6 +96,7 @@ std::string to_string(TokenType type) {
         case TokenType::kw_task: return "task";
         case TokenType::kw_lock: return "lock";
         case TokenType::kw_select: return "select";
+        case TokenType::kw_decltype: return "decltype";
         case TokenType::newline: return "<newline>";
     }
     return "<unknown token>";

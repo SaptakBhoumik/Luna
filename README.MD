@@ -12,7 +12,7 @@ Check out detailed.luna for a detailed demo. But remember the detailed demo is a
 The syntax is more or less fixed at this point. It looks something like this
 
 ```rust
-import io
+io := import("std/io")
 
 fn divide(a, b) -> !f64 {
     when b == 0: { ret Error("div by zero") }

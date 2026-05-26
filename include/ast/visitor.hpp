@@ -23,6 +23,7 @@ class AstVisitor {
     virtual bool visit(const AssignTupleLiteral& node) { return false; };
     //Type expression nodes
     virtual bool visit(const TypeExpr& node) { return false; };
+    virtual bool visit(const DeclTypeExpr& node) { return false; };
     virtual bool visit(const ListTypeExpr& node) { return false; };
     virtual bool visit(const PtrTypeExpr& node) { return false; };
     virtual bool visit(const OptionalTypeExpr& node) { return false; };
@@ -60,7 +61,6 @@ class AstVisitor {
     virtual bool visit(const LockStmt& node) { return false; };
     //Module statement nodes
     virtual bool visit(const ImportStmt& node) { return false; };
-    virtual bool visit(const UsingStmt& node) { return false; };
     //Branch statement nodes
     virtual bool visit(const WhenStmt& node) { return false; };
     virtual bool visit(const LoopStmt& node) { return false; };

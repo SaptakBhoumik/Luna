@@ -56,8 +56,6 @@ AstNodePtr Parser::parse_identifier(bool turbo_fish_required){
                 advance(); // On comma and continue parsing generic args
             }
             else if(peek().type != TokenType::gt){
-                std::cout<<peek() << std::endl;
-                std::cout<<this->curr_tok << std::endl;
                 error(peek(),"expected ',' or '>' in generic argument list");
             }
         }

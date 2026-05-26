@@ -73,18 +73,11 @@ This is just done for making the parser simpler without reducing features
 */
 //Why is there no &Type? Because it is a bit confusing. Sure it makes life easy but can be error prone so we just use *Type when needed. 
 // ---- Imports ----
-import math
-import fs
-import std::io::{println, print}
-import os::{platform::Linux}
-using io = std::io
-using math // Same as ``using namespace std`` in c++
-/*
-Also in Luna when someone does "import io{print}" then also they have to use io::print. The {print} signifies that u can't do io::other_func() . 
-Use "using io" so that "print" works. Also due to {print}, only print function is imported even when u do using io
-We dont have something like import http::* because u can just do import http and then do using http. Sure more clumky but it is a bad practice anyways
-*/
-
+pub math := import("../math")
+fs := import("fs")
+io := import("std/io")
+sys := import("std/sys.luna")
+import("os")//Imports everything
 // Important:- For when clause, unlike C++ switch case, you dont have to break at the end of each case because there is no fallthrough. Each case is independent and only one case will be executed. 
 // So no need for break to prevent fallthrough.
 //NOTE TO SELF:Do not add the feature to use continue for fall back. No. If continue is used then the loop in which the when clause is will continue and 
@@ -239,6 +232,17 @@ fn function123(a,b:=10){//Yes u have to use := for default value
 }
 fn func1234(*args := 10, **kwargs := "hello"){
     // Default value for variadic parameters means when u do out of bounds access, u get the default value instead of error. 
+}
+fn decltype_demo(a){
+    b:decltype(a.field) = a.field//Similar to C++ decltype
+    c:decltype((a.field1,a.field2)) = (a.field1,a.field2)//No. U cant do decltype(a.field1,a.field2) because decltype takes in only one expression
+                                                        //ret (a,b) and ret a,b both are allowed
+                                                        //a,b = b,a and (a,b) = (b,a) both are allowed 
+                                                        //But these are statement level constructs
+                                                        //decltype is supposed to look like a fucntion call
+                                                        //f(a,b) is not same as f((a,b))
+                                                        //That is why decltype((a.field1,a.field2)) and not decltype(a.field1,a.field2)
+                                                        //decltype has one argument and u write decltype((a.field1,a.field2)) to get the type of the tuple (a.field1,a.field2)
 }
 fn a(x:i8,y:i8,z:str = "default") -> i8 { ret x+y }
 fn func122w34(*args:i8, **kwargs:str = "9"){//Yes does what u think it does

@@ -144,7 +144,6 @@ AstNodePtr Parser::parse_block(){
             break;
         }
         else if(this->curr_tok.type != TokenType::rbrace){
-            std::cout << this->curr_tok << std::endl;
             error(this->curr_tok, "Expected newline after statement in block");
         }
     }
@@ -181,10 +180,11 @@ AstNodePtr Parser::parse_stmt(){
         }
 
         case TokenType::kw_import:{
-            return parse_import_stmt();
-        }
-        case TokenType::kw_using:{
-            return parse_using_stmt();
+            expect(TokenType::lparen, "Expected '(' after 'import'"); 
+            advance(); // after '('
+            AstNodePtr expr = parse_expression();//Expects string or compile time expression
+            expect(TokenType::rparen, "Expected ')' after import path expression");
+            return std::make_shared<ImportStmt>(this->curr_tok, false, std::nullopt, expr);
         }
 
         case TokenType::dollar:{
@@ -303,7 +303,7 @@ AstNodePtr Parser::parse_stmt(){
                 case TokenType::walrus:
                 case TokenType::colon:{
                     advance(); // on =,:= or :
-                    return parse_var_stmt(annotations, names);
+                    return parse_var_or_import_stmt(annotations, names);
                 }
                 case TokenType::plus_eq:          // +=
                 case TokenType::minus_eq:         // -=

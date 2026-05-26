@@ -42,7 +42,46 @@ AstNodePtr Parser::parse_type_def_stmt(std::vector<Annotation> annotations, bool
 
 }
 
-AstNodePtr Parser::parse_var_stmt(std::vector<Annotation> annotations, std::vector<std::pair<AstNodePtr, std::pair<bool, bool>>> names){
+AstNodePtr Parser::parse_var_or_import_stmt(std::vector<Annotation> annotations, std::vector<std::pair<AstNodePtr, std::pair<bool, bool>>> names){
+    Token tok = this->curr_tok; // The token on which the variable declaration starts (could be 'var' or the first variable name)
+    if(peek().type == TokenType::kw_import){
+        if(this->curr_tok.type!=TokenType::walrus){
+            error(this->curr_tok, "Only walrus operator (:=) is allowed in import statements to specify visibility of the imported name");
+        }
+        if(names.size() > 1){
+            error(this->curr_tok, "Multiple variable names cannot be used in an import statement");
+        }
+        else if(annotations.size() > 0){
+            error(this->curr_tok, "Annotations are not allowed on import statements");
+        }
+        std::optional<Token> alias_name = std::nullopt;
+        bool is_pub = names[0].second.first;
+        if(names[0].first->kind() != AstKind::IdentifierLiteral){
+            error(this->curr_tok, "Expected identifier for imported name in import statement");
+        }
+        else{
+            auto var_name = std::dynamic_pointer_cast<IdentifierLiteral>(names[0].first);
+            if(var_name->is_compile_time()){
+                error(this->curr_tok, "Compile-time variables cannot be used as import aliases");
+            }
+            else if(var_name->get_generic_args().size() > 0){
+                error(this->curr_tok, "Generic variables cannot be used as import aliases");
+            }
+            auto path = var_name->get_path();
+            if(path.size()!=1){
+                error(this->curr_tok, "Only single identifier is allowed as import alias");
+            }
+            else{
+                alias_name = path[0];
+            }
+        }
+        advance(); // on 'import'
+        expect(TokenType::lparen, "Expected '(' after 'import'");
+        advance(); // after '('
+        AstNodePtr module_path = parse_expression();//Expects string or compile time expression
+        expect(TokenType::rparen, "Expected ')' after import path expression");
+        return std::make_shared<ImportStmt>(tok, is_pub, alias_name, module_path);
+    }
     std::vector<Attribute> attributes;
     for(const auto& ann : annotations){
         if(ann.is_decorator){
@@ -52,7 +91,6 @@ AstNodePtr Parser::parse_var_stmt(std::vector<Annotation> annotations, std::vect
             attributes.push_back(ann.attribute);
         }
     }
-    Token tok = this->curr_tok; // The token on which the variable declaration starts (could be 'var' or the first variable name)
     AstNodePtr type = std::make_shared<NoLiteral>();
     std::vector<AstNodePtr> values;
     bool def = false;

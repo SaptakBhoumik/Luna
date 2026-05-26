@@ -72,7 +72,7 @@ void Lexer::flush_keyword() {
 
     static const std::unordered_map<std::string, TokenType> keywords = {
         { "import", TokenType::kw_import },
-        { "using", TokenType::kw_using },
+        // { "using", TokenType::kw_using },
         { "pub", TokenType::kw_pub },
         { "enum", TokenType::kw_enum },
         { "type", TokenType::kw_type },
@@ -104,8 +104,9 @@ void Lexer::flush_keyword() {
         { "thread", TokenType::kw_thread },
         { "task", TokenType::kw_task },
         { "lock", TokenType::kw_lock },
-        { "select", TokenType::kw_select},
+        { "select", TokenType::kw_select },
         { "interface", TokenType::kw_interface },
+        { "decltype", TokenType::kw_decltype },
 
         // { "typesize", TokenType::kw_typesize },
         // { "decltype", TokenType::kw_decltype },
@@ -147,7 +148,6 @@ void Lexer::handle_newline_tracking() {
 void Lexer::lex() {
     while (true) {
         switch (this->curr_char) {
-
             // ---- string literals ----
             case '"':
             case '\'': {
@@ -447,7 +447,7 @@ void Lexer::lex_string() {
 }
 
 void Lexer::lex_fstring() {
-    //TODO:Stress test it. I used LLM for this part but not so confident in it since f-string lexing is quite tricky. So check in future 
+    //TODO:Stress test it. It is working for now but not confident it is bug free. It is pretty complex.
     const bool saved_in_fstring = this->in_fstring;
     this->in_fstring = true;
 
@@ -485,7 +485,8 @@ void Lexer::lex_fstring() {
                     return;
                 }
                 // second '{' consumed by loop advance
-            } else {
+            } 
+            else {
                 // Start of expression
                 has_expr = true;
 
@@ -527,7 +528,8 @@ void Lexer::lex_fstring() {
                     return;
                 }
                 // second '}' consumed by loop advance
-            } else {
+            } 
+            else {
                 // Unmatched '}' inside f-string
                 this->report_error("Unmatched '}' in f-string");
                 this->in_fstring = saved_in_fstring;

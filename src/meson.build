@@ -27,7 +27,7 @@ parser_src = [
     'parser/parse_def_stmt.cpp',
     'parser/parse_expr_node.cpp',
     'parser/parse_literal.cpp',
-    'parser/parse_module_stmt.cpp',
+    # 'parser/parse_module_stmt.cpp',
     'parser/parse_simple_stmt.cpp',
     'parser/parse_type_expr.cpp',
     'parser/parse_utils.cpp',

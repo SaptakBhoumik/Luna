@@ -30,6 +30,7 @@ enum class AstKind {
 
     // Type nodes
     TypeExpr,
+    DeclTypeExpr,
     ListTypeExpr,
     PtrTypeExpr,
     OptionalTypeExpr,
@@ -70,7 +71,6 @@ enum class AstKind {
 
     //Module statement nodes
     ImportStmt,
-    UsingStmt,
 
     //Branch statement nodes
     WhenStmt,
@@ -329,6 +329,21 @@ public:
 
     AstNodePtr get_value() const;
     AstNodePtr get_idx() const;
+
+    Token token() const;
+    AstKind kind() const;
+    std::string stringify() const;
+    
+    void accept(AstVisitor& visitor) const;
+};
+
+class DeclTypeExpr : public AstNode {
+    Token tok;
+    AstNodePtr expr;
+public:
+    DeclTypeExpr(Token tok, AstNodePtr expr);
+
+    AstNodePtr get_expr() const;
 
     Token token() const;
     AstKind kind() const;
@@ -955,47 +970,17 @@ public:
 //  Module statement nodes
 // ============================
 
-// import path::sym  or  import path::{s1, s2}  
 class ImportStmt : public AstNode {
     Token tok;
-    std::vector<Token> module_path;
-    std::vector<std::pair<std::vector<Token>, bool>> imported_symbols;//The bool says if we are importing a compile time symbol
-    /*
-    import std::io::{println, print}
-    For the above imported_symbols = {{println, false}, {print, false}} and module_path = {std, io}
-
-    import os::{platform::Linux}
-    For the above imported_symbols = {{platform, Linux}, false} and module_path = {os}
-
-    Basically each element of imported symbols is the path of the imported symbol
-    */
+    bool pub;
+    std::optional<Token> name;
+    AstNodePtr module_path;
 public:
-    ImportStmt(Token tok, std::vector<Token> module_path, std::vector<std::pair<std::vector<Token>, bool>> imported_symbols);
+    ImportStmt(Token tok, bool pub, std::optional<Token> name, AstNodePtr module_path);
 
-    std::vector<Token> get_module_path() const;
-    std::vector<std::pair<std::vector<Token>, bool>> get_imported_symbols() const;
-
-    Token token() const;
-    AstKind kind() const;
-    std::string stringify() const;
-
-    void accept(AstVisitor& visitor) const;
-};
-
-// using alias = path  or  using path  (alias is NoLiteral for the second form)
-class UsingStmt : public AstNode {
-    /*
-    For something like ``fmt::println``, u can only do ``using fmt`` or ``using f = fmt`` 
-    U cant do ``using fmt::println``. Because using is meant for bringing modules into scope and fmt::println is not a module but a function.
-    */
-    Token tok;
-    std::vector<Token> path;
-    std::optional<Token> alias;
-public:
-    UsingStmt(Token tok, std::vector<Token> path, std::optional<Token> alias);
-
-    std::vector<Token> get_path() const;
-    std::optional<Token> get_alias() const;
+    bool is_pub() const;
+    std::optional<Token> get_name() const;
+    AstNodePtr get_module_path() const;
 
     Token token() const;
     AstKind kind() const;

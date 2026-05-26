@@ -10,6 +10,10 @@ AstNodePtr Parser::parse_type_expr(bool can_be_sumtype){
     const Token tok = this->curr_tok;
     AstNodePtr type_expr;
     switch(this->curr_tok.type){
+        case TokenType::kw_decltype:{
+            type_expr = parse_decltype_expr();
+            break;
+        }
         case TokenType::identifier:{
             type_expr = parse_identifier_type_expr();
             break;
@@ -65,6 +69,14 @@ AstNodePtr Parser::parse_type_expr(bool can_be_sumtype){
         type_expr = std::make_shared<SumTypeExpr>(tok,sum_types);   
     }
     return type_expr;
+}
+AstNodePtr Parser::parse_decltype_expr(){
+    const Token tok = this->curr_tok;
+    expect(TokenType::lparen, "Expected '(' after 'decltype'");
+    advance();//After '('
+    AstNodePtr expr = parse_expression();
+    expect(TokenType::rparen, "Expected ')' after expression in decltype");
+    return std::make_shared<DeclTypeExpr>(tok, expr);
 }
 AstNodePtr Parser::parse_identifier_type_expr(){
     const Token tok = this->curr_tok;

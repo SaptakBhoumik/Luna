@@ -101,7 +101,7 @@ enum class TokenType {
 
     // Keywords
     kw_import,//import
-    kw_using,//using
+    // kw_using,//using
     kw_pub,//pub
     kw_enum,//enum
     kw_interface,//interface
@@ -138,7 +138,7 @@ enum class TokenType {
 
     // kw_cast,//Technically not a function but I will treat it as one for simplicity
     // kw_typesize,//typesize
-    // kw_decltype,//decltype
+    kw_decltype,//decltype
     // kw_typeid,//typeid
 
     newline,

@@ -49,6 +49,9 @@ void AssignTupleLiteral::accept(AstVisitor& visitor) const {
 void TypeExpr::accept(AstVisitor& visitor) const {
     visitor.visit(*this);
 }
+void DeclTypeExpr::accept(AstVisitor& visitor) const {
+    visitor.visit(*this);
+}
 void ListTypeExpr::accept(AstVisitor& visitor) const {
     visitor.visit(*this);
 }
@@ -152,9 +155,6 @@ void LockStmt::accept(AstVisitor& visitor) const {
 }
 //Module statement nodes
 void ImportStmt::accept(AstVisitor& visitor) const {
-    visitor.visit(*this);
-}
-void UsingStmt::accept(AstVisitor& visitor) const {
     visitor.visit(*this);
 }
 //Branch statement nodes
