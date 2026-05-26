@@ -600,7 +600,7 @@ fn tensor_example(){
                  //Use *args in method defination if number of item is not known
 }
 // ---- Main ----
-pub fn main() {
+pub fn main(argv:[str]) -> i32 {//Optional argv and optional ret
 
     _test => {
         //Equivalent to a lambda that has no input variable or return type. Note in other places to define lambda u need fn and stuff. Just a special syntactic sugar here

@@ -116,6 +116,8 @@ My main inspiration was Lua(Although it is significantly different from Lua righ
  - [x] Parser
  - [x] Test Parser
  - [ ] Create better errors
+ - [ ] Binder
+ - [ ] Test Binder
  - [ ] Syntax analyzer and name mangler lvl 1
  - [ ] Type checker, compile time resolution, name mangler lvl 2 and ast lowering lvl 1
  - [ ] Ast lowering lvl 2 
