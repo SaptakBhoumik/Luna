@@ -127,8 +127,11 @@ fn name(arg: Shared<T>) -> R {
 arg not used after call, no concurrent thread access
     -> name_owned_ptr(&arg)
 
-arg IS used after call, no concurrent thread access
+arg IS used after call and name_ptr doesnt modify it, no concurrent thread access
     -> name_ptr(&arg), caller is responsible for lifetime
+
+arg IS used after call and name_ptr does modify it, no concurrent thread access
+    -> name(arg), callee is responsible for lifetime of the copy and caller is responsible for lifetime of the original
 
 arg shared with another thread, join is guaranteed before arg goes out of scope
     -> name_ptr(&arg), join acts as the lifetime barrier, no Shared needed
