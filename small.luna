@@ -108,7 +108,8 @@ pub type Result = enum {
 
 // ---- Type aliases ----
 type Shape = Circle | Rect
-type Pair  = (i32, i32)
+#[opaque]
+type Pair  = (i32, i32) //With opaque, GenericPair<T1,T2> is not same as Pair.
 type GenericPair<T1,T2> = (T1, T2,)
 
 // ---- Structs ----
