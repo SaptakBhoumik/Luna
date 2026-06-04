@@ -131,6 +131,31 @@ pub type Buf = {
     pub mut fd:i32
 }
 
+//By default the innitializer of Buf will be Buf(fd:i32)
+//But if you do the following then the default innitializer will no longer be generated instead the innitializer u define will be used(Based on operator overloading)
+fn Buf(name:str) -> Buf {
+    ret Buf(fd = fs::open(name)!)
+}
+fn Buf(fd:i32) -> Buf {
+    //Have to manually define this
+    ret Buf(fd = fd)
+}
+fn Buf() -> Buf {
+    //Default innitializer if no arguments are given. 
+    ret Buf(fd = -1)
+}
+fn Buf(buf:Buf) -> Buf {
+    //Copy innitializer. Yes we have to manually define this as well. 
+    ret Buf(fd = buf.fd)
+}
+
+fn (mut b:Buf)__copy__(other:Buf) {
+    //Copy assignment operator. Yes we have to manually define this as well. 
+    b.fd = other.fd
+}
+
+
+
 fn (mut b:Buf) __drop__() { fs::close(b.fd) }
 
 type Number = interface {

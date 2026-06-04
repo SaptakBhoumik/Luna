@@ -1,0 +1,46 @@
+For every luna function define 2 version
+
+LEts say u have ``fn name(arg:T)->R``
+
+Then you will have 2 version of this function if sizeof(T) > 16
+
+```
+fn name_ptr(argptr:*T)->R //The original code is here. Assumes sizeof(T) > 16 byte (On linux x86_64, sending 16bytes of data is not hard and we target only linux x86_64). Argptr is not heap allocated. Destructor of T is not called here
+fn name_owned_ptr(argptr:*T)->R{//Takes ownership of the content and calls destructor
+    val := name_ptr(argptr);
+    //Call the destructor of T here
+    ret val;
+}
+fn name(arg: T) -> R {
+    //Just for linker symbol.
+    ret name_owned_ptr(&arg)
+}
+fn name(arg:shared<T>)->R {
+    val := name_ptr(arg.get());
+    arg.release();//Decrement the ref count and call the destructor of T if ref count becomes 0
+    return val;
+}
+// During invoking call name_owned_ptr(argptr:*T) if the arg is not used afterwards and call name_ptr(argptr:*T) if the arg is used afterwards(To be freed by the callee) 
+// The same applies for shared ptr version but only for threads
+// Note shared is not used if the arg is not used by any other thread
+// If arg is used by other thread then we have to use shared ptr. Even the subsequent usage of arg by the function from where arg originates will rely on shared version
+// If one thread uses the arg and the arg is also used by the function after launching thread from where arg originates then we dont promote to shared ptr version if this
+// thread is definately joined. If we are not sure if joined or not then we use shared ptr version
+// We dont need GC as we have RAII and automatic shared ptr is a narrow usecase where cycle cant happen so ref counting works
+// For manual shared ptr, we have weak ptr to break cycle but headache of user not our
+```
+
+If sizeof(R) > 16 
+
+```
+fn name_ptr(arg:T, retptr:*R) {
+    //The original code is here. Assumes sizeof(R) > 16. Retptr is not heap allocated
+    //Insted of ret val we do *retptr = val;
+}
+fn name(arg:T)->R{
+    R ret;
+    name_ptr(arg, &ret);
+    return ret;
+}
+// The above is not needed because System V ABI handles this at calling convention. I am just writing it for future reference even if we dont need it
+```
