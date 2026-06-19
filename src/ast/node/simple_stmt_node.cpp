@@ -110,6 +110,25 @@ std::string ReturnStmt::stringify() const {
 }
 
 
+RaiseStmt::RaiseStmt(Token tok, AstNodePtr value){
+    this->tok = tok;
+    this->value = value;
+}
+
+AstNodePtr RaiseStmt::get_value() const {
+    return this->value;
+}
+
+Token RaiseStmt::token() const {
+    return this->tok;
+}
+AstKind RaiseStmt::kind() const {
+    return AstKind::RaiseStmt;
+}
+std::string RaiseStmt::stringify() const {
+    return "raise " + this->value->stringify();
+}
+
 GiveStmt::GiveStmt(Token tok, std::vector<AstNodePtr> values){
     this->tok = tok;
     this->values = values;

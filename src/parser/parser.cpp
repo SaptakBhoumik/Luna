@@ -175,6 +175,9 @@ AstNodePtr Parser::parse_stmt(){
         case TokenType::kw_give:{
             return parse_give_stmt();
         }
+        case TokenType::kw_raise:{
+            return parse_raise_stmt();
+        }
         case TokenType::kw_lock:{
             return parse_lock_stmt();
         }

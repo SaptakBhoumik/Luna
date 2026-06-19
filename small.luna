@@ -249,7 +249,13 @@ fn area(c:Circle) -> f64 { ret PI * c.r * c.r }
 fn area(r:Rect) -> f64 {
     ret (r.br.x - r.tl.x) * (r.br.y - r.tl.y)
 }
+fn func1() -> Error  { ret Error("error") }//Just returning the Error struct as a plain value. No propagation.
 
+fn func2() -> !Error { ret Error("error") }//Also just returning the Error struct, but as the *success* value.
+                                            //!Error means this function CAN propagate an error via raise,
+                                            //but it doesnt raise here. On success the caller gets the Error struct
+                                            //as a plain value. !! is only needed if raise is actually hit and you want to handle it.
+                                            //Silly but legal since Error is just a struct like any other.
 fn function123(a,b:=10){//Yes u have to use := for default value
     //Yes u need not specify the type of 'a' or the return type. It will be infered. It is equivalent to the following:-
     /*
@@ -304,11 +310,11 @@ fn find_val(arr:[i32,5], idx:i32) -> ?i32 {
 
 // ---- Defer ----
 fn read_file(path:str) -> !str {
-    f := fs::open(path)!
+    f := fs::open(path) // Propagate due to lack of !
     defer { fs::close(f) }
     //Note:-You dont need to enclose it in ```{...}``` if only one statement so something like the following also works
     defer fs::close(f)
-    ret fs::read(f)!
+    ret fs::read(f)! // Panics not propagate due to presence !
 }
 
 // ---- Drop ordering ----

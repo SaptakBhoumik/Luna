@@ -81,6 +81,7 @@ void Lexer::flush_keyword() {
 
         { "mut", TokenType::kw_mut },
         { "ret", TokenType::kw_ret },
+        { "raise", TokenType::kw_raise },
         // { "if", TokenType::kw_if },
         // { "elif", TokenType::kw_elif },
         // { "else", TokenType::kw_else },

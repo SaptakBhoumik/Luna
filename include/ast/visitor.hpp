@@ -57,6 +57,7 @@ class AstVisitor {
     virtual bool visit(const BreakStmt& node) { return false; };
     virtual bool visit(const ContinueStmt& node) { return false; };
     virtual bool visit(const ReturnStmt& node) { return false; };
+    virtual bool visit(const RaiseStmt& node) { return false; };
     virtual bool visit(const GiveStmt& node) { return false; };
     virtual bool visit(const LockStmt& node) { return false; };
     //Module statement nodes

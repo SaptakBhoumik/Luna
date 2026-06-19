@@ -112,6 +112,7 @@ class Parser{
     AstNodePtr parse_break_stmt();
     AstNodePtr parse_continue_stmt();
     AstNodePtr parse_return_stmt();
+    AstNodePtr parse_raise_stmt();
     AstNodePtr parse_give_stmt();
     AstNodePtr parse_lock_stmt();
 

@@ -111,6 +111,7 @@ enum class TokenType {
 
     kw_mut,//mut
     kw_ret,//ret
+    kw_raise,//raise
     // kw_if,//if
     // kw_elif,//elif
     // kw_else,//else

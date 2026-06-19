@@ -147,6 +147,9 @@ void ContinueStmt::accept(AstVisitor& visitor) const {
 void ReturnStmt::accept(AstVisitor& visitor) const {
     visitor.visit(*this);
 }
+void RaiseStmt::accept(AstVisitor& visitor) const {
+    visitor.visit(*this);
+}
 void GiveStmt::accept(AstVisitor& visitor) const {
     visitor.visit(*this);
 }

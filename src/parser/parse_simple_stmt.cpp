@@ -47,6 +47,12 @@ AstNodePtr Parser::parse_return_stmt(){
     }
     return std::make_shared<ReturnStmt>(tok, values);
 }
+AstNodePtr Parser::parse_raise_stmt(){
+    Token tok = this->curr_tok;
+    this->advance();
+    AstNodePtr value = parse_expression();
+    return std::make_shared<RaiseStmt>(tok, value);
+}
 AstNodePtr Parser::parse_give_stmt(){
     Token tok = this->curr_tok;
     if(peek().type == TokenType::newline){

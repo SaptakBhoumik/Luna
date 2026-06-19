@@ -66,6 +66,7 @@ enum class AstKind {
     BreakStmt,
     ContinueStmt,
     ReturnStmt,
+    RaiseStmt,
     GiveStmt,
     LockStmt,
 
@@ -925,6 +926,22 @@ public:
     ReturnStmt(Token tok, std::vector<AstNodePtr> values);
 
     std::vector<AstNodePtr> get_values() const;
+
+    Token token() const;
+    AstKind kind() const;
+    std::string stringify() const;
+
+    void accept(AstVisitor& visitor) const;
+};
+
+// raise expr  (expr is necessary
+class RaiseStmt : public AstNode {
+    Token tok;
+    AstNodePtr value;
+public:
+    RaiseStmt(Token tok, AstNodePtr value);
+
+    AstNodePtr get_value() const;
 
     Token token() const;
     AstKind kind() const;

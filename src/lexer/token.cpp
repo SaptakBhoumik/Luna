@@ -81,6 +81,7 @@ std::string to_string(TokenType type) {
         case TokenType::kw_fn: return "fn";
         case TokenType::kw_mut: return "mut";
         case TokenType::kw_ret: return "ret";
+        case TokenType::kw_raise: return "raise";
         case TokenType::kw_loop: return "loop";
         case TokenType::kw_break: return "break";
         case TokenType::kw_continue: return "continue";
