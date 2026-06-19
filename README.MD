@@ -15,7 +15,7 @@ The syntax is more or less fixed at this point. It looks something like this
 io := import("std/io")
 
 fn divide(a, b) -> !f64 {
-    when b == 0: { ret Error("div by zero") }
+    when b == 0: { raise Error("div by zero") }
     ret a / b
 }
 
