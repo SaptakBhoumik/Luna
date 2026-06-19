@@ -42,11 +42,14 @@
 //This is because if code body doesnt give any value then the whole expr !! code_body or expr ?? code_body will not have any value and it will be a compile error. 
 //So to avoid that we enforce that code body must exit the scope if it doesnt give any value.
 // Actually for the above 2, I will think in future if the code should implecitely exit the scope or the programmer should do it and throw error if programmer forgets
-// If u do expr! and expr gives an error then it will throw the error and exit the program. So use !! if you want to handle the error and not exit the program.
+// If u do expr! and expr gives an error then it will panic and exit the program. expr! is promise to compiler that no error. If promise not met then the
+// program panics and exits. So use !! if you want to handle the error and not exit the program.
+// Note:-expr! will panic and exit even inside an error propagating function
+// A function must be error propagating if you dont handle the error via expr! or expr !! {}. U get compiler error otherwise
 // If u do expr? then syntax error because that is not allowed cuz dont make sense
 
 /*
-has_value() method for both ?T and !T . 
+has_value() method for ?T. 
 
 Also stuff like == and != Work on them without null/error coalescing and work as u would expect but <,> etc don't for obvious reason
 */
@@ -134,7 +137,7 @@ pub type Buf = {
 
 //By default the innitializer of Buf will be Buf(fd:i32)
 //But if you do the following then the default innitializer will no longer be generated instead the innitializer u define will be used(Based on operator overloading)
-fn Buf(name:str) -> Buf {
+fn Buf(name:str) -> !Buf {
     ret Buf(fd = fs::open(name)!)
 }
 fn Buf(fd:i32) -> Buf {
@@ -277,7 +280,7 @@ fn func122w34(*args:i8, **kwargs:str = "9"){//Yes does what u think it does
 // ---- Error handling ----
 fn divide(a:f64, b:f64) -> !f64 {
     //THe : signifies if block without any else if and stuff i.e npt a match statement
-    when b == 0.0:{ ret Error("div by zero") } //Note:-Error is just a struct with string field. Nothing fancy. Error is a builtin type and is meant specifically 
+    when b == 0.0:{ raise Error("div by zero") } //Note:-Error is just a struct with string field. Nothing fancy. Error is a builtin type and is meant specifically 
                                             //for error handling. The Error struct has an implicit field called msg which is the error message. You can access it using err.msg in the !! block. 
                                             // You can not create your own error types
     //Note:For when statement, u can just do ``when cond {.....}``
@@ -369,7 +372,8 @@ fn lock_demo() -> !void {
     io::println(f"bal:{bal}")
 }
 CONST1:=10.2E-3
-CONST2:!i32 = Error("not initialized")//Yes this is actually valid. Btw you can also have *!T but idk why you will need it. But u can just for consistancy
+// CONST2:!i32 = Error("not initialized")//No this is actually not valid. Do the following if you want to store some error
+CONST2:Error = Error("not initialized")
 fn chan_demo() -> !void {
     ch:Chan<i32> = Chan::<i32>(cap = 4)
     p := thread { 
@@ -626,7 +630,7 @@ fn tensor_example(){
                  //Use *args in method defination if number of item is not known
 }
 // ---- Main ----
-pub fn main(argv:[str]) -> i32 {//Optional argv and optional ret
+pub fn main(argv:[str]) -> !i32 {//Optional argv and optional ret
 
     _test => {
         //Equivalent to a lambda that has no input variable or return type. Note in other places to define lambda u need fn and stuff. Just a special syntactic sugar here
@@ -761,11 +765,7 @@ pub fn main(argv:[str]) -> i32 {//Optional argv and optional ret
         give 0.0
     }
     mut var:i32//Without a set default value
-    r5 := divide(4.0, 0.0)//This means type of r5 is !f64. Also we didnt use divide(...)! because if error we dont want to throw it
-                         //We just want to save it. If we did divide(...)! then we would throw an error and exit if divide throws an Error
-    //You cant use r5 as a normal f64 variable because it can also hold an error value. So you can use it only after applying !! operator to handle it
-    r6:!f64 = r5 
-    err:?Error = r5.err//This is how you can get the error value from a !T variable. Note if no error then it will be None. err is implicit field of !T
+    r5 := divide(4.0, 0.0)//This means type of r5 is f64. In case it has an error then the error will be propagated to the caller of this function. So the caller of this function must handle the error or propagate it further up the call stack.
     // loops
     loop i :0..5 { io::print(f"{i} ") }
     loop i :0..10..2 { io::print(f"{i} ") }         // step
