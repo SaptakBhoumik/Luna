@@ -3,6 +3,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <mutex>
 
 namespace Luna {
 static const char* level_colour(DiagLevel level) {
@@ -47,7 +48,7 @@ static std::string make_caret(size_t col, size_t len = 1) {
 }
 
 
-void display(const Diagnostic& diag) {
+static void _display_impl(const Diagnostic& diag) {
     const auto& lc = level_colour(diag.level);
     const auto& lbl = level_label(diag.level);
 
@@ -105,19 +106,27 @@ void display(const Diagnostic& diag) {
     std::cerr << '\n';   // blank line between diagnostics
 }
 
+static std::mutex _diag_mutex;//In case we allow parallel compilation in future, we want to make sure that diagnostics from different threads don't interleave and become unreadable. So we use a mutex to serialize access to the display function.
+
+void display(const Diagnostic& diag){
+    std::lock_guard<std::mutex> lock(_diag_mutex);
+    _display_impl(diag);
+}
 void display_all(const std::vector<Diagnostic>& diags) {
     bool has_error = false;
-    for (const auto& d : diags) {
-        display(d);
-        if (d.level == DiagLevel::error){
-            has_error = true;
+    {
+        std::lock_guard<std::mutex> lock(_diag_mutex);
+        for (const auto& d : diags) {
+            _display_impl(d);
+            if (d.level == DiagLevel::error){
+                has_error = true;
+            }
         }
     }
     if (has_error){
         std::exit(1);
     }
 }
-
 
 
 Diagnostic make_error(const Location& loc,const std::string& message,const std::string& sub_message,const std::string& code) {
